@@ -6,6 +6,7 @@
 .vercel
 dist
 node_modules
-supabase
+/supabase
 tests
 *.tsbuildinfo
+next-env.d.ts
