@@ -28,7 +28,9 @@ test("ships a bento identity, installable assets and a safe Supabase catalog mig
   ]);
 
   assert.match(manifest, /"display": "standalone"/);
+  assert.match(manifest, /"orientation": "any"/);
   assert.match(envExample, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
+  assert.match(envExample, /NEXT_PUBLIC_SUPABASE_CATALOG_ENABLED=false/);
   assert.match(migration, /enable row level security/i);
   assert.match(migration, /to anon, authenticated\s+using \(active = true\)/i);
   assert.match(migration, /grant select on table public\.products to anon, authenticated/i);
@@ -36,7 +38,11 @@ test("ships a bento identity, installable assets and a safe Supabase catalog mig
   assert.match(migration, /'patchwork', 'ribbon', 'index', 'seam', 'frame', 'sample'/);
   assert.doesNotMatch(migration, /#d9ff00|halo-burn|ghost-signal|void-bloom/);
   assert.match(app, /Catalogo live/);
+  assert.match(app, /NEXT_PUBLIC_SUPABASE_CATALOG_ENABLED/);
+  assert.match(app, /image\/heic/);
   assert.match(styles, /\.home-board/);
+  assert.match(styles, /safe-area-inset-bottom/);
+  assert.match(styles, /100dvh/);
   assert.match(styles, /--mint: #a8efcf/);
   assert.match(styles, /\.shape-patchwork/);
   assert.doesNotMatch(styles, /Impact|--paper|--red:|--acid:|\.ticker|hero-sticker|7px 7px 0/);

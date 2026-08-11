@@ -23,10 +23,13 @@ Impostare in `.env.local`:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key
+NEXT_PUBLIC_SUPABASE_CATALOG_ENABLED=false
 NEXT_PUBLIC_SITE_URL=https://bleachwears.vercel.app
 ```
 
 La publishable key può essere usata nel browser: le tabelle esposte devono comunque avere privilegi minimi e Row Level Security attiva. Non inserire mai secret key o `service_role` in variabili `NEXT_PUBLIC_*`.
+
+Il catalogo usa i dati locali finché `NEXT_PUBLIC_SUPABASE_CATALOG_ENABLED` è `false`. Dopo aver applicato le migrazioni al progetto Supabase, impostarlo a `true` in locale e su Vercel per attivare la lettura live senza richieste fallite durante la configurazione iniziale.
 
 ## Database
 

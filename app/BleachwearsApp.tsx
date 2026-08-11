@@ -146,6 +146,8 @@ const navItems: { id: View; label: string; short: string }[] = [
   { id: "lab", label: "Custom Lab", short: "Lab" },
 ];
 
+const CART_HISTORY_KEY = "bleachwearsCart";
+
 function money(value: number) {
   return new Intl.NumberFormat("it-IT", {
     style: "currency",
@@ -202,20 +204,23 @@ export function BleachwearsApp() {
   const cartSheetRef = useRef<HTMLElement>(null);
   const cartCloseButtonRef = useRef<HTMLButtonElement>(null);
   const cartTriggerRef = useRef<HTMLElement | null>(null);
+  const builderCardRef = useRef<HTMLElement>(null);
+  const builderHeadingRef = useRef<HTMLHeadingElement>(null);
 
   const closeCart = useCallback(() => {
+    if (window.history.state?.[CART_HISTORY_KEY]) {
+      window.history.back();
+      return;
+    }
     setCartOpen(false);
   }, []);
 
   useEffect(() => {
     const syncFromLocation = () => {
       const hash = window.location.hash.replace("#", "");
-      if (!hash) {
-        setView("links");
-        return;
-      }
       const matchingView = navItems.find((item) => item.id === hash);
-      if (matchingView) setView(matchingView.id);
+      setView(matchingView?.id ?? "links");
+      setCartOpen(Boolean(window.history.state?.[CART_HISTORY_KEY]));
     };
 
     syncFromLocation();
@@ -228,6 +233,8 @@ export function BleachwearsApp() {
   }, []);
 
   useEffect(() => {
+    if (process.env.NEXT_PUBLIC_SUPABASE_CATALOG_ENABLED !== "true") return;
+
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
 
@@ -265,9 +272,16 @@ export function BleachwearsApp() {
 
     const pageLayer = pageLayerRef.current;
     const cartSheet = cartSheetRef.current;
+    const scrollY = window.scrollY;
     const previousOverflow = document.body.style.overflow;
+    const previousPosition = document.body.style.position;
+    const previousTop = document.body.style.top;
+    const previousWidth = document.body.style.width;
     pageLayer?.setAttribute("inert", "");
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -303,7 +317,11 @@ export function BleachwearsApp() {
     return () => {
       pageLayer?.removeAttribute("inert");
       document.body.style.overflow = previousOverflow;
+      document.body.style.position = previousPosition;
+      document.body.style.top = previousTop;
+      document.body.style.width = previousWidth;
       window.removeEventListener("keydown", handleKeyDown);
+      window.scrollTo({ top: scrollY, behavior: "auto" });
       window.requestAnimationFrame(() => cartTriggerRef.current?.focus());
     };
   }, [cartOpen, closeCart]);
@@ -324,13 +342,41 @@ export function BleachwearsApp() {
   function navigate(next: View) {
     setView(next);
     if (window.location.hash !== `#${next}`) window.history.pushState(null, "", `#${next}`);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    window.requestAnimationFrame(() => mainRef.current?.focus());
+    window.requestAnimationFrame(() => {
+      mainRef.current?.focus({ preventScroll: true });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
   }
 
   function openCart() {
     cartTriggerRef.current = document.activeElement as HTMLElement | null;
+    if (!window.history.state?.[CART_HISTORY_KEY]) {
+      const currentState = window.history.state && typeof window.history.state === "object"
+        ? window.history.state
+        : {};
+      window.history.pushState({ ...currentState, [CART_HISTORY_KEY]: true }, "", window.location.href);
+    }
     setCartOpen(true);
+  }
+
+  function closeCartAndNavigate(next: View) {
+    if (window.history.state?.[CART_HISTORY_KEY]) {
+      window.addEventListener("popstate", () => navigate(next), { once: true });
+      window.history.back();
+      return;
+    }
+    setCartOpen(false);
+    navigate(next);
+  }
+
+  function goToLabStep(next: number) {
+    setLabStep(Math.max(1, Math.min(4, next)));
+    window.requestAnimationFrame(() => {
+      builderHeadingRef.current?.focus({ preventScroll: true });
+      if (window.matchMedia("(max-width: 680px)").matches) {
+        builderCardRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+      }
+    });
   }
 
   function addToCart(name: string, detail: string, price: number) {
@@ -357,10 +403,11 @@ export function BleachwearsApp() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const allowedTypes = new Set(["image/png", "image/jpeg", "image/webp", "application/pdf"]);
-    const allowedExtension = /\.(png|jpe?g|webp|pdf)$/i.test(file.name);
+    const allowedTypes = new Set(["image/png", "image/jpeg", "image/webp", "image/heic", "image/heif", "application/pdf"]);
+    const isImageExtension = /\.(png|jpe?g|webp|heic|heif)$/i.test(file.name);
+    const allowedExtension = isImageExtension || /\.pdf$/i.test(file.name);
     if ((file.type && !allowedTypes.has(file.type)) || (!file.type && !allowedExtension)) {
-      setToast("Formato non supportato: usa JPG, PNG, WEBP o PDF");
+      setToast("Formato non supportato: usa JPG, PNG, WEBP, HEIC o PDF");
       event.target.value = "";
       return;
     }
@@ -373,8 +420,9 @@ export function BleachwearsApp() {
     setCustomFileName(file.name);
     setDesign("custom");
     setConfirmed(false);
-    setCustomPreview(file.type.startsWith("image/") ? URL.createObjectURL(file) : "");
+    setCustomPreview(file.type.startsWith("image/") || isImageExtension ? URL.createObjectURL(file) : "");
     setToast("Grafica caricata per l’anteprima");
+    event.target.value = "";
   }
 
   const previewStyle = {
@@ -390,8 +438,8 @@ export function BleachwearsApp() {
           href="#main-content"
           onClick={(event) => {
             event.preventDefault();
-            mainRef.current?.focus();
-            mainRef.current?.scrollIntoView({ block: "start" });
+            mainRef.current?.focus({ preventScroll: true });
+            mainRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
           }}
         >
           Vai al contenuto
@@ -421,6 +469,15 @@ export function BleachwearsApp() {
             <b>{cartItems.length}</b>
           </button>
         </header>
+
+        <nav className="mobile-dock" aria-label="Navigazione mobile">
+          {navItems.map((item) => (
+            <button key={item.id} type="button" className={view === item.id ? "is-current" : ""} onClick={() => navigate(item.id)} aria-current={view === item.id ? "page" : undefined}>
+              <span aria-hidden="true">{item.id === "links" ? "⌂" : item.id === "shop" ? "◫" : "＋"}</span>{item.short}
+            </button>
+          ))}
+          <button type="button" onClick={openCart} aria-label={`Apri carrello, ${cartItems.length} articoli`}><span aria-hidden="true">{cartItems.length}</span>Bag</button>
+        </nav>
 
         <main id="main-content" className="site-main" ref={mainRef} tabIndex={-1}>
           {view === "links" && (
@@ -564,11 +621,11 @@ export function BleachwearsApp() {
                   </div>
                 </section>
 
-                <section className="bento-card builder-card" aria-label="Configuratore del capo">
+                <section className="bento-card builder-card" ref={builderCardRef} aria-label="Configuratore del capo">
                   <div className="builder-topline">
                     <div>
                       <span className="section-kicker">Passaggio {labStep} di 4</span>
-                      <h2>{["Scegli la base", "Scegli il segno", "Scegli la reazione", "Controlla tutto"][labStep - 1]}</h2>
+                      <h2 ref={builderHeadingRef} tabIndex={-1}>{["Scegli la base", "Scegli il segno", "Scegli la reazione", "Controlla tutto"][labStep - 1]}</h2>
                     </div>
                     <span className="step-count">{labStep}/4</span>
                   </div>
@@ -581,7 +638,7 @@ export function BleachwearsApp() {
                           type="button"
                           key={label}
                           className={labStep === step ? "is-current" : labStep > step ? "is-complete" : ""}
-                          onClick={() => setLabStep(step)}
+                          onClick={() => goToLabStep(step)}
                           aria-current={labStep === step ? "step" : undefined}
                           aria-label={`Passaggio ${step}: ${label}`}
                         >
@@ -652,9 +709,9 @@ export function BleachwearsApp() {
                       <fieldset>
                         <legend>Oppure usa una tua immagine</legend>
                         <label className={design === "custom" ? "upload-card is-selected" : "upload-card"}>
-                          <input type="file" accept=".png,.jpg,.jpeg,.webp,.pdf" onChange={handleUpload} />
+                          <input type="file" accept=".png,.jpg,.jpeg,.webp,.heic,.heif,.pdf,image/heic,image/heif" onChange={handleUpload} />
                           <span className="upload-symbol" aria-hidden="true">＋</span>
-                          <span><strong>{customFileName || "Carica dalla galleria"}</strong><small>JPG, PNG, WEBP o PDF · max 10 MB</small></span>
+                          <span><strong>{customFileName || "Carica dalla galleria"}</strong><small>JPG, PNG, WEBP, HEIC o PDF · max 10 MB</small></span>
                         </label>
                         <p className="field-helper">Il file resta sul dispositivo in questa versione dimostrativa.</p>
                       </fieldset>
@@ -732,8 +789,8 @@ export function BleachwearsApp() {
                   )}
 
                   <div className="builder-actions">
-                    <button type="button" className="ghost-action" onClick={() => setLabStep((step) => Math.max(1, step - 1))} disabled={labStep === 1}>Indietro</button>
-                    {labStep < 4 && <button type="button" className="solid-action" onClick={() => setLabStep((step) => Math.min(4, step + 1))}>Continua <span aria-hidden="true">→</span></button>}
+                    <button type="button" className="ghost-action" onClick={() => goToLabStep(labStep - 1)} disabled={labStep === 1}>Indietro</button>
+                    {labStep < 4 && <button type="button" className="solid-action" onClick={() => goToLabStep(labStep + 1)}>Continua <span aria-hidden="true">→</span></button>}
                   </div>
                 </section>
               </div>
@@ -747,14 +804,6 @@ export function BleachwearsApp() {
           <div><span>Fatto a mano in Italia · © 2026</span><button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Torna su ↑</button></div>
         </footer>
 
-        <nav className="mobile-dock" aria-label="Navigazione mobile">
-          {navItems.map((item) => (
-            <button key={item.id} type="button" className={view === item.id ? "is-current" : ""} onClick={() => navigate(item.id)} aria-current={view === item.id ? "page" : undefined}>
-              <span aria-hidden="true">{item.id === "links" ? "⌂" : item.id === "shop" ? "◫" : "＋"}</span>{item.short}
-            </button>
-          ))}
-          <button type="button" onClick={openCart}><span aria-hidden="true">{cartItems.length}</span>Bag</button>
-        </nav>
       </div>
 
       {cartOpen && (
@@ -768,7 +817,7 @@ export function BleachwearsApp() {
               <div className="cart-empty">
                 <GridMark />
                 <p>Inizia da un drop oppure crea qualcosa nel Custom Lab.</p>
-                <button type="button" className="solid-action" onClick={() => { closeCart(); navigate("shop"); }}>Scopri il drop</button>
+                <button type="button" className="solid-action" onClick={() => closeCartAndNavigate("shop")}>Scopri il drop</button>
               </div>
             ) : (
               <>
