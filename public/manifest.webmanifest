@@ -1,13 +1,14 @@
 {
-  "name": "Bleachwears — Indossa la reazione",
+  "name": "Bleachwears — Custom streetwear",
   "short_name": "Bleachwears",
   "description": "Streetwear personalizzato a mano con candeggina.",
-  "start_url": "/#links",
+  "id": "/",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#f3e7ce",
-  "theme_color": "#e73423",
+  "background_color": "#f2f5f1",
+  "theme_color": "#171a1c",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -19,7 +20,13 @@
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

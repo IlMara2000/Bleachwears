@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-const title = "Bleachwears — Indossa la reazione";
+const title = "Bleachwears — Custom streetwear";
 const description =
-  "Streetwear personalizzato a mano con candeggina. Scopri i drop, trova Bleachwears online o crea la tua t-shirt e felpa nel Custom Lab.";
+  "Drop artigianali e capi personalizzati con candeggina. Scegli una base, un segno e crea il tuo pezzo nel Custom Lab.";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://bleachwears.vercel.app";
 
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "Bleachwears",
   },
   openGraph: {
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     locale: "it_IT",
     siteName: "Bleachwears",
     url: "/",
-    images: [{ url: "/og.png", width: 1536, height: 1024, alt: "Bleachwears — Indossa la reazione" }],
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Bleachwears — Custom streetwear" }],
   },
   twitter: {
     card: "summary_large_image",
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#e73423",
+  themeColor: "#171a1c",
   colorScheme: "light",
   width: "device-width",
   initialScale: 1,

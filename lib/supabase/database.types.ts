@@ -8,7 +8,7 @@ export type ProductRow = {
   status: string;
   color: string;
   reaction: string;
-  art: "halo" | "bloom" | "static" | "ghost" | "void" | "oneoff";
+  art: "patchwork" | "ribbon" | "index" | "seam" | "frame" | "sample";
   active: boolean;
   position: number;
   created_at: string;

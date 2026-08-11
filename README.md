@@ -1,6 +1,6 @@
 # Bleachwears
 
-Web app maximalist per Bleachwears: link-in-bio, catalogo drop e configuratore interattivo per t-shirt e felpe personalizzate con candeggina.
+Web app bento-grid per Bleachwears: link hub, catalogo drop e configuratore interattivo per t-shirt e felpe personalizzate con candeggina.
 
 ## Stack
 

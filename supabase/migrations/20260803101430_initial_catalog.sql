@@ -10,7 +10,7 @@ create table if not exists public.products (
   status text not null,
   color text not null check (color ~ '^#[0-9a-fA-F]{6}$'),
   reaction text not null check (reaction ~ '^#[0-9a-fA-F]{6}$'),
-  art text not null check (art in ('halo', 'bloom', 'static', 'ghost', 'void', 'oneoff')),
+  art text not null check (art in ('patchwork', 'ribbon', 'index', 'seam', 'frame', 'sample')),
   active boolean not null default true,
   position integer not null default 0,
   created_at timestamptz not null default now(),
@@ -53,12 +53,12 @@ insert into public.products (
   position
 )
 values
-  ('BW-T01', 'halo-burn', 'HALO BURN', 'tee', 'Tee 240 g', 4900, '7–10 giorni', '#171717', '#d88954', 'halo', true, 10),
-  ('BW-T02', 'night-garden', 'NIGHT GARDEN', 'tee', 'Tee 240 g', 5500, '7–10 giorni', '#4d1d29', '#e8aa83', 'bloom', true, 20),
-  ('BW-T03', 'static-face', 'STATIC FACE', 'tee', 'Tee oversized', 5900, 'Serie limitata', '#17223c', '#cfa361', 'static', true, 30),
-  ('BW-H01', 'ghost-signal', 'GHOST SIGNAL', 'hoodie', 'Felpa 400 g', 8900, '10–14 giorni', '#151515', '#e2c090', 'ghost', true, 40),
-  ('BW-H02', 'void-bloom', 'VOID BLOOM', 'hoodie', 'Felpa 400 g', 9900, 'Serie limitata', '#352018', '#d78a56', 'void', true, 50),
-  ('BW-O01', 'one-off-001', 'ONE/OFF #001', 'oneoff', 'Pezzo unico', 11900, '1 disponibile', '#22201f', '#d9ff00', 'oneoff', true, 60)
+  ('BW-T01', 'mint-index', 'MINT INDEX', 'tee', 'Tee 240 g', 4900, '7–10 giorni', '#171717', '#d88954', 'patchwork', true, 10),
+  ('BW-T02', 'soft-ribbon', 'SOFT RIBBON', 'tee', 'Tee 240 g', 5500, '7–10 giorni', '#4d1d29', '#e8aa83', 'ribbon', true, 20),
+  ('BW-T03', 'night-index', 'NIGHT INDEX', 'tee', 'Tee oversized', 5900, 'Serie limitata', '#17223c', '#cfa361', 'index', true, 30),
+  ('BW-H01', 'quiet-seam', 'QUIET SEAM', 'hoodie', 'Felpa 400 g', 8900, '10–14 giorni', '#151515', '#e2c090', 'seam', true, 40),
+  ('BW-H02', 'field-frame', 'FIELD FRAME', 'hoodie', 'Felpa 400 g', 9900, 'Serie limitata', '#352018', '#d78a56', 'frame', true, 50),
+  ('BW-O01', 'studio-sample-001', 'STUDIO SAMPLE 001', 'oneoff', 'Pezzo unico', 11900, '1 disponibile', '#22201f', '#c5bbff', 'sample', true, 60)
 on conflict (id) do update
 set
   slug = excluded.slug,

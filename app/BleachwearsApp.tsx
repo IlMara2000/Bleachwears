@@ -1,8 +1,8 @@
 "use client";
 
-import type { ChangeEvent, CSSProperties, FormEvent } from "react";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent, CSSProperties, FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { ProductRow } from "@/lib/supabase/database.types";
 
@@ -11,6 +11,8 @@ type ProductCategory = "tee" | "hoodie" | "oneoff";
 type GarmentType = "tee" | "hoodie";
 type Placement = "front" | "back";
 type PrintScale = "S" | "M" | "L";
+type CatalogSource = "local" | "live";
+type ProductArt = "patchwork" | "ribbon" | "index" | "seam" | "frame" | "sample";
 
 type Product = {
   id: string;
@@ -21,7 +23,7 @@ type Product = {
   status: string;
   color: string;
   reaction: string;
-  art: "halo" | "bloom" | "static" | "ghost" | "void" | "oneoff";
+  art: ProductArt;
 };
 
 type CartItem = {
@@ -34,69 +36,69 @@ type CartItem = {
 const fallbackProducts: Product[] = [
   {
     id: "BW-T01",
-    name: "HALO BURN",
+    name: "Mint Index",
     category: "tee",
-    kind: "Tee 240 g",
+    kind: "T-shirt 240 g",
     price: 49,
     status: "7–10 giorni",
     color: "#171717",
     reaction: "#d88954",
-    art: "halo",
+    art: "patchwork",
   },
   {
     id: "BW-T02",
-    name: "NIGHT GARDEN",
+    name: "Soft Ribbon",
     category: "tee",
-    kind: "Tee 240 g",
+    kind: "T-shirt 240 g",
     price: 55,
     status: "7–10 giorni",
     color: "#4d1d29",
     reaction: "#e8aa83",
-    art: "bloom",
+    art: "ribbon",
   },
   {
     id: "BW-T03",
-    name: "STATIC FACE",
+    name: "Night Index",
     category: "tee",
-    kind: "Tee oversized",
+    kind: "T-shirt oversize",
     price: 59,
     status: "Serie limitata",
     color: "#17223c",
     reaction: "#cfa361",
-    art: "static",
+    art: "index",
   },
   {
     id: "BW-H01",
-    name: "GHOST SIGNAL",
+    name: "Quiet Seam",
     category: "hoodie",
     kind: "Felpa 400 g",
     price: 89,
     status: "10–14 giorni",
     color: "#151515",
     reaction: "#e2c090",
-    art: "ghost",
+    art: "seam",
   },
   {
     id: "BW-H02",
-    name: "VOID BLOOM",
+    name: "Field Frame",
     category: "hoodie",
     kind: "Felpa 400 g",
     price: 99,
     status: "Serie limitata",
     color: "#352018",
     reaction: "#d78a56",
-    art: "void",
+    art: "frame",
   },
   {
     id: "BW-O01",
-    name: "ONE/OFF #001",
+    name: "Studio Sample 001",
     category: "oneoff",
     kind: "Pezzo unico",
     price: 119,
     status: "1 disponibile",
     color: "#22201f",
-    reaction: "#d9ff00",
-    art: "oneoff",
+    reaction: "#c5bbff",
+    art: "sample",
   },
 ];
 
@@ -118,12 +120,12 @@ const reactionMap = {
     { id: "rose", name: "Rosa polvere", hex: "#d8878c" },
   ],
   navy: [
-    { id: "gold", name: "Oro sporco", hex: "#d0a35d" },
+    { id: "gold", name: "Oro morbido", hex: "#d0a35d" },
     { id: "ice", name: "Ghiaccio", hex: "#bac5c0" },
   ],
   forest: [
-    { id: "sun", name: "Sole", hex: "#d5b169" },
-    { id: "moss", name: "Muschio chiaro", hex: "#a9a56c" },
+    { id: "sun", name: "Sabbia chiara", hex: "#d5b169" },
+    { id: "moss", name: "Muschio", hex: "#a9a56c" },
   ],
   cocoa: [
     { id: "sand", name: "Sabbia", hex: "#c79b71" },
@@ -132,16 +134,16 @@ const reactionMap = {
 } as const;
 
 const designs = [
-  { id: "orbit", name: "Orbita 01", note: "Cerchi / organico" },
-  { id: "bloom", name: "Red Bloom", note: "Fiore / radicale" },
-  { id: "static", name: "Static Cut", note: "Segnale / ruvido" },
-  { id: "ghost", name: "Ghost Mark", note: "Volto / astratto" },
+  { id: "patchwork", name: "Modulo 01", note: "Tasselli morbidi", symbol: "▦" },
+  { id: "ribbon", name: "Nastro 02", note: "Percorso continuo", symbol: "⌁" },
+  { id: "index", name: "Indice 03", note: "Segmenti liberi", symbol: "╱" },
+  { id: "frame", name: "Finestra 04", note: "Campo aperto", symbol: "▰" },
 ] as const;
 
-const navItems: { id: View; index: string; label: string; short: string }[] = [
-  { id: "links", index: "01", label: "Trovaci", short: "Link" },
-  { id: "shop", index: "02", label: "Drop", short: "Drop" },
-  { id: "lab", index: "03", label: "Custom Lab", short: "Lab" },
+const navItems: { id: View; label: string; short: string }[] = [
+  { id: "links", label: "Home", short: "Home" },
+  { id: "shop", label: "Drop", short: "Drop" },
+  { id: "lab", label: "Custom Lab", short: "Lab" },
 ];
 
 function money(value: number) {
@@ -152,10 +154,17 @@ function money(value: number) {
   }).format(value);
 }
 
+function readableName(name: string) {
+  if (name !== name.toUpperCase()) return name;
+  return name
+    .toLocaleLowerCase("it-IT")
+    .replace(/(^|[\s/])([a-zà-ÿ])/g, (_, prefix: string, letter: string) => `${prefix}${letter.toLocaleUpperCase("it-IT")}`);
+}
+
 function productFromRow(row: ProductRow): Product {
   return {
     id: row.id,
-    name: row.name,
+    name: readableName(row.name),
     category: row.category,
     kind: row.kind,
     price: row.price_cents / 100,
@@ -173,32 +182,49 @@ export function BleachwearsApp() {
   const [cartOpen, setCartOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [catalogProducts, setCatalogProducts] = useState<Product[]>(fallbackProducts);
-  const [catalogLive, setCatalogLive] = useState(false);
+  const [catalogSource, setCatalogSource] = useState<CatalogSource>("local");
 
   const [labStep, setLabStep] = useState(1);
   const [garment, setGarment] = useState<GarmentType>("tee");
   const [garmentColor, setGarmentColor] = useState("black");
   const [garmentSize, setGarmentSize] = useState("M");
-  const [design, setDesign] = useState("orbit");
+  const [design, setDesign] = useState("patchwork");
   const [reaction, setReaction] = useState("rust");
   const [placement, setPlacement] = useState<Placement>("front");
   const [printScale, setPrintScale] = useState<PrintScale>("M");
   const [customFileName, setCustomFileName] = useState("");
   const [customPreview, setCustomPreview] = useState("");
-  const [confirmed, setConfirmed] = useState(true);
+  const [confirmed, setConfirmed] = useState(false);
+
   const cartSequence = useRef(0);
   const mainRef = useRef<HTMLElement>(null);
-  const cartDrawerRef = useRef<HTMLElement>(null);
+  const pageLayerRef = useRef<HTMLDivElement>(null);
+  const cartSheetRef = useRef<HTMLElement>(null);
+  const cartCloseButtonRef = useRef<HTMLButtonElement>(null);
   const cartTriggerRef = useRef<HTMLElement | null>(null);
 
+  const closeCart = useCallback(() => {
+    setCartOpen(false);
+  }, []);
+
   useEffect(() => {
-    const syncFromHash = () => {
-      const hash = window.location.hash.replace("#", "") as View;
-      if (navItems.some((item) => item.id === hash)) setView(hash);
+    const syncFromLocation = () => {
+      const hash = window.location.hash.replace("#", "");
+      if (!hash) {
+        setView("links");
+        return;
+      }
+      const matchingView = navItems.find((item) => item.id === hash);
+      if (matchingView) setView(matchingView.id);
     };
-    syncFromHash();
-    window.addEventListener("hashchange", syncFromHash);
-    return () => window.removeEventListener("hashchange", syncFromHash);
+
+    syncFromLocation();
+    window.addEventListener("hashchange", syncFromLocation);
+    window.addEventListener("popstate", syncFromLocation);
+    return () => {
+      window.removeEventListener("hashchange", syncFromLocation);
+      window.removeEventListener("popstate", syncFromLocation);
+    };
   }, []);
 
   useEffect(() => {
@@ -212,9 +238,9 @@ export function BleachwearsApp() {
       .eq("active", true)
       .order("position", { ascending: true })
       .then(({ data, error }) => {
-        if (cancelled || error || !data?.length) return;
+        if (cancelled || error || !data) return;
         setCatalogProducts(data.map(productFromRow));
-        setCatalogLive(true);
+        setCatalogSource("live");
       });
 
     return () => {
@@ -236,27 +262,55 @@ export function BleachwearsApp() {
 
   useEffect(() => {
     if (!cartOpen) return;
+
+    const pageLayer = pageLayerRef.current;
+    const cartSheet = cartSheetRef.current;
     const previousOverflow = document.body.style.overflow;
+    pageLayer?.setAttribute("inert", "");
+    document.body.style.overflow = "hidden";
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeCart();
+      if (event.key === "Escape") {
+        closeCart();
+        return;
+      }
+
+      if (event.key !== "Tab" || !cartSheet) return;
+      const focusable = Array.from(
+        cartSheet.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (!focusable.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!cartSheet.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
 
-    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKeyDown);
-    window.requestAnimationFrame(() => cartDrawerRef.current?.focus());
+    window.requestAnimationFrame(() => cartCloseButtonRef.current?.focus());
 
     return () => {
+      pageLayer?.removeAttribute("inert");
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
+      window.requestAnimationFrame(() => cartTriggerRef.current?.focus());
     };
-  }, [cartOpen]);
+  }, [cartOpen, closeCart]);
 
-  const activeColor =
-    garmentColors.find((color) => color.id === garmentColor) || garmentColors[0];
+  const activeColor = garmentColors.find((color) => color.id === garmentColor) || garmentColors[0];
   const availableReactions = reactionMap[garmentColor as keyof typeof reactionMap];
-  const activeReaction =
-    availableReactions.find((option) => option.id === reaction) || availableReactions[0];
-
+  const activeReaction = availableReactions.find((option) => option.id === reaction) || availableReactions[0];
   const labPrice = (garment === "tee" ? 49 : 89) + (design === "custom" ? 10 : 0) + (placement === "back" ? 8 : 0);
 
   const filteredProducts = useMemo(
@@ -269,7 +323,7 @@ export function BleachwearsApp() {
 
   function navigate(next: View) {
     setView(next);
-    window.history.replaceState(null, "", `#${next}`);
+    if (window.location.hash !== `#${next}`) window.history.pushState(null, "", `#${next}`);
     window.scrollTo({ top: 0, behavior: "smooth" });
     window.requestAnimationFrame(() => mainRef.current?.focus());
   }
@@ -279,33 +333,33 @@ export function BleachwearsApp() {
     setCartOpen(true);
   }
 
-  function closeCart() {
-    setCartOpen(false);
-    window.requestAnimationFrame(() => cartTriggerRef.current?.focus());
-  }
-
   function addToCart(name: string, detail: string, price: number) {
     cartSequence.current += 1;
-    const item: CartItem = {
-      id: `cart-${cartSequence.current}`,
-      name,
-      detail,
-      price,
-    };
-    setCartItems((current) => [...current, item]);
-    setToast(`${name} aggiunto al carrello`);
+    setCartItems((current) => [
+      ...current,
+      { id: `cart-${cartSequence.current}`, name, detail, price },
+    ]);
+    setToast(`${name} è nel carrello`);
+  }
+
+  function updateSelection<T>(setter: (value: T) => void, value: T) {
+    setter(value);
+    setConfirmed(false);
   }
 
   function selectGarmentColor(colorId: string) {
     setGarmentColor(colorId);
     setReaction(reactionMap[colorId as keyof typeof reactionMap][0].id);
+    setConfirmed(false);
   }
 
   function handleUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+
     const allowedTypes = new Set(["image/png", "image/jpeg", "image/webp", "application/pdf"]);
-    if (!allowedTypes.has(file.type)) {
+    const allowedExtension = /\.(png|jpe?g|webp|pdf)$/i.test(file.name);
+    if ((file.type && !allowedTypes.has(file.type)) || (!file.type && !allowedExtension)) {
       setToast("Formato non supportato: usa JPG, PNG, WEBP o PDF");
       event.target.value = "";
       return;
@@ -318,12 +372,9 @@ export function BleachwearsApp() {
 
     setCustomFileName(file.name);
     setDesign("custom");
-    if (file.type.startsWith("image/")) {
-      setCustomPreview(URL.createObjectURL(file));
-    } else {
-      setCustomPreview("");
-    }
-    setToast("Grafica personale caricata");
+    setConfirmed(false);
+    setCustomPreview(file.type.startsWith("image/") ? URL.createObjectURL(file) : "");
+    setToast("Grafica caricata per l’anteprima");
   }
 
   const previewStyle = {
@@ -332,470 +383,560 @@ export function BleachwearsApp() {
   } as CSSProperties;
 
   return (
-    <div className="app-shell">
-      <a className="skip-link" href="#main-content">
-        Vai al contenuto
-      </a>
+    <div className="site-root">
+      <div className="page-layer" ref={pageLayerRef}>
+        <a
+          className="skip-link"
+          href="#main-content"
+          onClick={(event) => {
+            event.preventDefault();
+            mainRef.current?.focus();
+            mainRef.current?.scrollIntoView({ block: "start" });
+          }}
+        >
+          Vai al contenuto
+        </a>
+        <header className="topbar">
+          <button className="brand-button" type="button" onClick={() => navigate("links")} aria-label="Bleachwears, vai alla home">
+            <GridMark />
+            <span>bleachwears</span>
+          </button>
 
-      <header className="site-header">
-        <button className="brand-lockup" type="button" onClick={() => navigate("links")} aria-label="Bleachwears, vai alla home">
-          <span className="brand-mark" aria-hidden="true">
-            <span>B/</span>
-            <span>W</span>
-          </span>
-          <span className="brand-name">BLEACHWEARS</span>
-        </button>
+          <nav className="primary-nav" aria-label="Navigazione principale">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={view === item.id ? "is-current" : ""}
+                onClick={() => navigate(item.id)}
+                aria-current={view === item.id ? "page" : undefined}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
 
-        <nav className="desktop-nav" aria-label="Navigazione principale">
+          <button className="bag-button" type="button" onClick={openCart} aria-label={`Apri carrello, ${cartItems.length} articoli`}>
+            <span>Carrello</span>
+            <b>{cartItems.length}</b>
+          </button>
+        </header>
+
+        <main id="main-content" className="site-main" ref={mainRef} tabIndex={-1}>
+          {view === "links" && (
+            <BentoHome
+              navigate={navigate}
+              notify={setToast}
+              products={catalogProducts.slice(0, 3)}
+              catalogSource={catalogSource}
+            />
+          )}
+
+          {view === "shop" && (
+            <section className="screen shop-screen" aria-labelledby="shop-title">
+              <div className="shop-intro-grid">
+                <article className="bento-card shop-intro-card">
+                  <span className="section-kicker">Drop corrente</span>
+                  <h1 id="shop-title">Capi diversi, per davvero.</h1>
+                  <p>Ogni lavorazione reagisce in modo proprio. Le variazioni sono parte del pezzo, non un difetto da nascondere.</p>
+                </article>
+
+                <aside className="bento-card shop-info-card" aria-label="Informazioni sul drop">
+                  <div><span>Disponibili</span><strong>{catalogProducts.length}</strong></div>
+                  <div><span>Tempo medio</span><strong>7–14 gg</strong></div>
+                  <p className={catalogSource === "live" ? "source-pill is-live" : "source-pill"}>
+                    <span aria-hidden="true" />{catalogSource === "live" ? "Catalogo live" : "Dati dimostrativi"}
+                  </p>
+                </aside>
+              </div>
+
+              <div className="bento-card filter-card">
+                <div>
+                  <span className="section-kicker">Filtra</span>
+                  <p>{filteredProducts.length} risultati</p>
+                </div>
+                <div className="filter-pills" role="group" aria-label="Filtra i prodotti">
+                  {[
+                    ["all", "Tutto"],
+                    ["tee", "T-shirt"],
+                    ["hoodie", "Felpe"],
+                    ["oneoff", "One/off"],
+                  ].map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      className={shopFilter === id ? "is-selected" : ""}
+                      onClick={() => setShopFilter(id as "all" | ProductCategory)}
+                      aria-pressed={shopFilter === id}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {filteredProducts.length ? (
+                <div className="catalog-grid">
+                  {filteredProducts.map((product, index) => (
+                    <article className={index === 0 ? "catalog-card is-featured" : "catalog-card"} key={product.id}>
+                      <div className="product-stage" style={{ "--product-color": product.color, "--product-reaction": product.reaction } as CSSProperties}>
+                        <span className="craft-pill">Fatto a mano</span>
+                        <GarmentVisual
+                          type={product.category === "hoodie" ? "hoodie" : "tee"}
+                          color={product.color}
+                          reaction={product.reaction}
+                          art={product.art}
+                        />
+                      </div>
+                      <div className="catalog-copy">
+                        <div>
+                          <p>{product.kind} · {product.id}</p>
+                          <h2>{product.name}</h2>
+                        </div>
+                        <strong>{money(product.price)}</strong>
+                      </div>
+                      <div className="catalog-meta">
+                        <span>{product.status}</span>
+                        <span>XS–XXL</span>
+                      </div>
+                      <button
+                        className="inline-action"
+                        type="button"
+                        onClick={() => addToCart(product.name, `${product.kind} · ${product.status}`, product.price)}
+                      >
+                        Aggiungi al carrello <span aria-hidden="true">→</span>
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="bento-card empty-catalog">
+                  <span aria-hidden="true">○</span>
+                  <h2>Il prossimo drop sta prendendo forma.</h2>
+                  <p>Torna presto oppure crea subito un capo nel Custom Lab.</p>
+                  <button type="button" className="soft-button" onClick={() => navigate("lab")}>Apri il Custom Lab</button>
+                </div>
+              )}
+
+              <button type="button" className="lab-invite-card" onClick={() => navigate("lab")}>
+                <span className="section-kicker">Non trovi il tuo?</span>
+                <strong>Parti da una base neutra e componilo tu.</strong>
+                <span className="round-arrow" aria-hidden="true">→</span>
+              </button>
+            </section>
+          )}
+
+          {view === "lab" && (
+            <section className="screen lab-screen" aria-labelledby="lab-title">
+              <div className="lab-heading-grid">
+                <article className="bento-card lab-heading-card">
+                  <span className="section-kicker">Custom Lab</span>
+                  <h1 id="lab-title">Componilo come un gioco.</h1>
+                  <p>Scegli la base, il segno e la reazione. L’anteprima cambia con te, passo dopo passo.</p>
+                </article>
+                <aside className="bento-card lab-facts-card">
+                  <div><strong>4</strong><span>scelte semplici</span></div>
+                  <div><strong>49 €</strong><span>prezzo di partenza</span></div>
+                </aside>
+              </div>
+
+              <div className="lab-workspace">
+                <section className="bento-card preview-card" aria-label="Anteprima del capo personalizzato">
+                  <div className="preview-toolbar">
+                    <span>Anteprima · {placement === "front" ? "Fronte" : "Retro"}</span>
+                    <span>{activeColor.name} + {activeReaction.name}</span>
+                  </div>
+                  <div className="preview-well" style={previewStyle}>
+                    <GarmentVisual
+                      type={garment}
+                      color={activeColor.hex}
+                      reaction={activeReaction.hex}
+                      art={design}
+                      placement={placement}
+                      scale={printScale}
+                      customPreview={customPreview}
+                    />
+                  </div>
+                  <div className="preview-summary" aria-live="polite">
+                    <div><span>Base</span><strong>{garment === "tee" ? "T-shirt" : "Felpa"} · {garmentSize}</strong></div>
+                    <div><span>Segno</span><strong>{design === "custom" ? customFileName || "File personale" : designs.find((item) => item.id === design)?.name}</strong></div>
+                    <div><span>Totale</span><strong>{money(labPrice)}</strong></div>
+                  </div>
+                </section>
+
+                <section className="bento-card builder-card" aria-label="Configuratore del capo">
+                  <div className="builder-topline">
+                    <div>
+                      <span className="section-kicker">Passaggio {labStep} di 4</span>
+                      <h2>{["Scegli la base", "Scegli il segno", "Scegli la reazione", "Controlla tutto"][labStep - 1]}</h2>
+                    </div>
+                    <span className="step-count">{labStep}/4</span>
+                  </div>
+
+                  <div className="progress-pills" aria-label="Passaggi del configuratore">
+                    {["Base", "Segno", "Reazione", "Riepilogo"].map((label, index) => {
+                      const step = index + 1;
+                      return (
+                        <button
+                          type="button"
+                          key={label}
+                          className={labStep === step ? "is-current" : labStep > step ? "is-complete" : ""}
+                          onClick={() => setLabStep(step)}
+                          aria-current={labStep === step ? "step" : undefined}
+                          aria-label={`Passaggio ${step}: ${label}`}
+                        >
+                          <span>{labStep > step ? "✓" : step}</span>
+                          <small>{label}</small>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {labStep === 1 && (
+                    <div className="builder-body">
+                      <fieldset>
+                        <legend>Capo</legend>
+                        <div className="option-grid two-columns">
+                          <button type="button" className={garment === "tee" ? "option-tile is-selected" : "option-tile"} onClick={() => updateSelection(setGarment, "tee")} aria-pressed={garment === "tee"}>
+                            <span className="option-icon tee-icon" aria-hidden="true" />
+                            <strong>T-shirt</strong><small>240 g · da 49 €</small>
+                          </button>
+                          <button type="button" className={garment === "hoodie" ? "option-tile is-selected" : "option-tile"} onClick={() => updateSelection(setGarment, "hoodie")} aria-pressed={garment === "hoodie"}>
+                            <span className="option-icon hoodie-icon" aria-hidden="true" />
+                            <strong>Felpa</strong><small>400 g · da 89 €</small>
+                          </button>
+                        </div>
+                      </fieldset>
+
+                      <fieldset>
+                        <legend>Colore della base</legend>
+                        <div className="color-options">
+                          {garmentColors.map((color) => (
+                            <button type="button" key={color.id} className={garmentColor === color.id ? "is-selected" : ""} onClick={() => selectGarmentColor(color.id)} aria-pressed={garmentColor === color.id}>
+                              <span style={{ backgroundColor: color.hex }} aria-hidden="true" />
+                              <small>{color.name}</small>
+                            </button>
+                          ))}
+                        </div>
+                      </fieldset>
+
+                      <fieldset>
+                        <legend>Taglia</legend>
+                        <div className="choice-pills">
+                          {["XS", "S", "M", "L", "XL", "XXL"].map((size) => (
+                            <button key={size} type="button" className={garmentSize === size ? "is-selected" : ""} onClick={() => updateSelection(setGarmentSize, size)} aria-pressed={garmentSize === size}>{size}</button>
+                          ))}
+                        </div>
+                      </fieldset>
+                    </div>
+                  )}
+
+                  {labStep === 2 && (
+                    <div className="builder-body">
+                      <fieldset>
+                        <legend>Archivio Bleachwears</legend>
+                        <div className="design-options">
+                          {designs.map((item) => (
+                            <button key={item.id} type="button" className={design === item.id ? "design-tile is-selected" : "design-tile"} onClick={() => updateSelection(setDesign, item.id)} aria-pressed={design === item.id}>
+                              <span aria-hidden="true">{item.symbol}</span>
+                              <div><strong>{item.name}</strong><small>{item.note}</small></div>
+                            </button>
+                          ))}
+                        </div>
+                      </fieldset>
+
+                      <button type="button" className="catalog-link" onClick={() => setToast("Il catalogo PDF sarà collegato appena definitivo")}>
+                        <span><strong>Catalogo completo</strong><small>PDF in preparazione</small></span><span aria-hidden="true">→</span>
+                      </button>
+
+                      <fieldset>
+                        <legend>Oppure usa una tua immagine</legend>
+                        <label className={design === "custom" ? "upload-card is-selected" : "upload-card"}>
+                          <input type="file" accept=".png,.jpg,.jpeg,.webp,.pdf" onChange={handleUpload} />
+                          <span className="upload-symbol" aria-hidden="true">＋</span>
+                          <span><strong>{customFileName || "Carica dalla galleria"}</strong><small>JPG, PNG, WEBP o PDF · max 10 MB</small></span>
+                        </label>
+                        <p className="field-helper">Il file resta sul dispositivo in questa versione dimostrativa.</p>
+                      </fieldset>
+                    </div>
+                  )}
+
+                  {labStep === 3 && (
+                    <div className="builder-body">
+                      <fieldset>
+                        <legend>Reazione compatibile con {activeColor.name}</legend>
+                        <div className="reaction-options">
+                          {availableReactions.map((option) => (
+                            <button type="button" key={option.id} className={reaction === option.id ? "reaction-tile is-selected" : "reaction-tile"} onClick={() => updateSelection(setReaction, option.id)} aria-pressed={reaction === option.id}>
+                              <span className="reaction-dot" style={{ "--reaction-base": activeColor.hex, "--reaction-mark": option.hex } as CSSProperties} aria-hidden="true" />
+                              <div><strong>{option.name}</strong><small>Effetto candeggina</small></div>
+                            </button>
+                          ))}
+                          <button type="button" className="reaction-tile is-disabled" disabled>
+                            <span className="reaction-dot acrylic-dot" aria-hidden="true" />
+                            <div><strong>Acrilico</strong><small>In arrivo</small></div>
+                          </button>
+                        </div>
+                      </fieldset>
+
+                      <div className="split-fields">
+                        <fieldset>
+                          <legend>Posizione</legend>
+                          <div className="choice-pills two-up">
+                            <button type="button" className={placement === "front" ? "is-selected" : ""} onClick={() => updateSelection(setPlacement, "front")} aria-pressed={placement === "front"}>Fronte</button>
+                            <button type="button" className={placement === "back" ? "is-selected" : ""} onClick={() => updateSelection(setPlacement, "back")} aria-pressed={placement === "back"}>Retro +8 €</button>
+                          </div>
+                        </fieldset>
+                        <fieldset>
+                          <legend>Dimensione</legend>
+                          <div className="choice-pills three-up">
+                            {(["S", "M", "L"] as PrintScale[]).map((size) => (
+                              <button type="button" key={size} className={printScale === size ? "is-selected" : ""} onClick={() => updateSelection(setPrintScale, size)} aria-pressed={printScale === size}>{size}</button>
+                            ))}
+                          </div>
+                        </fieldset>
+                      </div>
+                    </div>
+                  )}
+
+                  {labStep === 4 && (
+                    <div className="builder-body review-body">
+                      <div className="review-grid">
+                        <div><span>Capo</span><strong>{garment === "tee" ? "T-shirt 240 g" : "Felpa 400 g"}</strong><small>Taglia {garmentSize}</small></div>
+                        <div><span>Colore</span><strong>{activeColor.name}</strong><small>Base selezionata</small></div>
+                        <div><span>Segno</span><strong>{design === "custom" ? customFileName || "File personale" : designs.find((item) => item.id === design)?.name}</strong><small>{placement === "front" ? "Fronte" : "Retro"} · misura {printScale}</small></div>
+                        <div><span>Reazione</span><strong>{activeReaction.name}</strong><small>Lavorazione manuale</small></div>
+                      </div>
+                      <div className="review-total"><span>Totale indicativo</span><strong>{money(labPrice)}</strong></div>
+                      <label className="confirmation-row">
+                        <input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />
+                        <span>Ho controllato taglia e impostazioni.</span>
+                      </label>
+                      <button
+                        className="primary-wide-action"
+                        type="button"
+                        disabled={!confirmed}
+                        onClick={() => {
+                          addToCart(
+                            "Custom Reaction",
+                            `${garment === "tee" ? "T-shirt" : "Felpa"} ${garmentSize} · ${activeColor.name} · ${design === "custom" ? customFileName || "file personale" : designs.find((item) => item.id === design)?.name} · ${activeReaction.name} · ${placement === "front" ? "fronte" : "retro"} · segno ${printScale}`,
+                            labPrice,
+                          );
+                          setConfirmed(false);
+                        }}
+                      >
+                        Aggiungi al carrello <span>{money(labPrice)} →</span>
+                      </button>
+                      <p className="field-helper">L’anteprima è indicativa: ogni lavorazione manuale produce variazioni uniche.</p>
+                    </div>
+                  )}
+
+                  <div className="builder-actions">
+                    <button type="button" className="ghost-action" onClick={() => setLabStep((step) => Math.max(1, step - 1))} disabled={labStep === 1}>Indietro</button>
+                    {labStep < 4 && <button type="button" className="solid-action" onClick={() => setLabStep((step) => Math.min(4, step + 1))}>Continua <span aria-hidden="true">→</span></button>}
+                  </div>
+                </section>
+              </div>
+            </section>
+          )}
+        </main>
+
+        <footer className="footer-card">
+          <div><GridMark /><strong>bleachwears</strong></div>
+          <p>Coloriamo togliendo colore. Ogni capo passa dalle nostre mani e diventa irripetibile.</p>
+          <div><span>Fatto a mano in Italia · © 2026</span><button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Torna su ↑</button></div>
+        </footer>
+
+        <nav className="mobile-dock" aria-label="Navigazione mobile">
           {navItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={view === item.id ? "nav-button active" : "nav-button"}
-              onClick={() => navigate(item.id)}
-              aria-current={view === item.id ? "page" : undefined}
-            >
-              <span>{item.index}</span>
-              {item.label}
+            <button key={item.id} type="button" className={view === item.id ? "is-current" : ""} onClick={() => navigate(item.id)} aria-current={view === item.id ? "page" : undefined}>
+              <span aria-hidden="true">{item.id === "links" ? "⌂" : item.id === "shop" ? "◫" : "＋"}</span>{item.short}
             </button>
           ))}
+          <button type="button" onClick={openCart}><span aria-hidden="true">{cartItems.length}</span>Bag</button>
         </nav>
-
-        <button className="cart-button" type="button" onClick={openCart} aria-label={`Apri carrello, ${cartItems.length} articoli`}>
-          <span>CARRELLO</span>
-          <strong>{String(cartItems.length).padStart(2, "0")}</strong>
-        </button>
-      </header>
-
-      <main id="main-content" ref={mainRef} tabIndex={-1}>
-        {view === "links" && (
-          <LinksView
-            navigate={navigate}
-            notify={setToast}
-          />
-        )}
-
-        {view === "shop" && (
-          <section className="view-section shop-view" aria-labelledby="shop-title">
-            <div className="section-heading red-heading">
-              <p className="eyebrow">DROP_01 / FATTO A MANO / 2026 <span className={catalogLive ? "catalog-status live" : "catalog-status"}>{catalogLive ? "SUPABASE LIVE" : "CATALOGO LOCALE"}</span></p>
-              <h1 id="shop-title">NESSUN CLONE PERFETTO.</h1>
-              <p>Ogni pezzo reagisce in modo diverso. Le piccole variazioni non sono difetti: sono la firma del processo.</p>
-            </div>
-
-            <div className="filter-bar" role="group" aria-label="Filtra i prodotti">
-              {[
-                ["all", "Tutto"],
-                ["tee", "T-shirt"],
-                ["hoodie", "Felpe"],
-                ["oneoff", "One/off"],
-              ].map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={shopFilter === id ? "filter-button active" : "filter-button"}
-                  onClick={() => setShopFilter(id as "all" | ProductCategory)}
-                  aria-pressed={shopFilter === id}
-                >
-                  {label}
-                </button>
-              ))}
-              <span className="filter-count">{filteredProducts.length} PEZZI</span>
-            </div>
-
-            <div className="product-grid">
-              {filteredProducts.map((product, index) => (
-                <article className="product-card" key={product.id}>
-                  <div className={`product-visual visual-${product.art}`} style={{ "--product": product.color, "--bleach": product.reaction } as CSSProperties}>
-                    <span className="product-index">{String(index + 1).padStart(2, "0")}</span>
-                    <div className={`mini-garment ${product.category === "hoodie" ? "hoodie" : "tee"}`} aria-hidden="true">
-                      <span className="mini-art" />
-                    </div>
-                    <span className="handmade-stamp">HAND<br />MADE</span>
-                  </div>
-                  <div className="product-copy">
-                    <div>
-                      <p>{product.id} · {product.kind}</p>
-                      <h2>{product.name}</h2>
-                    </div>
-                    <strong>{money(product.price)}</strong>
-                  </div>
-                  <div className="product-meta">
-                    <span>{product.status}</span>
-                    <span>XS—XXL</span>
-                  </div>
-                  <button
-                    className="add-button"
-                    type="button"
-                    onClick={() => addToCart(product.name, `${product.kind} · ${product.status}`, product.price)}
-                  >
-                    AGGIUNGI <span aria-hidden="true">↗</span>
-                  </button>
-                </article>
-              ))}
-            </div>
-
-            <div className="custom-banner">
-              <span className="burst" aria-hidden="true">★</span>
-              <div>
-                <p className="eyebrow">NON TROVI IL TUO?</p>
-                <h2>COSTRUISCILO TU.</h2>
-              </div>
-              <button type="button" className="inverse-button" onClick={() => navigate("lab")}>ENTRA NEL LAB <span aria-hidden="true">→</span></button>
-            </div>
-          </section>
-        )}
-
-        {view === "lab" && (
-          <section className="view-section lab-view" aria-labelledby="lab-title">
-            <div className="lab-intro">
-              <p className="eyebrow">CUSTOM LAB / GIOCA, MESCOLA, INDOSSA</p>
-              <h1 id="lab-title">CREA LA TUA REAZIONE.</h1>
-              <p>Quattro mosse, zero regole inutili. L’anteprima cambia mentre scegli.</p>
-            </div>
-
-            <div className="stepper" aria-label="Passaggi del configuratore">
-              {["La tela", "Il segno", "La reazione", "Ultimo check"].map((label, index) => {
-                const step = index + 1;
-                return (
-                  <button
-                    type="button"
-                    key={label}
-                    className={labStep === step ? "step active" : labStep > step ? "step done" : "step"}
-                    onClick={() => setLabStep(step)}
-                    aria-current={labStep === step ? "step" : undefined}
-                  >
-                    <span>{String(step).padStart(2, "0")}</span>
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="lab-grid">
-              <div className="preview-column">
-                <div className="preview-stage">
-                  <div className="preview-label top-left">ANTEPRIMA / {placement === "front" ? "FRONTE" : "RETRO"}</div>
-                  <div className="preview-label bottom-right">{activeColor.name} × {activeReaction.name}</div>
-                  <div className={`garment-preview ${garment} print-${printScale.toLowerCase()} place-${placement}`} style={previewStyle}>
-                    {garment === "hoodie" && <span className="hood-shape" aria-hidden="true" />}
-                    <div className={`design-mark design-${design}`} aria-hidden="true">
-                      {design === "bloom" && <span>✹</span>}
-                      {design === "static" && <span>{"///"}</span>}
-                      {design === "ghost" && <span>●</span>}
-                      {design === "custom" && customPreview && <Image src={customPreview} alt="" width={400} height={400} unoptimized />}
-                      {design === "custom" && !customPreview && <span>+</span>}
-                    </div>
-                  </div>
-                  <span className="chem-badge" aria-hidden="true">NaClO<br />LAB</span>
-                </div>
-                <div className="live-summary" aria-live="polite">
-                  <div><span>BASE</span><strong>{garment === "tee" ? "T-SHIRT" : "FELPA"} / {garmentSize}</strong></div>
-                  <div><span>SEGNO</span><strong>{design === "custom" ? customFileName || "TUO FILE" : designs.find((item) => item.id === design)?.name}</strong></div>
-                  <div><span>PREZZO</span><strong>{money(labPrice)}</strong></div>
-                </div>
-              </div>
-
-              <div className="control-panel">
-                <div className="panel-head">
-                  <span>STEP_{String(labStep).padStart(2, "0")}</span>
-                  <strong>{["SCEGLI LA TELA", "SCEGLI IL SEGNO", "SCEGLI LA REAZIONE", "ULTIMO CHECK"][labStep - 1]}</strong>
-                </div>
-
-                {labStep === 1 && (
-                  <div className="panel-body">
-                    <fieldset>
-                      <legend>Da cosa vuoi partire?</legend>
-                      <div className="choice-grid two">
-                        <button type="button" className={garment === "tee" ? "choice-card selected" : "choice-card"} onClick={() => setGarment("tee")} aria-pressed={garment === "tee"}>
-                          <span className="choice-number">01</span>
-                          <strong>T-SHIRT</strong>
-                          <small>240 g · da €49</small>
-                        </button>
-                        <button type="button" className={garment === "hoodie" ? "choice-card selected" : "choice-card"} onClick={() => setGarment("hoodie")} aria-pressed={garment === "hoodie"}>
-                          <span className="choice-number">02</span>
-                          <strong>FELPA</strong>
-                          <small>400 g · da €89</small>
-                        </button>
-                      </div>
-                    </fieldset>
-
-                    <fieldset>
-                      <legend>Scegli il colore della base</legend>
-                      <div className="swatch-grid">
-                        {garmentColors.map((color) => (
-                          <button
-                            type="button"
-                            key={color.id}
-                            className={garmentColor === color.id ? "swatch selected" : "swatch"}
-                            onClick={() => selectGarmentColor(color.id)}
-                            aria-pressed={garmentColor === color.id}
-                          >
-                            <span style={{ backgroundColor: color.hex }} aria-hidden="true" />
-                            {color.name}
-                          </button>
-                        ))}
-                      </div>
-                    </fieldset>
-
-                    <fieldset>
-                      <legend>La tua taglia</legend>
-                      <div className="segmented-control size-control">
-                        {["XS", "S", "M", "L", "XL", "XXL"].map((size) => (
-                          <button key={size} type="button" onClick={() => setGarmentSize(size)} className={garmentSize === size ? "active" : ""} aria-pressed={garmentSize === size}>{size}</button>
-                        ))}
-                      </div>
-                    </fieldset>
-                  </div>
-                )}
-
-                {labStep === 2 && (
-                  <div className="panel-body">
-                    <fieldset>
-                      <legend>Prendine uno dal nostro archivio</legend>
-                      <div className="design-grid">
-                        {designs.map((item, index) => (
-                          <button key={item.id} type="button" className={design === item.id ? `design-choice design-${item.id} selected` : `design-choice design-${item.id}`} onClick={() => setDesign(item.id)} aria-pressed={design === item.id}>
-                            <span className="design-thumb" aria-hidden="true">{item.id === "bloom" ? "✹" : item.id === "static" ? "///" : item.id === "ghost" ? "●" : "◎"}</span>
-                            <span><strong>{item.name}</strong><small>{item.note}</small></span>
-                            <em>{String(index + 1).padStart(2, "0")}</em>
-                          </button>
-                        ))}
-                      </div>
-                    </fieldset>
-
-                    <div className="catalog-row">
-                      <button type="button" className="text-button" onClick={() => setToast("Qui collegheremo il PDF con il catalogo definitivo")}>SFOGLIA IL PDF COMPLETO <span aria-hidden="true">↗</span></button>
-                      <span>CATALOGO DEMO / 04 SEGNI</span>
-                    </div>
-
-                    <fieldset>
-                      <legend>Oppure portaci la tua immagine</legend>
-                      <label className={design === "custom" ? "upload-zone selected" : "upload-zone"}>
-                        <input type="file" accept=".png,.jpg,.jpeg,.webp,.pdf" onChange={handleUpload} />
-                        <span className="upload-plus">+</span>
-                        <span><strong>{customFileName || "CARICA DALLA GALLERIA"}</strong><small>JPG, PNG, WEBP o PDF · max 10 MB</small></span>
-                      </label>
-                      <p className="helper-copy">Caricando il file confermi di avere il diritto di usarlo.</p>
-                    </fieldset>
-                  </div>
-                )}
-
-                {labStep === 3 && (
-                  <div className="panel-body">
-                    <fieldset>
-                      <legend>Quale reazione vuoi ottenere?</legend>
-                      <p className="field-note">Opzioni compatibili con {activeColor.name}. Il risultato reale può variare.</p>
-                      <div className="reaction-grid">
-                        {availableReactions.map((option) => (
-                          <button type="button" key={option.id} className={reaction === option.id ? "reaction-card selected" : "reaction-card"} onClick={() => setReaction(option.id)} aria-pressed={reaction === option.id}>
-                            <span className="reaction-sample" style={{ "--sample-base": activeColor.hex, "--sample-reaction": option.hex } as CSSProperties} aria-hidden="true" />
-                            <strong>{option.name}</strong>
-                            <small>Effetto bleach</small>
-                          </button>
-                        ))}
-                        <button type="button" className="reaction-card coming-soon" disabled>
-                          <span className="reaction-sample acrylic" aria-hidden="true" />
-                          <strong>Acrilico</strong>
-                          <small>In arrivo</small>
-                        </button>
-                      </div>
-                    </fieldset>
-
-                    <fieldset>
-                      <legend>Dove lo mettiamo?</legend>
-                      <div className="segmented-control">
-                        <button type="button" className={placement === "front" ? "active" : ""} onClick={() => setPlacement("front")} aria-pressed={placement === "front"}>FRONTE</button>
-                        <button type="button" className={placement === "back" ? "active" : ""} onClick={() => setPlacement("back")} aria-pressed={placement === "back"}>RETRO +€8</button>
-                      </div>
-                    </fieldset>
-
-                    <fieldset>
-                      <legend>Quanto grande?</legend>
-                      <div className="segmented-control">
-                        {(["S", "M", "L"] as PrintScale[]).map((size) => (
-                          <button type="button" key={size} className={printScale === size ? "active" : ""} onClick={() => setPrintScale(size)} aria-pressed={printScale === size}>SEGNO {size}</button>
-                        ))}
-                      </div>
-                    </fieldset>
-                  </div>
-                )}
-
-                {labStep === 4 && (
-                  <div className="panel-body final-check">
-                    <div className="check-poster">
-                      <span>PROGETTO</span>
-                      <strong>BW-{garment.toUpperCase()}-{activeColor.id.toUpperCase()}</strong>
-                      <em>PRONTO DA REAGIRE</em>
-                    </div>
-                    <dl className="order-list">
-                      <div><dt>Capo</dt><dd>{garment === "tee" ? "T-shirt 240 g" : "Felpa 400 g"} · {garmentSize}</dd></div>
-                      <div><dt>Colore</dt><dd>{activeColor.name}</dd></div>
-                      <div><dt>Segno</dt><dd>{design === "custom" ? customFileName || "File personale" : designs.find((item) => item.id === design)?.name}</dd></div>
-                      <div><dt>Reazione</dt><dd>{activeReaction.name} · {placement === "front" ? "fronte" : "retro"} · {printScale}</dd></div>
-                      <div className="total-row"><dt>Totale</dt><dd>{money(labPrice)}</dd></div>
-                    </dl>
-                    <label className="rights-check">
-                      <input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />
-                      <span>Ho controllato taglia e impostazioni.</span>
-                    </label>
-                    <button className="big-cart-button" type="button" disabled={!confirmed} onClick={() => addToCart("CUSTOM REACTION", `${garment === "tee" ? "T-shirt" : "Felpa"} ${garmentSize} · ${activeColor.name} · ${design === "custom" ? customFileName || "file personale" : designs.find((item) => item.id === design)?.name} · ${activeReaction.name} · ${placement} · segno ${printScale}`, labPrice)}>
-                      AGGIUNGI AL CARRELLO <span>{money(labPrice)} →</span>
-                    </button>
-                    <p className="manual-note">L’anteprima è indicativa: la lavorazione manuale rende ogni pezzo leggermente diverso.</p>
-                  </div>
-                )}
-
-                <div className="panel-footer">
-                  <button type="button" className="back-button" onClick={() => setLabStep((step) => Math.max(1, step - 1))} disabled={labStep === 1}>← INDIETRO</button>
-                  {labStep < 4 && <button type="button" className="next-button" onClick={() => setLabStep((step) => Math.min(4, step + 1))}>AVANTI / STEP {String(labStep + 1).padStart(2, "0")} →</button>}
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-      </main>
-
-      <footer className="site-footer">
-        <div className="footer-wordmark">BLEACH<br />WEARS</div>
-        <div className="footer-manifesto">
-          <p className="eyebrow">MANIFESTO_001</p>
-          <p>Coloriamo togliendo colore. Ogni capo passa dalle nostre mani, reagisce, cambia e diventa irripetibile.</p>
-        </div>
-        <div className="footer-meta">
-          <span>MADE BY HAND IN ITALY</span>
-          <span>© 2026 BLEACHWEARS</span>
-          <button type="button" onClick={() => navigate("links")}>TORNA SU ↑</button>
-        </div>
-      </footer>
-
-      <nav className="mobile-nav" aria-label="Navigazione mobile">
-        {navItems.map((item) => (
-          <button key={item.id} type="button" className={view === item.id ? "active" : ""} onClick={() => navigate(item.id)} aria-current={view === item.id ? "page" : undefined}>
-            <span>{item.index}</span>{item.short}
-          </button>
-        ))}
-        <button type="button" onClick={openCart}><span>{String(cartItems.length).padStart(2, "0")}</span>Bag</button>
-      </nav>
+      </div>
 
       {cartOpen && (
-        <div className="cart-backdrop" role="presentation" onMouseDown={closeCart}>
-          <aside className="cart-drawer" ref={cartDrawerRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="cart-title" onMouseDown={(event) => event.stopPropagation()}>
-            <div className="cart-head">
-              <div><p className="eyebrow">IL TUO DROP</p><h2 id="cart-title">CARRELLO / {String(cartItems.length).padStart(2, "0")}</h2></div>
-              <button type="button" onClick={closeCart} aria-label="Chiudi carrello">×</button>
+        <div className="cart-scrim" role="presentation" onMouseDown={closeCart}>
+          <aside className="cart-sheet" ref={cartSheetRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="cart-title" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="cart-header">
+              <div><span className="section-kicker">Il tuo carrello</span><h2 id="cart-title">{cartItems.length ? `${cartItems.length} ${cartItems.length === 1 ? "capo" : "capi"}` : "Ancora vuoto"}</h2></div>
+              <button ref={cartCloseButtonRef} type="button" onClick={closeCart} aria-label="Chiudi carrello">×</button>
             </div>
             {cartItems.length === 0 ? (
-              <div className="empty-cart"><span aria-hidden="true">∅</span><p>Qui è ancora tutto neutro.</p><button type="button" onClick={() => { closeCart(); navigate("shop"); }}>SCOPRI IL DROP →</button></div>
+              <div className="cart-empty">
+                <GridMark />
+                <p>Inizia da un drop oppure crea qualcosa nel Custom Lab.</p>
+                <button type="button" className="solid-action" onClick={() => { closeCart(); navigate("shop"); }}>Scopri il drop</button>
+              </div>
             ) : (
               <>
-                <ul className="cart-list">
-                  {cartItems.map((item, index) => (
+                <ul className="cart-items">
+                  {cartItems.map((item) => (
                     <li key={item.id}>
-                      <span>{String(index + 1).padStart(2, "0")}</span>
+                      <span className="cart-item-swatch" aria-hidden="true" />
                       <div><strong>{item.name}</strong><small>{item.detail}</small></div>
                       <b>{money(item.price)}</b>
                       <button type="button" onClick={() => setCartItems((current) => current.filter((entry) => entry.id !== item.id))} aria-label={`Rimuovi ${item.name}`}>×</button>
                     </li>
                   ))}
                 </ul>
-                <div className="cart-total"><span>TOTALE</span><strong>{money(cartItems.reduce((sum, item) => sum + item.price, 0))}</strong></div>
-                <button type="button" className="checkout-button" onClick={() => setToast("Il checkout verrà collegato nella prossima fase")}>VAI AL CHECKOUT <span>→</span></button>
-                <p className="cart-note">Checkout demo: pagamenti e spedizioni saranno collegati nella fase e-commerce.</p>
+                <div className="cart-total"><span>Totale</span><strong>{money(cartItems.reduce((sum, item) => sum + item.price, 0))}</strong></div>
+                <button type="button" className="primary-wide-action" onClick={() => setToast("Checkout non ancora attivo: questa è una preview di design")}>Vai al checkout <span>→</span></button>
+                <p className="cart-helper">Pagamenti e spedizioni verranno collegati nella fase e-commerce.</p>
               </>
             )}
           </aside>
         </div>
       )}
 
-      <div className={toast ? "toast visible" : "toast"} role="status" aria-live="polite">{toast}</div>
+      <div className={toast ? "toast-pill is-visible" : "toast-pill"} role="status" aria-live="polite">{toast}</div>
     </div>
   );
 }
 
-function LinksView({ navigate, notify }: { navigate: (view: View) => void; notify: (message: string) => void }) {
+function BentoHome({
+  navigate,
+  notify,
+  products,
+  catalogSource,
+}: {
+  navigate: (view: View) => void;
+  notify: (message: string) => void;
+  products: Product[];
+  catalogSource: CatalogSource;
+}) {
   function handleNewsletter(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    notify("Sei dentro. Niente spam, solo drop.");
+    notify("Modulo in anteprima: l’iscrizione sarà collegata nella prossima fase");
     event.currentTarget.reset();
   }
 
-  const socialLinks = [
-    { number: "01", name: "INSTAGRAM", handle: "@bleachwears", accent: "red" },
-    { number: "02", name: "TIKTOK", handle: "@bleachwears", accent: "cream" },
-    { number: "03", name: "WHATSAPP", handle: "Parla con noi", accent: "acid" },
-    { number: "04", name: "EMAIL", handle: "Scrivici", accent: "black" },
+  const socials = [
+    { name: "Instagram", handle: "@bleachwears" },
+    { name: "TikTok", handle: "@bleachwears" },
+    { name: "WhatsApp", handle: "Parla con noi" },
+    { name: "Email", handle: "Scrivici" },
   ];
 
   return (
-    <section className="links-view" aria-labelledby="hero-title">
-      <div className="ticker" aria-hidden="true">
-        <div>FATTO A MANO ★ NESSUN CLONE ★ CUSTOM BLEACH ★ FATTO A MANO ★ NESSUN CLONE ★ CUSTOM BLEACH ★</div>
-      </div>
-
-      <div className="hero-grid">
-        <div className="hero-copy">
-          <p className="eyebrow hero-eyebrow">BLEACH-CUSTOMIZED STREETWEAR / ITALIA</p>
-          <h1 className="hero-title" id="hero-title">
-            <span>INDOSSA</span>
-            <span className="red-line">LA</span>
-            <span className="outline-line">REAZIONE.</span>
-          </h1>
-          <div className="hero-note">
-            <span aria-hidden="true">✦</span>
-            <p>Partiamo da t-shirt e felpe scure. Togliamo colore, aggiungiamo segni, lasciamo che ogni pezzo diventi unico.</p>
+    <section className="screen home-screen" aria-labelledby="home-title">
+      <div className="home-board">
+        <article className="bento-card home-hero-card">
+          <div className="hero-content">
+            <span className="status-chip"><span aria-hidden="true" /> Custom streetwear · Italia</span>
+            <h1 id="home-title">Indossa qualcosa che non esiste due volte.</h1>
+            <p>Partiamo da t-shirt e felpe scure. Togliamo colore, aggiungiamo un segno e lasciamo che la materia faccia il resto.</p>
+            <div className="hero-buttons">
+              <button type="button" className="mint-action" onClick={() => navigate("lab")}>Crea il tuo capo <span aria-hidden="true">→</span></button>
+              <button type="button" className="dark-ghost-action" onClick={() => navigate("shop")}>Esplora il drop</button>
+            </div>
           </div>
-          <div className="hero-actions">
-            <button type="button" className="primary-cta" onClick={() => navigate("lab")}>CREA IL TUO <span aria-hidden="true">↗</span></button>
-            <button type="button" className="secondary-cta" onClick={() => navigate("shop")}>VEDI IL DROP <span aria-hidden="true">→</span></button>
+          <div className="hero-garment-well" aria-hidden="true">
+            <span className="floating-note">pezzo unico</span>
+            <GarmentVisual type="tee" color="#111514" reaction="#a8efcf" art="patchwork" />
           </div>
-        </div>
+        </article>
 
-        <div className="link-stack" aria-label="Link di Bleachwears">
-          <div className="stack-title"><span>LINK IN BIO</span><strong>SEGUICI<br />OVUNQUE.</strong></div>
-          {socialLinks.map((social) => (
-            <button key={social.name} type="button" className={`social-link ${social.accent}`} onClick={() => notify(`Link ${social.name} pronto: inserisci l’URL ufficiale`)}>
-              <span>{social.number}</span>
-              <strong>{social.name}</strong>
-              <small>{social.handle}</small>
-              <em aria-hidden="true">↗</em>
-            </button>
-          ))}
-          <p className="link-footnote">I collegamenti sono predisposti: basterà inserire gli URL ufficiali.</p>
-        </div>
+        <article className="bento-card social-card">
+          <div className="card-heading-row"><div><span className="section-kicker">Link hub</span><h2>Troviamoci.</h2></div><span className="availability-pill">Link in arrivo</span></div>
+          <div className="social-grid">
+            {socials.map((social) => (
+              <button key={social.name} type="button" onClick={() => notify(`${social.name} non è ancora collegato`)}>
+                <span><strong>{social.name}</strong><small>{social.handle}</small></span><span aria-hidden="true">→</span>
+              </button>
+            ))}
+          </div>
+        </article>
 
-        <span className="hero-sticker sticker-one" aria-hidden="true">ONE<br />OF<br />ONE</span>
-        <span className="hero-sticker sticker-two" aria-hidden="true">★</span>
-      </div>
-
-      <div className="portal-grid">
-        <button type="button" className="portal-card drop-card" onClick={() => navigate("shop")}>
-          <span className="portal-number">02 / DROP</span>
-          <div className="portal-garment tee" aria-hidden="true"><span /></div>
-          <div><p>PEZZI PRONTI / SERIE LIMITATE</p><h2>SHOPPA<br />IL DROP.</h2></div>
-          <em>ENTRA ↗</em>
+        <button type="button" className="lab-teaser-card" onClick={() => navigate("lab")}>
+          <span className="section-kicker">Custom Lab</span>
+          <strong>Componilo come un gioco.</strong>
+          <span className="lab-mini-grid" aria-hidden="true"><i /><i /><i /><i /></span>
+          <span className="round-arrow" aria-hidden="true">→</span>
         </button>
-        <button type="button" className="portal-card lab-card" onClick={() => navigate("lab")}>
-          <span className="portal-number">03 / CUSTOM LAB</span>
-          <div className="lab-orbit" aria-hidden="true"><span>+</span></div>
-          <div><p>LA TUA BASE / IL TUO SEGNO</p><h2>CREA IL<br />TUO PEZZO.</h2></div>
-          <em>GIOCA ↗</em>
-        </button>
-      </div>
 
-      <div className="manifesto-strip">
-        <div className="manifesto-index">MANIFESTO<br /><strong>001</strong></div>
-        <blockquote>“IL DIFETTO È LA PARTE CHE NON SI PUÒ COPIARE.”</blockquote>
-        <div className="manifesto-facts"><span>01 / ARTIGIANALE</span><span>02 / IRRIPETIBILE</span><span>03 / TUO</span></div>
-      </div>
+        <article className="bento-card drop-preview-card">
+          <div className="card-heading-row">
+            <div><span className="section-kicker">Drop selezionato</span><h2>Pronti adesso.</h2></div>
+            <span className={catalogSource === "live" ? "source-pill is-live" : "source-pill"}>{catalogSource === "live" ? "Live" : "Preview"}</span>
+          </div>
+          <div className="featured-list">
+            {products.length ? products.map((product) => (
+              <div key={product.id}>
+                <span className="featured-swatch" style={{ backgroundColor: product.color }} aria-hidden="true" />
+                <span><strong>{product.name}</strong><small>{product.kind}</small></span>
+                <b>{money(product.price)}</b>
+              </div>
+            )) : <p>Il prossimo drop sta prendendo forma.</p>}
+          </div>
+          <button type="button" className="soft-button" onClick={() => navigate("shop")}>Vedi tutto il drop <span aria-hidden="true">→</span></button>
+        </article>
 
-      <div className="newsletter-block">
-        <div><p className="eyebrow">DROP ALERT / NO SPAM</p><h2>ENTRA NELLA LISTA.</h2></div>
-        <form onSubmit={handleNewsletter}>
-          <label htmlFor="email">La tua email</label>
-          <div><input id="email" type="email" required placeholder="nome@email.it" /><button type="submit">DENTRO →</button></div>
-        </form>
+        <article className="bento-card process-card">
+          <span className="section-kicker">Come funziona</span>
+          <h2>Tre scelte, una reazione.</h2>
+          <ol>
+            <li><span>1</span><div><strong>Base</strong><small>T-shirt o felpa</small></div></li>
+            <li><span>2</span><div><strong>Segno</strong><small>Archivio o tuo file</small></div></li>
+            <li><span>3</span><div><strong>Reazione</strong><small>Colore e posizione</small></div></li>
+          </ol>
+        </article>
+
+        <article className="bento-card craft-card">
+          <span className="section-kicker">Fatto a mano</span>
+          <blockquote>“La parte più bella è quella che non possiamo replicare.”</blockquote>
+          <div><span>Unico</span><span>Locale</span><span>Lento</span></div>
+        </article>
+
+        <article className="bento-card newsletter-card">
+          <div><span className="section-kicker">Drop alert</span><h2>Solo quando c’è qualcosa di nuovo.</h2><p>Niente calendario editoriale. Ti scriviamo quando esce un capo o si apre un nuovo slot custom.</p></div>
+          <form onSubmit={handleNewsletter}>
+            <label htmlFor="email">La tua email</label>
+            <div><input id="email" type="email" required placeholder="nome@email.it" /><button type="submit" aria-label="Iscriviti alla lista">→</button></div>
+            <small>Funzione in anteprima, nessun dato viene salvato.</small>
+          </form>
+        </article>
       </div>
     </section>
+  );
+}
+
+function GridMark() {
+  return <span className="grid-mark" aria-hidden="true"><i /><i /><i /><i /></span>;
+}
+
+function GarmentVisual({
+  type,
+  color,
+  reaction,
+  art,
+  placement = "front",
+  scale = "M",
+  customPreview = "",
+}: {
+  type: GarmentType;
+  color: string;
+  reaction: string;
+  art: string;
+  placement?: Placement;
+  scale?: PrintScale;
+  customPreview?: string;
+}) {
+  const style = {
+    "--garment-fill": color,
+    "--mark-fill": reaction,
+  } as CSSProperties;
+
+  return (
+    <div className={`garment-object garment-${type} mark-${scale.toLowerCase()} placement-${placement}`} style={style}>
+      {type === "hoodie" && <span className="hood-piece" aria-hidden="true" />}
+      <span className="garment-collar" aria-hidden="true" />
+      <span className={`bleach-shape shape-${art}`} aria-hidden="true">
+        {art === "custom" && customPreview && <Image src={customPreview} alt="" width={420} height={420} unoptimized />}
+        {art === "custom" && !customPreview && "＋"}
+      </span>
+    </div>
   );
 }
