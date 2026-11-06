@@ -187,6 +187,23 @@ const instagramPosts = [
   },
 ];
 
+const instagramReels = [
+  {
+    code: "De94I9YBFPi",
+    kind: "Reel",
+    date: "Ott 2026",
+    title: "Aquila e teschio",
+    caption: "L'ultimo video del profilo: aquila e teschio su felpa.",
+  },
+  {
+    code: "DRz4LmWDK2J",
+    kind: "Reel",
+    date: "Dic 2025",
+    title: "Reel di dicembre",
+    caption: "Il video uscito insieme al post del 3 dicembre 2025.",
+  },
+];
+
 const CART_HISTORY_KEY = "bleachwearsCart";
 
 function money(value: number) {
@@ -984,20 +1001,44 @@ function BentoHome({
           <p className="insta-intro">
             Il progetto nasce tra amici: felpe e magliette lavorate a mano con la candeggina, una per una.
             Si parte da una richiesta in direct — un tema, una base, una taglia — e nessun pezzo esce uguale a un altro.
-            Qui sotto, cinque lavori raccontati dal profilo.
+            Qui sotto due reel che si riproducono nella pagina e cinque lavori raccontati dal profilo.
           </p>
+
+          <div className="insta-reels">
+            {instagramReels.map((reel) => (
+              <div className="insta-reel" key={reel.code}>
+                <div className="insta-player">
+                  <iframe
+                    src={`https://www.instagram.com/reel/${reel.code}/embed/`}
+                    title={`${reel.title} — reel di @bleach_wears`}
+                    loading="lazy"
+                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                </div>
+                <div className="insta-reel-copy">
+                  <span className="insta-meta">
+                    <span className="insta-kind">{reel.kind}</span>
+                    <span className="insta-date">{reel.date}</span>
+                  </span>
+                  <strong>{reel.title}</strong>
+                  <span className="insta-caption">{reel.caption}</span>
+                </div>
+              </div>
+            ))}
+          </div>
 
           <div className="insta-wall">
             {instagramPosts.map((post) => (
-              <a key={post.url} className="insta-post" href={post.url} target="_blank" rel="noopener noreferrer">
+              <article className="insta-post" key={post.url}>
                 <span className="insta-meta">
                   <span className="insta-kind">{post.kind}</span>
                   <span className="insta-date">{post.date}</span>
                 </span>
                 <strong>{post.title}</strong>
                 <span className="insta-caption">{post.caption}</span>
-                <span className="insta-open">Apri su Instagram <span aria-hidden="true">→</span></span>
-              </a>
+                <span className="insta-source">Dal profilo @bleach_wears</span>
+              </article>
             ))}
           </div>
         </article>
