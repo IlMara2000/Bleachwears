@@ -2257,7 +2257,7 @@ button:disabled {
   --radius-card: 6px;
   --radius-control: 4px;
 
-  --font-display: "Avenir Next Condensed", "Avenir Next", "Helvetica Neue", "Arial Narrow", Impact, sans-serif;
+  --font-display: var(--font-display-loaded), "Arial Narrow", "Helvetica Neue", Impact, sans-serif;
   --font-mono: "SF Mono", ui-monospace, Menlo, "Courier New", monospace;
 }
 

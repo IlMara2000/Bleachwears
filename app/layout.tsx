@@ -1,5 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import { Big_Shoulders } from "next/font/google";
 import "./globals.css";
+
+const displayFont = Big_Shoulders({
+  subsets: ["latin"],
+  weight: "variable",
+  variable: "--font-display-loaded",
+  display: "swap",
+  fallback: ["Arial Narrow", "Impact", "sans-serif"],
+});
 
 const title = "Bleachwears — Custom streetwear";
 const description =
@@ -55,7 +64,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="it">
+    <html lang="it" className={displayFont.variable}>
       <body>{children}</body>
     </html>
   );
