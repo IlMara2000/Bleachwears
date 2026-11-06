@@ -1,8 +1,12 @@
 # Velvetica Streetwear — tema Shopify OS 2.0
 
-Tema Shopify completo che riproduce il design dello storefront: hero con capi appesi
-al binario, sezione campagna con sfera cromata, vetrina prodotti, pagina prodotto con
-galleria e selettore taglie, drawer carrello AJAX.
+Tema Shopify completo con direzione visiva **massimalista**: hero con capi appesi al
+binario, nastro scorrevole, campagna con sfera cromata su fondo elettrico, vetrina
+prodotti, pagina prodotto con galleria e selettore taglie, drawer carrello AJAX.
+
+Il linguaggio visivo è volutamente rumoroso: palette carta/crema con tre accenti
+(verde acido, rosso pomodoro, viola elettrico), bordi da 3px, ombre dure offset,
+cartellini ruotati, texture a grana e strisce, titoli compressi con ombra colorata.
 
 ## Installazione
 
@@ -20,9 +24,11 @@ Admin → Online Store → Themes → Add theme → Upload zip file.
 
 **Impostazioni tema** (`config/settings_schema.json`)
 
-- Colori: sfondo, testo, testo secondario, bordi.
+- Colori base: sfondo, superfici, testo, testo secondario, bordi.
+- Accenti massimalisti: acido (lime), caldo (rosso), elettrico (viola): cambiano
+  bottoni, cartellini, ombre, nastro e sfondo della campagna.
 - Tipografia: font titoli e font testo (font library Shopify).
-- Forme: raggio degli angoli.
+- Forme: raggio degli angoli (0 = taglio netto, il valore più massimalista).
 
 **Home** (`templates/index.json`)
 
@@ -30,6 +36,8 @@ Admin → Online Store → Themes → Add theme → Upload zip file.
   per ogni capo appeso (blocco) prodotto, appendino legno/metallo, cartellino
   (testo + stile sconto/novità/brand), forma e colore del segnaposto se il prodotto
   non ha foto.
+- `Nastro scorrevole`: voci del marquee (testo libero), colore del nastro
+  (rosso/acido/nero/viola) e velocità in secondi.
 - `Campagna`: titolo, testo, bottone, sfera cromata on/off.
 - `Collezione in vetrina`: titolo, sottotitolo, collezione, numero prodotti.
 
@@ -46,6 +54,7 @@ assets/base.css              tutti gli stili
 assets/theme.js              drawer, carrello AJAX, varianti, galleria
 sections/header.liquid       brand, menu, ricerca, carrello
 sections/hero-rail.liquid    binario dei capi (blocchi prodotto)
+sections/ticker.liquid       nastro scorrevole (marquee)
 sections/campaign.liquid     campagna con sfera
 sections/featured-collection.liquid
 sections/main-product.liquid galleria, taglie, form, correlati

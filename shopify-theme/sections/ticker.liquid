@@ -1,0 +1,53 @@
+{%- assign items = section.blocks | size -%}
+{%- if items > 0 -%}
+  <section class="ticker ticker--{{ section.settings.scheme }}"
+           style="--ticker-speed:{{ section.settings.speed }}s"
+           aria-label="{{ section.settings.aria_label | escape }}">
+    <div class="ticker__track">
+      {%- for copy in (1..2) -%}
+        <div class="ticker__set"{% if copy == 2 %} aria-hidden="true"{% endif %}>
+          {%- for block in section.blocks -%}
+            <span class="ticker__item" {{ block.shopify_attributes }}>{{ block.settings.text | escape }}</span>
+          {%- endfor -%}
+        </div>
+      {%- endfor -%}
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Nastro scorrevole",
+  "settings": [
+    { "type": "text", "id": "aria_label", "label": "Etichetta per screen reader", "default": "Annunci" },
+    { "type": "select", "id": "scheme", "label": "Colore del nastro", "options": [
+      { "value": "hot", "label": "Rosso" },
+      { "value": "acid", "label": "Verde acido" },
+      { "value": "ink", "label": "Nero" },
+      { "value": "electric", "label": "Viola" }
+    ], "default": "hot" },
+    { "type": "range", "id": "speed", "label": "Velocità (secondi per giro)", "min": 10, "max": 60, "step": 2, "unit": "s", "default": 26 }
+  ],
+  "blocks": [
+    {
+      "type": "item",
+      "name": "Voce",
+      "settings": [
+        { "type": "text", "id": "text", "label": "Testo", "default": "Spedizione gratuita sopra €120" }
+      ]
+    }
+  ],
+  "max_blocks": 8,
+  "presets": [
+    {
+      "name": "Nastro scorrevole",
+      "blocks": [
+        { "type": "item", "settings": { "text": "Drop autunno/inverno online ora" } },
+        { "type": "item", "settings": { "text": "Spedizione gratuita sopra €120" } },
+        { "type": "item", "settings": { "text": "Reso gratuito entro 30 giorni" } },
+        { "type": "item", "settings": { "text": "Produzione in piccoli lotti" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

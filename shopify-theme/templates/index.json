@@ -12,6 +12,20 @@
       "block_order": ["g1", "g2", "g3", "g4", "g5"],
       "settings": {}
     },
+    "ticker": {
+      "type": "ticker",
+      "blocks": {
+        "t1": { "type": "item", "settings": { "text": "Drop autunno/inverno online ora" } },
+        "t2": { "type": "item", "settings": { "text": "Spedizione gratuita sopra €120" } },
+        "t3": { "type": "item", "settings": { "text": "Reso gratuito entro 30 giorni" } },
+        "t4": { "type": "item", "settings": { "text": "Produzione in piccoli lotti" } }
+      },
+      "block_order": ["t1", "t2", "t3", "t4"],
+      "settings": {
+        "scheme": "hot",
+        "speed": 26
+      }
+    },
     "campaign": {
       "type": "campaign",
       "settings": {}
@@ -25,5 +39,5 @@
       }
     }
   },
-  "order": ["hero", "campaign", "products"]
+  "order": ["hero", "ticker", "campaign", "products"]
 }

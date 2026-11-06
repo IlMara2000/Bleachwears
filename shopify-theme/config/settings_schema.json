@@ -2,7 +2,7 @@
   {
     "name": "theme_info",
     "theme_name": "Velvetica Streetwear",
-    "theme_version": "1.0.0",
+    "theme_version": "1.1.0",
     "theme_author": "Velvetica Studio",
     "theme_documentation_url": "https://shopify.dev/docs/themes",
     "theme_support_url": "https://shopify.dev/docs/themes"
@@ -10,10 +10,16 @@
   {
     "name": "Colori",
     "settings": [
-      { "type": "color", "id": "color_background", "label": "Sfondo", "default": "#f2f1ee" },
-      { "type": "color", "id": "color_text", "label": "Testo", "default": "#111214" },
-      { "type": "color", "id": "color_muted", "label": "Testo secondario", "default": "#71736f" },
-      { "type": "color", "id": "color_border", "label": "Bordi", "default": "#dedcd6" }
+      { "type": "header", "content": "Base" },
+      { "type": "color", "id": "color_background", "label": "Sfondo", "default": "#f4ede0" },
+      { "type": "color", "id": "color_paper", "label": "Superfici (card, header)", "default": "#f8f2e6" },
+      { "type": "color", "id": "color_text", "label": "Testo e bordi", "default": "#0e0b0a" },
+      { "type": "color", "id": "color_muted", "label": "Testo secondario", "default": "#6b6357" },
+      { "type": "color", "id": "color_border", "label": "Bordi sottili", "default": "#0e0b0a" },
+      { "type": "header", "content": "Accenti massimalisti" },
+      { "type": "color", "id": "color_acid", "label": "Accento acido (verde lime)", "default": "#d8ff3e" },
+      { "type": "color", "id": "color_hot", "label": "Accento caldo (rosso pomodoro)", "default": "#ff3b2f" },
+      { "type": "color", "id": "color_electric", "label": "Accento elettrico (viola)", "default": "#4a1fff" }
     ]
   },
   {
@@ -26,7 +32,7 @@
   {
     "name": "Forme",
     "settings": [
-      { "type": "range", "id": "corner_radius", "label": "Raggio angoli", "min": 0, "max": 24, "step": 1, "unit": "px", "default": 8 }
+      { "type": "range", "id": "corner_radius", "label": "Raggio angoli", "min": 0, "max": 24, "step": 1, "unit": "px", "default": 4 }
     ]
   }
 ]
