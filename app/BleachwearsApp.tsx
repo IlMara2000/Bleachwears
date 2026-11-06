@@ -146,6 +146,47 @@ const navItems: { id: View; label: string; short: string }[] = [
   { id: "lab", label: "Custom Lab", short: "Lab" },
 ];
 
+const INSTAGRAM_PROFILE = "https://www.instagram.com/bleach_wears/";
+const TIKTOK_PROFILE = "https://www.tiktok.com/@bleach_wears";
+
+const instagramPosts = [
+  {
+    kind: "Post",
+    date: "Lug 2026",
+    title: "Felpa motocicletta",
+    caption: "Tema moto su felpa: il disegno si costruisce a mano, non arriva da un catalogo.",
+    url: "https://www.instagram.com/bleach_wears/p/Daih1UgjMPw/",
+  },
+  {
+    kind: "Post",
+    date: "Set 2026",
+    title: "Maglietta Spider-Man",
+    caption: "Acrilico a mano su base rossa e nera, tema fumetto.",
+    url: "https://www.instagram.com/bleach_wears/p/DdYUsEQDI0E/",
+  },
+  {
+    kind: "Post",
+    date: "Set 2026",
+    title: "Maglietta drago",
+    caption: "Drago in acrilico: un tema che torna spesso, mai due volte identico.",
+    url: "https://www.instagram.com/bleach_wears/p/Dd1o1ZSjOXK/",
+  },
+  {
+    kind: "Post",
+    date: "Ott 2026",
+    title: "Felpa drago",
+    caption: "Lo stesso tema su felpa: cambia la base, e con lei il risultato.",
+    url: "https://www.instagram.com/bleach_wears/p/DeYkRbJjH9i/",
+  },
+  {
+    kind: "Post",
+    date: "Ott 2025",
+    title: "Santeria Toscana 31",
+    caption: "«Non smettete mai di esprimervi»: la serata fuori studio, con il grazie a Dante.",
+    url: "https://www.instagram.com/bleach_wears/p/DPbv5fwjPvo/",
+  },
+];
+
 const CART_HISTORY_KEY = "bleachwearsCart";
 
 function money(value: number) {
@@ -862,9 +903,9 @@ function BentoHome({
     event.currentTarget.reset();
   }
 
-  const socials = [
-    { name: "Instagram", handle: "@bleachwears" },
-    { name: "TikTok", handle: "@bleachwears" },
+  const socials: { name: string; handle: string; href?: string }[] = [
+    { name: "Instagram", handle: "@bleach_wears", href: INSTAGRAM_PROFILE },
+    { name: "TikTok", handle: "@bleach_wears", href: TIKTOK_PROFILE },
     { name: "WhatsApp", handle: "Parla con noi" },
     { name: "Email", handle: "Scrivici" },
   ];
@@ -891,11 +932,17 @@ function BentoHome({
         <article className="bento-card social-card">
           <div className="card-heading-row"><div><span className="section-kicker">Link hub</span><h2>Troviamoci.</h2></div><span className="availability-pill">Link in arrivo</span></div>
           <div className="social-grid">
-            {socials.map((social) => (
-              <button key={social.name} type="button" onClick={() => notify(`${social.name} non è ancora collegato`)}>
-                <span><strong>{social.name}</strong><small>{social.handle}</small></span><span aria-hidden="true">→</span>
-              </button>
-            ))}
+            {socials.map((social) =>
+              social.href ? (
+                <a key={social.name} href={social.href} target="_blank" rel="noopener noreferrer">
+                  <span><strong>{social.name}</strong><small>{social.handle}</small></span><span aria-hidden="true">↗</span>
+                </a>
+              ) : (
+                <button key={social.name} type="button" onClick={() => notify(`${social.name} non è ancora collegato`)}>
+                  <span><strong>{social.name}</strong><small>{social.handle}</small></span><span aria-hidden="true">→</span>
+                </button>
+              ),
+            )}
           </div>
         </article>
 
@@ -921,6 +968,38 @@ function BentoHome({
             )) : <p>Il prossimo drop sta prendendo forma.</p>}
           </div>
           <button type="button" className="soft-button" onClick={() => navigate("shop")}>Vedi tutto il drop <span aria-hidden="true">→</span></button>
+        </article>
+
+        <article className="bento-card instagram-card" id="instagram">
+          <div className="card-heading-row">
+            <div>
+              <span className="section-kicker">Dal profilo</span>
+              <h2>Il gruppo, prima del sito.</h2>
+            </div>
+            <a className="insta-follow" href={INSTAGRAM_PROFILE} target="_blank" rel="noopener noreferrer">
+              Segui @bleach_wears <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+
+          <p className="insta-intro">
+            Il progetto nasce tra amici: felpe e magliette lavorate a mano con la candeggina, una per una.
+            Si parte da una richiesta in direct — un tema, una base, una taglia — e nessun pezzo esce uguale a un altro.
+            Qui sotto, cinque lavori raccontati dal profilo.
+          </p>
+
+          <div className="insta-wall">
+            {instagramPosts.map((post) => (
+              <a key={post.url} className="insta-post" href={post.url} target="_blank" rel="noopener noreferrer">
+                <span className="insta-meta">
+                  <span className="insta-kind">{post.kind}</span>
+                  <span className="insta-date">{post.date}</span>
+                </span>
+                <strong>{post.title}</strong>
+                <span className="insta-caption">{post.caption}</span>
+                <span className="insta-open">Apri su Instagram <span aria-hidden="true">→</span></span>
+              </a>
+            ))}
+          </div>
         </article>
 
         <article className="bento-card process-card">

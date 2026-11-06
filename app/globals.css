@@ -3928,3 +3928,173 @@ p {
 .confirmation-row input {
   accent-color: var(--hot);
 }
+
+/* ---------- dal profilo Instagram ---------- */
+.instagram-card {
+  grid-column: span 12;
+  padding: 2rem;
+  scroll-margin-top: 110px;
+}
+
+.insta-follow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  border: 2px solid var(--ink);
+  background: var(--acid);
+  color: var(--ink);
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: transform 160ms var(--ease), box-shadow 160ms var(--ease), background 160ms var(--ease);
+}
+
+.insta-follow:hover {
+  transform: translate(2px, 2px);
+  background: var(--hot);
+  color: var(--surface);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.insta-intro {
+  max-width: 64ch;
+  margin: 1rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.insta-wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin-top: 1.5rem;
+}
+
+.insta-post {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 2px solid var(--ink);
+  background: var(--surface-soft);
+  text-decoration: none;
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  transition: transform 160ms var(--ease), box-shadow 160ms var(--ease), background 160ms var(--ease);
+}
+
+.insta-post:hover {
+  transform: translate(-2px, -2px);
+  background: var(--surface);
+  box-shadow: 7px 7px 0 var(--hot);
+}
+
+.insta-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.insta-kind {
+  background: var(--ink);
+  color: var(--acid);
+  padding: 0.1rem 0.3rem;
+}
+
+.insta-date {
+  color: var(--muted);
+}
+
+.insta-post strong {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.insta-caption {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.insta-open {
+  margin-top: auto;
+  padding-top: 0.55rem;
+  border-top: 2px dashed rgb(20 23 31 / 30%);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* tessere social: link e bottoni con lo stesso aspetto */
+.social-grid :is(a, button) {
+  min-height: 88px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.7rem;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  padding: 1rem;
+  background: var(--surface-soft);
+  color: var(--ink);
+  text-align: left;
+  text-decoration: none;
+  transition: transform 160ms var(--ease), box-shadow 160ms var(--ease), background 160ms var(--ease);
+}
+
+.social-grid :is(a, button):nth-child(1) {
+  background: var(--acid-soft);
+}
+
+.social-grid :is(a, button):nth-child(2) {
+  background: var(--electric);
+  color: var(--surface);
+}
+
+.social-grid :is(a, button):nth-child(3) {
+  background: var(--hot);
+  color: var(--surface);
+}
+
+.social-grid :is(a, button):nth-child(4) {
+  background: var(--cyan);
+  color: var(--surface);
+}
+
+.social-grid :is(a, button):hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+@media (max-width: 680px) {
+  .instagram-card {
+    padding: 1.3rem;
+  }
+
+  .insta-follow {
+    align-self: flex-start;
+  }
+
+  .insta-wall {
+    grid-template-columns: 1fr;
+  }
+}
