@@ -4269,6 +4269,158 @@ strong {
   }
 }
 
+/* ============================================================
+   IMPAGINAZIONE — taratura su Big Shoulders.
+   Il font ha maiuscole molto alte e larghezza ridotta: servono
+   interlinea più aperta, tracking meno compresso e misure di
+   colonna espresse in em invece che in ch (che con un condensato
+   si restringono). Le regole stanno in coda, quindi vincono.
+   ============================================================ */
+
+h1,
+h2,
+h3,
+blockquote,
+.brand-button,
+.section-kicker,
+strong {
+  font-synthesis: none;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* titoli di sezione e card */
+.card-heading-row h2,
+.catalog-copy h2,
+.empty-catalog h2,
+.cart-header h2,
+.newsletter-card h2 {
+  font-size: clamp(1.5rem, 2vw, 2.05rem);
+  line-height: 0.96;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+}
+
+/* hero */
+.hero-content h1 {
+  max-width: min(100%, 23ch);
+  margin: 1.9rem 0 1.1rem;
+  font-size: clamp(2.9rem, 4.6vw, 4.8rem);
+  line-height: 0.94;
+  letter-spacing: -0.008em;
+  text-wrap: balance;
+}
+
+.hero-content > p {
+  max-width: 44ch;
+}
+
+/* pagine shop e lab */
+.shop-intro-card h1,
+.lab-heading-card h1 {
+  font-size: clamp(2.3rem, 3.5vw, 3.7rem);
+  line-height: 0.94;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* tessere colorate */
+.lab-teaser-card strong,
+.lab-invite-card strong {
+  font-size: clamp(1.6rem, 2.2vw, 2.15rem);
+  line-height: 0.96;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.craft-card blockquote {
+  font-size: clamp(1.25rem, 1.7vw, 1.6rem);
+  line-height: 1.04;
+  letter-spacing: -0.008em;
+}
+
+/* configuratore */
+.builder-topline h2 {
+  font-size: clamp(1.45rem, 2vw, 1.95rem);
+  line-height: 0.96;
+  letter-spacing: -0.012em;
+}
+
+.option-tile strong,
+.design-tile strong,
+.reaction-tile strong,
+.review-grid strong {
+  font-size: 1rem;
+  line-height: 1.05;
+  letter-spacing: -0.005em;
+}
+
+.review-total strong {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+/* testi brevi in display */
+.brand-button {
+  font-size: 1.12rem;
+  letter-spacing: 0.02em;
+}
+
+.social-grid strong {
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.footer-card strong {
+  font-size: 1.2rem;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 920px) {
+  .hero-content h1 {
+    max-width: 100%;
+    font-size: clamp(2.6rem, 7vw, 3.6rem);
+  }
+
+  .shop-intro-card h1,
+  .lab-heading-card h1 {
+    font-size: clamp(2.2rem, 6.4vw, 3rem);
+  }
+}
+
+@media (max-width: 680px) {
+  .hero-content h1 {
+    margin: 0.8rem 0 0.45rem;
+    font-size: clamp(2.15rem, 9.2vw, 2.9rem);
+    line-height: 0.95;
+    letter-spacing: -0.005em;
+    text-shadow: 3px 3px 0 var(--hot);
+  }
+
+  .card-heading-row h2,
+  .catalog-copy h2,
+  .empty-catalog h2,
+  .newsletter-card h2 {
+    font-size: 1.45rem;
+    line-height: 0.98;
+  }
+
+  .shop-intro-card h1,
+  .lab-heading-card h1 {
+    font-size: clamp(2.05rem, 8vw, 2.6rem);
+    line-height: 0.95;
+    text-shadow: 2px 2px 0 var(--hot);
+  }
+
+  .lab-teaser-card strong,
+  .lab-invite-card strong {
+    font-size: 1.55rem;
+    line-height: 0.98;
+  }
+}
+
 /* Residui della palette pastello con specificità maggiore: riallineati. */
 .newsletter-card form > small {
   color: rgb(255 253 245 / 72%);
