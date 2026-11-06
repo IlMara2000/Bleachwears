@@ -1,0 +1,36 @@
+<header class="header{% if section.settings.sticky %} header--sticky{% endif %}">
+  <div class="wrap header-inner">
+    <a class="brand" href="{{ routes.root_url }}">{{ shop.name }}</a>
+
+    <nav class="nav" aria-label="Principale">
+      {%- for link in linklists[section.settings.menu].links -%}
+        <a href="{{ link.url }}"{% if link.active %} aria-current="page"{% endif %}>{{ link.title }}</a>
+      {%- endfor -%}
+    </nav>
+
+    <div class="actions">
+      <a class="icon-btn" href="{{ routes.search_url }}" aria-label="Cerca">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+      </a>
+      {%- if shop.customer_accounts_enabled -%}
+        <a class="icon-btn" href="{{ routes.account_url }}" aria-label="Account">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="9" r="3.4"/><path d="M5 20c1.4-3.6 4-5.4 7-5.4s5.6 1.8 7 5.4"/></svg>
+        </a>
+      {%- endif -%}
+      <button class="icon-btn" type="button" data-cart-open aria-label="Apri carrello">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 7h12l-1.2 12.2a2 2 0 0 1-2 1.8H9.2a2 2 0 0 1-2-1.8Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
+        <span class="badge{% if cart.item_count > 0 %} on{% endif %}" data-cart-count>{{ cart.item_count }}</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    { "type": "link_list", "id": "menu", "label": "Menu di navigazione", "default": "main-menu" },
+    { "type": "checkbox", "id": "sticky", "label": "Header fisso allo scroll", "default": true }
+  ]
+}
+{% endschema %}

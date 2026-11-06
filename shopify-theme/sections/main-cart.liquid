@@ -1,0 +1,59 @@
+<section class="cart-page wrap">
+  <div class="section-head">
+    <h2>Carrello</h2>
+    <p>{{ cart.item_count }} articol{% if cart.item_count == 1 %}o{% else %}i{% endif %}</p>
+  </div>
+
+  <div data-cart-page>
+    {%- if cart.item_count > 0 -%}
+      <div class="cart-lines">
+        {%- for item in cart.items -%}
+          <div class="cart-row cart-row--page">
+            <a class="cart-thumb" href="{{ item.url }}" aria-hidden="true" tabindex="-1">
+              {%- if item.image -%}
+                {{ item.image | image_url: width: 200 | image_tag: loading: 'lazy', alt: item.title | escape }}
+              {%- endif -%}
+            </a>
+
+            <div class="cart-meta">
+              <a href="{{ item.url }}"><strong>{{ item.product_title }}</strong></a>
+              <small>
+                {%- unless item.variant.title contains 'Default' -%}Taglia {{ item.variant.title }} · {%- endunless -%}
+                {{ item.final_price | money }}
+              </small>
+              <div class="qty">
+                <button type="button" data-cart-change="{{ item.key }}" data-qty="{{ item.quantity | minus: 1 }}" aria-label="Riduci quantità">−</button>
+                <span>{{ item.quantity }}</span>
+                <button type="button" data-cart-change="{{ item.key }}" data-qty="{{ item.quantity | plus: 1 }}" aria-label="Aumenta quantità">+</button>
+              </div>
+            </div>
+
+            <div class="cart-line-total">{{ item.final_line_price | money }}</div>
+
+            <button class="cart-remove" type="button" data-cart-change="{{ item.key }}" data-qty="0">Rimuovi</button>
+          </div>
+        {%- endfor -%}
+      </div>
+
+      <div class="cart-summary">
+        <div class="total"><span>Totale</span><span>{{ cart.total_price | money }}</span></div>
+        <p class="p-note">Tasse incluse. Spedizione calcolata al checkout.</p>
+        <a class="btn-add" href="{{ routes.cart_url }}/checkout">Vai al checkout</a>
+        <a class="btn-shop" href="{{ routes.all_products_collection_url }}">Continua lo shopping</a>
+      </div>
+    {%- else -%}
+      <p class="empty">Il carrello è vuoto.</p>
+      <p class="p-note" style="text-align:center">Aggiungi un capo dal catalogo per iniziare.</p>
+      <div style="text-align:center;margin-top:10px">
+        <a class="btn-shop" href="{{ routes.all_products_collection_url }}">Scopri il catalogo</a>
+      </div>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Carrello",
+  "settings": []
+}
+{% endschema %}

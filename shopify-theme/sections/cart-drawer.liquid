@@ -1,0 +1,51 @@
+<aside class="drawer" id="cart-drawer" aria-hidden="true" aria-label="Carrello">
+  <div data-cart-drawer>
+    <div class="drawer-head">
+      <h2>Carrello</h2>
+      <button class="icon-btn" type="button" data-cart-close aria-label="Chiudi carrello">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="drawer-body">
+      {%- if cart.item_count > 0 -%}
+        {%- for item in cart.items -%}
+          <div class="cart-row">
+            <div class="cart-thumb">
+              {%- if item.image -%}
+                {{ item.image | image_url: width: 120 | image_tag: loading: 'lazy', alt: item.title | escape }}
+              {%- endif -%}
+            </div>
+            <div class="cart-meta">
+              <strong>{{ item.product_title }}</strong>
+              <small>
+                {%- unless item.variant.title contains 'Default' -%}Taglia {{ item.variant.title }} · {%- endunless -%}
+                {{ item.final_price | money }}
+              </small>
+              <div class="qty">
+                <button type="button" data-cart-change="{{ item.key }}" data-qty="{{ item.quantity | minus: 1 }}" aria-label="Riduci quantità">−</button>
+                <span>{{ item.quantity }}</span>
+                <button type="button" data-cart-change="{{ item.key }}" data-qty="{{ item.quantity | plus: 1 }}" aria-label="Aumenta quantità">+</button>
+              </div>
+            </div>
+            <button class="cart-remove" type="button" data-cart-change="{{ item.key }}" data-qty="0">Rimuovi</button>
+          </div>
+        {%- endfor -%}
+      {%- else -%}
+        <p class="empty">Il carrello è vuoto.</p>
+      {%- endif -%}
+    </div>
+
+    <div class="drawer-foot">
+      <div class="total"><span>Totale</span><span>{{ cart.total_price | money }}</span></div>
+      <a class="checkout" href="{{ routes.cart_url }}/checkout">Vai al checkout</a>
+    </div>
+  </div>
+</aside>
+
+{% schema %}
+{
+  "name": "Carrello laterale",
+  "settings": []
+}
+{% endschema %}

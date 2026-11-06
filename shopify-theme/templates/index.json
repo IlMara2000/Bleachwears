@@ -1,0 +1,29 @@
+{
+  "sections": {
+    "hero": {
+      "type": "hero-rail",
+      "blocks": {
+        "g1": { "type": "garment", "settings": { "placeholder_shape": "hoodie", "placeholder_color": "#b9b7b4", "tag_text": "-20%", "tag_style": "sale", "hanger": "wood" } },
+        "g2": { "type": "garment", "settings": { "placeholder_shape": "tee", "placeholder_color": "#1b1f22", "hanger": "wire" } },
+        "g3": { "type": "garment", "settings": { "placeholder_shape": "longsleeve", "placeholder_color": "#1d3a2a", "tag_text": "VELVETICA®", "tag_style": "brand", "hanger": "wood" } },
+        "g4": { "type": "garment", "settings": { "placeholder_shape": "bomber", "placeholder_color": "#d3c9b8", "hanger": "wood" } },
+        "g5": { "type": "garment", "settings": { "placeholder_shape": "longsleeve", "placeholder_color": "#966a72", "tag_text": "New", "tag_style": "new", "hanger": "wire" } }
+      },
+      "block_order": ["g1", "g2", "g3", "g4", "g5"],
+      "settings": {}
+    },
+    "campaign": {
+      "type": "campaign",
+      "settings": {}
+    },
+    "products": {
+      "type": "featured-collection",
+      "settings": {
+        "heading": "Catalogo",
+        "subheading": "5 pezzi · spedizione gratuita sopra €120",
+        "products_to_show": 5
+      }
+    }
+  },
+  "order": ["hero", "campaign", "products"]
+}

@@ -1,0 +1,24 @@
+{%- liquid
+  case shape
+    when 'hoodie'
+      assign path = 'M60 30C50 30 42 33 34 38L12 50C6 54 5 62 8 70L20 106c3 7 11 7 15 0l5-14v60c0 8 6 13 14 13h12c8 0 14-5 14-13v-60l5 14c4 7 12 7 15 0l12-36c3-8 2-16-4-20L86 38c-8-5-16-8-26-8Z'
+    when 'longsleeve'
+      assign path = 'M60 22c-8 0-16 3-23 7L15 43c-5 3-6 10-2 15l19 34c3 5 9 5 12 0l2-8v68c0 8 5 13 12 13h4c7 0 12-5 12-13v-68l2 8c3 5 9 5 12 0l19-34c4-5 3-12-2-15L83 29c-7-4-15-7-23-7Z'
+    when 'bomber'
+      assign path = 'M60 24c-9 0-17 3-24 7L14 45c-5 3-6 10-2 15l18 36c3 5 9 5 12 0l2-8v62c0 8 5 13 12 13h8c7 0 12-5 12-13V88l2 8c3 5 9 5 12 0l18-36c4-5 3-12-2-15L84 31c-7-4-15-7-24-7Z'
+    else
+      assign path = 'M60 22c-8 0-16 2-22 5L16 40c-5 3-6 10-2 14l12 12c3 3 8 2 10-2l4-8v100c0 7 5 11 12 11h16c7 0 12-4 12-11V56l4 8c2 4 7 5 10 2l12-12c4-4 3-11-2-14L82 27c-6-3-14-5-22-5Z'
+  endcase
+  assign fill = color | default: '#cfccc5'
+-%}
+<svg class="cloth" viewBox="0 0 120 200" aria-hidden="true" focusable="false">
+  <path d="{{ path }}" fill="{{ fill }}"/>
+  {%- if shape == 'hoodie' -%}
+    <path d="M60 10c-14 0-23 10-22 24 1 11 11 20 22 20s21-9 22-20c1-14-8-24-22-24Z" fill="{{ fill }}"/>
+    <path d="M42 118h36v20H42z" fill="rgba(0,0,0,.18)"/>
+  {%- endif -%}
+  {%- if shape == 'bomber' -%}
+    <path d="M46 26h28l-7 13H53z" fill="rgba(0,0,0,.22)"/>
+    <path d="M44 148h32v12H44z" fill="rgba(0,0,0,.12)"/>
+  {%- endif -%}
+</svg>

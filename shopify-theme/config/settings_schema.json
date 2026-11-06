@@ -1,0 +1,32 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "Velvetica Streetwear",
+    "theme_version": "1.0.0",
+    "theme_author": "Velvetica Studio",
+    "theme_documentation_url": "https://shopify.dev/docs/themes",
+    "theme_support_url": "https://shopify.dev/docs/themes"
+  },
+  {
+    "name": "Colori",
+    "settings": [
+      { "type": "color", "id": "color_background", "label": "Sfondo", "default": "#f2f1ee" },
+      { "type": "color", "id": "color_text", "label": "Testo", "default": "#111214" },
+      { "type": "color", "id": "color_muted", "label": "Testo secondario", "default": "#71736f" },
+      { "type": "color", "id": "color_border", "label": "Bordi", "default": "#dedcd6" }
+    ]
+  },
+  {
+    "name": "Tipografia",
+    "settings": [
+      { "type": "font_picker", "id": "heading_font", "label": "Font titoli", "default": "assistant_n7" },
+      { "type": "font_picker", "id": "body_font", "label": "Font testo", "default": "assistant_n4" }
+    ]
+  },
+  {
+    "name": "Forme",
+    "settings": [
+      { "type": "range", "id": "corner_radius", "label": "Raggio angoli", "min": 0, "max": 24, "step": 1, "unit": "px", "default": 8 }
+    ]
+  }
+]

@@ -1,0 +1,33 @@
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <h3>{{ shop.name }}</h3>
+        {%- if section.settings.text != blank -%}<p>{{ section.settings.text }}</p>{%- endif -%}
+      </div>
+
+      {%- if section.settings.show_newsletter -%}
+        {%- form 'customer', id: 'newsletter-form', class: 'news' -%}
+          <input type="hidden" name="contact[tags]" value="newsletter">
+          <input type="email" name="contact[email]" placeholder="La tua email" aria-label="Email newsletter" required>
+          <button type="submit">Iscriviti</button>
+        {%- endform -%}
+      {%- endif -%}
+    </div>
+
+    <div class="footer-bottom">
+      <span>© {{ 'now' | date: '%Y' }} {{ shop.name }}</span>
+      <span>{%- if shop.email != blank -%}{{ shop.email }}{%- endif -%}</span>
+    </div>
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    { "type": "textarea", "id": "text", "label": "Testo", "default": "Streetwear premium prodotta in piccoli lotti." },
+    { "type": "checkbox", "id": "show_newsletter", "label": "Mostra newsletter", "default": true }
+  ]
+}
+{% endschema %}

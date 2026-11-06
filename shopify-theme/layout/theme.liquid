@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="{{ request.locale.iso_code }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ page_title }}{% unless page_title contains shop.name %} — {{ shop.name }}{% endunless %}</title>
+  {% if page_description %}<meta name="description" content="{{ page_description | escape }}">{% endif %}
+  <link rel="canonical" href="{{ canonical_url }}">
+  {{ content_for_header }}
+
+  {{ settings.heading_font | font_face: font_display: 'swap' }}
+  {{ settings.body_font | font_face: font_display: 'swap' }}
+  {{ 'base.css' | asset_url | stylesheet_tag }}
+
+  {%- style -%}
+    :root {
+      --bg: {{ settings.color_background }};
+      --ink: {{ settings.color_text }};
+      --muted: {{ settings.color_muted }};
+      --line: {{ settings.color_border }};
+      --font-heading: {{ settings.heading_font.family }}, {{ settings.heading_font.fallback_families }};
+      --font-body: {{ settings.body_font.family }}, {{ settings.body_font.fallback_families }};
+      --radius: {{ settings.corner_radius }}px;
+    }
+  {%- endstyle -%}
+
+  <script src="{{ 'theme.js' | asset_url }}" defer></script>
+</head>
+<body class="template-{{ template.name | handle }}">
+  <a class="skip-link" href="#MainContent">Vai al contenuto</a>
+
+  {% section 'header' %}
+
+  <main id="MainContent" role="main">
+    {{ content_for_layout }}
+  </main>
+
+  {% section 'footer' %}
+  {% section 'cart-drawer' %}
+
+  <div class="scrim" data-scrim></div>
+  <div class="toast" data-toast role="status" aria-live="polite"></div>
+</body>
+</html>

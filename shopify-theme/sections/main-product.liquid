@@ -1,0 +1,134 @@
+{%- assign v = product.selected_or_first_available_variant -%}
+{%- assign first_option = product.options_with_values.first -%}
+
+<article class="product wrap">
+  <nav class="breadcrumb" aria-label="Percorso">
+    <a href="{{ routes.root_url }}">Home</a><span>/</span>
+    <a href="{{ routes.all_products_collection_url }}">Catalogo</a><span>/</span>
+    <strong>{{ product.title }}</strong>
+  </nav>
+
+  <div class="product-grid">
+    <div class="gallery">
+      <div class="gallery-main">
+        {%- if product.featured_media -%}
+          <img data-gallery-main
+               src="{{ product.featured_media | image_url: width: 1200 }}"
+               alt="{{ product.featured_media.alt | escape }}"
+               width="1200" height="1400" loading="eager">
+        {%- else -%}
+          {% render 'garment-placeholder', shape: 'tee', color: '#d8d5ce' %}
+        {%- endif -%}
+      </div>
+
+      {%- if product.media.size > 1 -%}
+        <div class="thumbs" role="tablist" aria-label="Viste prodotto">
+          {%- for media in product.media limit: 6 -%}
+            <button class="thumb-btn" type="button" role="tab"
+                    data-gallery-thumb="{{ media.id }}"
+                    aria-selected="{{ forloop.first }}"
+                    aria-label="Vista {{ forloop.index }}">
+              {{ media | image_url: width: 200 | image_tag: loading: 'lazy', alt: media.alt | escape }}
+            </button>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+    </div>
+
+    <div class="p-info" data-product-info>
+      {%- if product.type != blank -%}<p class="p-kicker">{{ product.type }}</p>{%- endif -%}
+      <h1 class="p-name">{{ product.title }}</h1>
+      <p class="p-price" data-price>
+        {{ v.price | money }}
+        {%- if v.compare_at_price > v.price %} <s class="p-compare">{{ v.compare_at_price | money }}</s>{%- endif -%}
+      </p>
+
+      {%- if product.description != blank -%}
+        <div class="p-desc rte">{{ product.description }}</div>
+      {%- endif -%}
+
+      {%- unless product.has_only_default_variant -%}
+        <div class="p-block">
+          <div class="p-block-head">
+            <span>{{ first_option.name }}</span>
+            <a class="size-guide" href="{{ section.settings.size_guide_link | default: '#' }}">Guida alle taglie</a>
+          </div>
+
+          <div class="sizes" data-option-pills role="group" aria-label="{{ first_option.name }}">
+            {%- for value in first_option.values -%}
+              <button class="size" type="button"
+                      data-option-value="{{ value | escape }}"
+                      aria-pressed="{{ value == v.options.first }}">{{ value }}</button>
+            {%- endfor -%}
+          </div>
+
+          {%- for option in product.options_with_values offset: 1 -%}
+            <label class="opt">
+              <span>{{ option.name }}</span>
+              <select data-option-select data-option-pos="{{ forloop.index0 | plus: 1 }}">
+                {%- for value in option.values -%}
+                  <option value="{{ value | escape }}">{{ value }}</option>
+                {%- endfor -%}
+              </select>
+            </label>
+          {%- endfor -%}
+        </div>
+      {%- endunless -%}
+
+      {%- form 'product', product, id: 'product-form', class: 'product-form' -%}
+        <input type="hidden" name="id" value="{{ v.id }}" data-variant-id>
+        <input type="hidden" name="quantity" value="1">
+        <button class="btn-add" type="submit" data-add-label="Aggiungi al carrello" {% unless product.available %}disabled{% endunless %}>
+          {%- if product.available -%}Aggiungi al carrello · {{ v.price | money }}{%- else -%}Esaurito{%- endif -%}
+        </button>
+        {{ form | payment_button }}
+      {%- endform -%}
+
+      {%- if section.settings.shipping_note != blank -%}
+        <p class="p-note">{{ section.settings.shipping_note }}</p>
+      {%- endif -%}
+
+      {%- if section.settings.details != blank -%}
+        <div class="p-details rte">{{ section.settings.details }}</div>
+      {%- endif -%}
+    </div>
+  </div>
+
+  {%- assign rel = section.settings.related_collection -%}
+  {%- if rel == blank -%}{%- assign rel = product.collections.first -%}{%- endif -%}
+  {%- if rel.products.size > 0 -%}
+    <section class="related">
+      <div class="section-head">
+        <h2>{{ section.settings.related_heading }}</h2>
+        <p>Selezione correlata</p>
+      </div>
+      <div class="grid">
+        {%- assign shown = 0 -%}
+        {%- for item in rel.products -%}
+          {%- if item.id != product.id and shown < 4 -%}
+            {% render 'product-card', card_product: item %}
+            {%- assign shown = shown | plus: 1 -%}
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    </section>
+  {%- endif -%}
+</article>
+
+<script type="application/json" data-variants>{{ product.variants | json }}</script>
+<script type="application/json" data-gallery-sources>
+  [{% for media in product.media limit: 6 %}{"id":{{ media.id }},"src":{{ media | image_url: width: 1600 | json }}}{% unless forloop.last %},{% endunless %}{% endfor %}]
+</script>
+
+{% schema %}
+{
+  "name": "Prodotto principale",
+  "settings": [
+    { "type": "text", "id": "shipping_note", "label": "Nota spedizione", "default": "Spedizione in 24/48h · reso gratuito 30 giorni" },
+    { "type": "richtext", "id": "details", "label": "Dettagli e composizione", "default": "<ul><li>Composizione e cura del capo</li><li>Vestibilità</li><li>Made in</li></ul>" },
+    { "type": "url", "id": "size_guide_link", "label": "Link guida alle taglie" },
+    { "type": "text", "id": "related_heading", "label": "Titolo correlati", "default": "Completa il look" },
+    { "type": "collection", "id": "related_collection", "label": "Collezione correlati (opzionale)" }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,22 @@
+<article class="card">
+  <a class="thumb" href="{{ card_product.url }}" aria-label="{{ card_product.title | escape }}">
+    {%- if card_product.featured_media -%}
+      {{ card_product.featured_media
+        | image_url: width: 600
+        | image_tag: class: 'card-img', loading: 'lazy', widths: '300,450,600', sizes: '(min-width: 860px) 22vw, 45vw', alt: card_product.title | escape }}
+    {%- else -%}
+      {% render 'garment-placeholder', shape: 'tee', color: '#d8d5ce' %}
+    {%- endif -%}
+  </a>
+  <div class="card-body">
+    <div class="card-row">
+      <a href="{{ card_product.url }}"><strong>{{ card_product.title }}</strong></a>
+      <span>{{ card_product.price | money }}</span>
+    </div>
+    {%- if card_product.available -%}
+      <button class="add" type="button" data-quick-add="{{ card_product.selected_or_first_available_variant.id }}">Aggiungi</button>
+    {%- else -%}
+      <button class="add" type="button" disabled>Esaurito</button>
+    {%- endif -%}
+  </div>
+</article>

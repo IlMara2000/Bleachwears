@@ -1,0 +1,12 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-product",
+      "settings": {
+        "shipping_note": "Spedizione in 24/48h · reso gratuito 30 giorni",
+        "related_heading": "Completa il look"
+      }
+    }
+  },
+  "order": ["main"]
+}

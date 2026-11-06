@@ -1,0 +1,99 @@
+<section class="hero">
+  <p class="eyebrow">
+    {{ section.settings.eyebrow_left }} <i></i> {{ section.settings.eyebrow_right }}
+  </p>
+
+  <div class="rail-scene">
+    <div class="rail-track"></div>
+    <div class="garments">
+      {%- for block in section.blocks -%}
+        {%- assign item = block.settings.product -%}
+        <a class="garment"
+           {% if item != blank %}href="{{ item.url }}" aria-label="{{ item.title | escape }}"{% else %}href="{{ routes.all_products_collection_url }}"{% endif %}
+           {{ block.shopify_attributes }}>
+          {%- if block.settings.tag_text != blank -%}
+            <span class="tag tag--{{ block.settings.tag_style }}">{{ block.settings.tag_text | escape }}</span>
+          {%- endif -%}
+
+          <div class="hang{% if block.settings.hanger == 'wire' %} wire{% endif %}">
+            {% render 'icon-hanger' %}
+            {%- if item.featured_media != blank -%}
+              {{ item.featured_media
+                | image_url: width: 480
+                | image_tag: class: 'cloth cloth--photo', loading: 'lazy', widths: '240,360,480', sizes: '150px', alt: item.title | escape }}
+            {%- else -%}
+              {% render 'garment-placeholder', shape: block.settings.placeholder_shape, color: block.settings.placeholder_color %}
+            {%- endif -%}
+          </div>
+
+          {%- if item != blank -%}
+            <span class="cap">{{ item.title }}{% if block.settings.show_price %} · {{ item.price | money }}{% endif %}</span>
+          {%- endif -%}
+        </a>
+      {%- endfor -%}
+    </div>
+  </div>
+
+  {%- if section.settings.button_label != blank -%}
+    <a class="btn-shop" href="{{ section.settings.button_link | default: routes.all_products_collection_url }}">
+      {{ section.settings.button_label }}
+    </a>
+  {%- endif -%}
+
+  {%- if section.settings.handle != blank -%}
+    <p class="handle">{{ section.settings.handle }}</p>
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "Hero – binario capi",
+  "settings": [
+    { "type": "text", "id": "eyebrow_left", "label": "Eyebrow sinistra", "default": "New Collection" },
+    { "type": "text", "id": "eyebrow_right", "label": "Eyebrow destra", "default": "Premium Streetwear" },
+    { "type": "text", "id": "button_label", "label": "Etichetta bottone", "default": "Shop the Collection" },
+    { "type": "url", "id": "button_link", "label": "Link bottone" },
+    { "type": "text", "id": "handle", "label": "Riga sotto il bottone", "default": "@velvetica.studio" }
+  ],
+  "blocks": [
+    {
+      "type": "garment",
+      "name": "Capo appeso",
+      "settings": [
+        { "type": "product", "id": "product", "label": "Prodotto" },
+        { "type": "select", "id": "hanger", "label": "Appendino", "options": [
+          { "value": "wood", "label": "Legno" },
+          { "value": "wire", "label": "Metallo" }
+        ], "default": "wood" },
+        { "type": "checkbox", "id": "show_price", "label": "Mostra il prezzo in hover", "default": true },
+        { "type": "text", "id": "tag_text", "label": "Cartellino (testo)" },
+        { "type": "select", "id": "tag_style", "label": "Cartellino (stile)", "options": [
+          { "value": "sale", "label": "Sconto" },
+          { "value": "new", "label": "Novità" },
+          { "value": "brand", "label": "Brand" }
+        ], "default": "sale" },
+        { "type": "select", "id": "placeholder_shape", "label": "Forma segnaposto (senza foto)", "options": [
+          { "value": "hoodie", "label": "Felpa" },
+          { "value": "tee", "label": "T-shirt" },
+          { "value": "longsleeve", "label": "Manica lunga" },
+          { "value": "bomber", "label": "Bomber" }
+        ], "default": "tee" },
+        { "type": "color", "id": "placeholder_color", "label": "Colore segnaposto", "default": "#cfccc5" }
+      ]
+    }
+  ],
+  "max_blocks": 7,
+  "presets": [
+    {
+      "name": "Hero – binario capi",
+      "blocks": [
+        { "type": "garment", "settings": { "placeholder_shape": "hoodie", "placeholder_color": "#b9b7b4", "tag_text": "-20%", "tag_style": "sale", "hanger": "wood" } },
+        { "type": "garment", "settings": { "placeholder_shape": "tee", "placeholder_color": "#1b1f22", "hanger": "wire" } },
+        { "type": "garment", "settings": { "placeholder_shape": "longsleeve", "placeholder_color": "#1d3a2a", "tag_text": "VELVETICA®", "tag_style": "brand", "hanger": "wood" } },
+        { "type": "garment", "settings": { "placeholder_shape": "bomber", "placeholder_color": "#d3c9b8", "hanger": "wood" } },
+        { "type": "garment", "settings": { "placeholder_shape": "longsleeve", "placeholder_color": "#966a72", "tag_text": "New", "tag_style": "new", "hanger": "wire" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,27 @@
+<section class="campaign">
+  {%- if section.settings.show_orb -%}
+    <div class="orb" aria-hidden="true"></div>
+  {%- endif -%}
+
+  <div class="campaign-copy">
+    {%- if section.settings.heading != blank -%}<h2>{{ section.settings.heading }}</h2>{%- endif -%}
+    {%- if section.settings.text != blank -%}<p>{{ section.settings.text }}</p>{%- endif -%}
+    {%- if section.settings.button_label != blank -%}
+      <a class="btn-light" href="{{ section.settings.button_link | default: routes.all_products_collection_url }}">{{ section.settings.button_label }}</a>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Campagna",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Titolo", "default": "Il nuovo volume dello streetwear" },
+    { "type": "textarea", "id": "text", "label": "Testo", "default": "Capi oversize, tessuti pesanti, palette notturna. Drop autunno/inverno disponibile ora in quantità limitata." },
+    { "type": "text", "id": "button_label", "label": "Etichetta bottone", "default": "Scopri il drop" },
+    { "type": "url", "id": "button_link", "label": "Link bottone" },
+    { "type": "checkbox", "id": "show_orb", "label": "Mostra la sfera cromata", "default": true }
+  ],
+  "presets": [{ "name": "Campagna" }]
+}
+{% endschema %}

@@ -1,0 +1,45 @@
+<section class="catalog wrap">
+  <div class="section-head">
+    <h2>
+      {%- if search.performed -%}
+        Risultati per “{{ search.terms }}”
+      {%- else -%}
+        Cerca
+      {%- endif -%}
+    </h2>
+    <p>{% if search.performed %}{{ search.results_count }} risultat{% if search.results_count == 1 %}o{% else %}i{% endif %}{% endif %}</p>
+  </div>
+
+  <form class="search-form" action="{{ routes.search_url }}" method="get" role="search">
+    <input type="search" name="q" value="{{ search.terms | escape }}" placeholder="Cerca un capo, un colore…" aria-label="Cerca">
+    <input type="hidden" name="type" value="product">
+    <button type="submit">Cerca</button>
+  </form>
+
+  {%- if search.performed -%}
+    {%- paginate search.results by 12 -%}
+      {%- if search.results_count > 0 -%}
+        <div class="grid">
+          {%- for item in search.results -%}
+            {%- if item.object_type == 'product' -%}
+              {% render 'product-card', card_product: item %}
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      {%- else -%}
+        <p class="empty">Nessun prodotto per questa ricerca. Prova con un altro termine.</p>
+      {%- endif -%}
+
+      {%- if paginate.pages > 1 -%}
+        <nav class="pagination" aria-label="Paginazione">{{ paginate | default_pagination }}</nav>
+      {%- endif -%}
+    {%- endpaginate -%}
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "Ricerca",
+  "settings": []
+}
+{% endschema %}
