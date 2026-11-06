@@ -4079,6 +4079,18 @@ p {
   border: 0;
 }
 
+/* scudo trasparente: il player non riceve click, tap o swipe */
+.insta-player::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: transparent;
+  cursor: default;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .insta-reel-copy {
   flex: 1 1 170px;
   min-width: 0;

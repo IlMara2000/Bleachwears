@@ -1001,7 +1001,7 @@ function BentoHome({
           <p className="insta-intro">
             Il progetto nasce tra amici: felpe e magliette lavorate a mano con la candeggina, una per una.
             Si parte da una richiesta in direct — un tema, una base, una taglia — e nessun pezzo esce uguale a un altro.
-            Qui sotto due reel che si riproducono nella pagina e cinque lavori raccontati dal profilo.
+            Qui sotto due reel del profilo, inquadrati dentro la pagina, e cinque lavori raccontati.
           </p>
 
           <div className="insta-reels">
@@ -1012,6 +1012,7 @@ function BentoHome({
                     src={`https://www.instagram.com/reel/${reel.code}/embed/`}
                     title={`${reel.title} — reel di @bleach_wears`}
                     loading="lazy"
+                    tabIndex={-1}
                     allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
                     allowFullScreen
                   />
