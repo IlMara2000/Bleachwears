@@ -4161,3 +4161,1025 @@ p {
     width: 100%;
   }
 }
+
+/* ============================================================
+   layer poster — la vetrina come un flyer incollato al muro
+   ============================================================ */
+
+:root {
+  --asphalt: #0e1013;
+  --paper: #f5edde;
+}
+
+/* ---------- ticker ---------- */
+.ticker-strip {
+  overflow: hidden;
+  margin-bottom: 18px;
+  border: 3px solid var(--ink);
+  background: var(--asphalt);
+  box-shadow: 6px 6px 0 var(--hot);
+}
+
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker-run 34s linear infinite;
+}
+
+.ticker-group {
+  display: flex;
+  align-items: center;
+  gap: 1.6rem;
+  padding: 0.55rem 1.6rem 0.55rem 0.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ticker-group b {
+  color: var(--acid);
+  font-weight: 800;
+}
+
+.ticker-group i {
+  color: var(--paper);
+  font-style: normal;
+  opacity: 0.72;
+}
+
+.ticker-group i::before {
+  content: "✱";
+  margin-right: 0.7rem;
+  color: var(--hot);
+}
+
+@keyframes ticker-run {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ---------- manifesto ---------- */
+.poster-hero {
+  position: relative;
+  isolation: isolate;
+  grid-column: span 12;
+  display: grid;
+  grid-template-columns: minmax(0, 1.04fr) minmax(280px, 0.96fr);
+  gap: clamp(1.2rem, 3vw, 2.4rem);
+  padding: clamp(1.2rem, 2.8vw, 2.6rem);
+  overflow: hidden;
+  border: 3px solid var(--ink);
+  background: var(--asphalt);
+  color: var(--paper);
+  box-shadow: 9px 9px 0 var(--ink);
+}
+
+.poster-hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: -14%;
+  bottom: -46%;
+  width: min(58vw, 520px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--hot);
+  opacity: 0.92;
+}
+
+.poster-hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background-image: radial-gradient(rgb(245 237 222 / 16%) 1px, transparent 1.4px);
+  background-size: 5px 5px;
+  mask-image: linear-gradient(100deg, transparent 40%, #000 96%);
+}
+
+.poster-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.poster-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--paper);
+}
+
+.poster-meta span {
+  padding-bottom: 0.15rem;
+  border-bottom: 2px solid var(--acid);
+}
+
+.poster-title {
+  margin: 0.7rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2.7rem, 8vw, 6.6rem);
+  line-height: 0.82;
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+}
+
+.poster-title > span {
+  display: block;
+}
+
+.poster-title .is-outline {
+  color: transparent;
+  -webkit-text-stroke: 2px var(--paper);
+}
+
+.poster-title .is-eq {
+  display: inline-block;
+  margin-top: 0.3em;
+  padding: 0.02em 0.16em 0.08em;
+  transform: rotate(-2.4deg);
+  background: var(--acid);
+  color: var(--asphalt);
+  box-shadow: 6px 6px 0 var(--hot);
+}
+
+.poster-lead {
+  max-width: 42ch;
+  margin: 1.15rem 0 0;
+  color: rgb(245 237 222 / 84%);
+  font-size: 0.98rem;
+  line-height: 1.62;
+}
+
+.poster-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: auto;
+  padding-top: 1.6rem;
+}
+
+.poster-cta {
+  border: 3px solid var(--paper);
+  background: var(--acid);
+  color: var(--asphalt);
+  padding: 0.85rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  box-shadow: 5px 5px 0 var(--hot);
+  transition: transform 140ms var(--ease), box-shadow 140ms var(--ease);
+}
+
+.poster-cta:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 3px 3px 0 var(--hot);
+}
+
+.poster-cta.is-ghost {
+  border-color: var(--paper);
+  background: transparent;
+  color: var(--paper);
+  box-shadow: none;
+}
+
+.poster-cta.is-ghost:hover {
+  background: var(--paper);
+  color: var(--asphalt);
+}
+
+.poster-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 300px;
+  padding: 0.6rem 0;
+}
+
+.poster-halftone {
+  position: absolute;
+  width: min(88%, 400px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background-image: radial-gradient(var(--acid) 1.5px, transparent 1.7px);
+  background-size: 9px 9px;
+  opacity: 0.5;
+}
+
+.poster-plate {
+  position: relative;
+  width: min(100%, 366px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  padding: 1.1rem;
+  transform: rotate(2.4deg);
+  border: 3px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 9px 9px 0 var(--ink), 13px 13px 0 rgb(245 237 222 / 22%);
+}
+
+.poster-plate .garment-object {
+  width: auto;
+  height: 74%;
+  filter: drop-shadow(8px 10px 0 rgb(20 23 31 / 22%));
+}
+
+.sticker {
+  position: absolute;
+  z-index: 3;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.sticker.is-tape {
+  top: -13px;
+  left: 50%;
+  padding: 0.28rem 0.7rem;
+  transform: translateX(-50%) rotate(-2.6deg);
+  border: 2px solid var(--ink);
+  background: var(--acid);
+  color: var(--ink);
+  font-size: 0.54rem;
+  letter-spacing: 0.13em;
+  white-space: nowrap;
+}
+
+.sticker.is-round {
+  right: -16px;
+  bottom: -14px;
+  display: grid;
+  place-items: center;
+  width: 86px;
+  aspect-ratio: 1;
+  padding: 0.4rem;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  transform: rotate(-8deg);
+  background: var(--hot);
+  color: var(--paper);
+  font-size: 0.5rem;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* ---------- banco del drop ---------- */
+.shelf-list {
+  counter-reset: shelf;
+  display: grid;
+  margin: 1.1rem 0 0;
+  border-top: 3px solid var(--ink);
+}
+
+.shelf-row {
+  display: grid;
+  grid-template-columns: 2.6ch auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0;
+  border-bottom: 2px dashed rgb(20 23 31 / 22%);
+}
+
+.shelf-row::before {
+  counter-increment: shelf;
+  content: "0" counter(shelf);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.shelf-swatch {
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--ink);
+}
+
+.shelf-name {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.shelf-name strong {
+  font-family: var(--font-display);
+  font-size: 1.16rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+}
+
+.shelf-name small {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.shelf-price {
+  transform: rotate(-3deg);
+  border: 2px solid var(--ink);
+  background: var(--acid);
+  padding: 0.1rem 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 800;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+/* ---------- bacheca appesa ---------- */
+.home-board .instagram-card {
+  background: var(--paper);
+  background-image: repeating-linear-gradient(0deg, rgb(20 23 31 / 5%) 0 1px, transparent 1px 26px);
+}
+
+.insta-wall .insta-post {
+  position: relative;
+  border: 2px solid var(--ink);
+  background: #fffdf6;
+  box-shadow: 6px 6px 0 rgb(20 23 31 / 88%);
+}
+
+.insta-wall .insta-post:nth-child(odd) {
+  transform: rotate(-1.1deg);
+}
+
+.insta-wall .insta-post:nth-child(even) {
+  transform: rotate(0.9deg);
+}
+
+.insta-wall .insta-post::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 52px;
+  height: 17px;
+  transform: translateX(-50%) rotate(-3deg);
+  border: 2px solid var(--ink);
+  background: rgb(239 181 60 / 78%);
+}
+
+.insta-reel {
+  position: relative;
+  background: #fffdf6;
+}
+
+/* ---------- bande ---------- */
+.home-board .process-card {
+  background: var(--asphalt);
+  color: var(--paper);
+}
+
+.home-board .process-card h2 {
+  color: var(--paper);
+}
+
+.home-board .process-card ol li {
+  border-color: rgb(245 237 222 / 26%);
+}
+
+.home-board .process-card ol li span {
+  border: 2px solid var(--paper);
+  background: var(--acid);
+  color: var(--asphalt);
+  font-family: var(--font-display);
+  font-weight: 900;
+}
+
+.home-board .process-card small {
+  color: rgb(245 237 222 / 74%);
+}
+
+.home-board .craft-card {
+  background: var(--hot);
+  color: var(--paper);
+}
+
+.home-board .craft-card blockquote {
+  margin: 0.6rem 0 1rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3.1vw, 2.35rem);
+  font-weight: 900;
+  line-height: 0.94;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+}
+
+.home-board .craft-card > div span {
+  border: 2px solid var(--paper);
+  color: var(--paper);
+}
+
+.home-board .newsletter-card {
+  background: var(--acid);
+  color: var(--ink);
+}
+
+.home-board .newsletter-card h2 {
+  color: var(--ink);
+}
+
+.home-board .newsletter-card form label,
+.home-board .newsletter-card small {
+  color: rgb(20 23 31 / 78%);
+}
+
+/* ---------- footer come firma ---------- */
+.footer-card strong {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4.4vw, 3.2rem);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+/* ---------- adattamenti ---------- */
+@media (max-width: 980px) {
+  .poster-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .poster-art {
+    order: -1;
+    min-height: 0;
+  }
+
+  .poster-plate {
+    width: min(100%, 300px);
+  }
+
+  .poster-actions {
+    padding-top: 1.4rem;
+  }
+}
+
+@media (max-width: 680px) {
+  .poster-hero {
+    padding: 1.1rem;
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+
+  .poster-title {
+    font-size: clamp(2.4rem, 12.5vw, 3.6rem);
+  }
+
+  .poster-lead {
+    font-size: 0.92rem;
+  }
+
+  .poster-plate {
+    width: min(86%, 268px);
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+
+  .poster-halftone {
+    width: 76%;
+  }
+
+  .sticker.is-round {
+    right: -8px;
+    bottom: -10px;
+    width: 72px;
+    font-size: 0.46rem;
+  }
+
+  .poster-cta {
+    flex: 1 1 auto;
+    padding: 0.8rem 0.9rem;
+    font-size: 0.66rem;
+  }
+
+  .shelf-row {
+    gap: 0.55rem;
+  }
+
+  .shelf-name strong {
+    font-size: 1.02rem;
+  }
+
+  .insta-wall .insta-post:nth-child(odd),
+  .insta-wall .insta-post:nth-child(even) {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+}
+
+/* ---------- rifiniture del manifesto ---------- */
+.home-screen::before {
+  content: none;
+}
+
+.poster-title b {
+  display: inline-block;
+  width: 0.6em;
+  margin-right: 0.04em;
+  color: var(--acid);
+  font-weight: 700;
+  -webkit-text-stroke: 0;
+}
+
+.poster-hero {
+  align-items: center;
+}
+
+.poster-actions {
+  margin-top: 0;
+}
+
+.poster-art {
+  padding: 1.4rem 0.8rem 1rem;
+}
+
+.poster-halftone {
+  width: min(96%, 460px);
+  opacity: 0.42;
+}
+
+.poster-plate {
+  width: min(100%, 392px);
+}
+
+/* il capo come sagoma stampata, non come assemblaggio di pezzi */
+.poster-plate .garment-object {
+  width: auto;
+  height: 70%;
+  border-radius: 0;
+  background:
+    radial-gradient(rgb(255 255 255 / 7%) 1px, transparent 1.2px) 0 0 / 4px 4px,
+    var(--garment-fill);
+  box-shadow: none;
+  clip-path: polygon(
+    31% 0%,
+    40% 3%,
+    60% 3%,
+    69% 0%,
+    100% 13%,
+    100% 34%,
+    83% 40%,
+    83% 100%,
+    17% 100%,
+    17% 40%,
+    0% 34%,
+    0% 13%
+  );
+}
+
+.poster-plate .garment-hoodie::before,
+.poster-plate .garment-hoodie::after,
+.poster-plate .hood-piece {
+  display: none;
+}
+
+.poster-plate .garment-collar {
+  top: 0.5%;
+  left: 43%;
+  width: 14%;
+  height: 6%;
+  border-radius: 0 0 999px 999px;
+  background: var(--paper);
+  box-shadow: none;
+}
+
+.poster-plate .bleach-shape {
+  width: 42%;
+  top: 52%;
+  transform: translate(-50%, -50%) rotate(-6deg);
+}
+
+.poster-plate .shape-patchwork {
+  background: var(--mark-fill);
+}
+
+/* ---------- taratura manifesto 2 ---------- */
+.poster-hero {
+  padding: clamp(1.1rem, 2.4vw, 2.1rem);
+}
+
+.poster-title {
+  font-size: clamp(2.5rem, 7.2vw, 5.2rem);
+}
+
+.poster-lead {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+}
+
+.poster-actions {
+  padding-top: 1.4rem;
+}
+
+.poster-plate {
+  width: min(100%, 418px);
+}
+
+.poster-plate .garment-collar {
+  top: 3%;
+  left: 44.5%;
+  width: 11%;
+  height: 7%;
+  background: var(--paper);
+  border-radius: 0 0 999px 999px;
+}
+
+/* macchia di candeggina al posto del blocco geometrico */
+.poster-plate .shape-patchwork {
+  width: 46%;
+  border-radius: 0;
+  background: var(--mark-fill);
+  clip-path: polygon(
+    50% 0%,
+    63% 12%,
+    78% 6%,
+    84% 22%,
+    97% 30%,
+    88% 45%,
+    99% 56%,
+    85% 64%,
+    87% 81%,
+    69% 82%,
+    58% 97%,
+    46% 85%,
+    32% 96%,
+    25% 81%,
+    8% 76%,
+    15% 59%,
+    3% 49%,
+    16% 37%,
+    9% 22%,
+    27% 21%,
+    34% 6%
+  );
+  transform: translate(-50%, -50%) rotate(4deg);
+}
+
+/* ---------- bento senza buchi ---------- */
+.home-board .social-card {
+  grid-column: span 4;
+}
+
+.home-board .lab-teaser-card {
+  grid-column: span 3;
+}
+
+.home-board .drop-preview-card {
+  grid-column: span 5;
+}
+
+.home-board .process-card {
+  grid-column: span 4;
+}
+
+.home-board .craft-card {
+  grid-column: span 4;
+}
+
+.home-board .newsletter-card {
+  grid-column: span 4;
+}
+
+/* reel: riquadro piu stretto, copy centrata */
+.insta-player {
+  width: 300px;
+}
+
+.insta-reel-copy {
+  justify-content: center;
+}
+
+.insta-reel-copy strong {
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 1.8vw, 1.5rem);
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1180px) {
+  .home-board .social-card,
+  .home-board .lab-teaser-card {
+    grid-column: span 6;
+  }
+
+  .home-board .drop-preview-card {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 980px) {
+  .home-board .process-card,
+  .home-board .craft-card,
+  .home-board .newsletter-card {
+    grid-column: span 6;
+  }
+
+  .insta-player {
+    width: 260px;
+  }
+}
+
+@media (max-width: 680px) {
+  .home-board .social-card,
+  .home-board .lab-teaser-card,
+  .home-board .drop-preview-card,
+  .home-board .process-card,
+  .home-board .craft-card,
+  .home-board .newsletter-card {
+    grid-column: span 12;
+  }
+
+  .insta-player {
+    width: 100%;
+  }
+}
+
+/* ---------- tessere social leggibili ---------- */
+.social-grid :is(a, button) {
+  text-decoration: none;
+  align-items: flex-start;
+}
+
+.social-grid :is(a, button) > span:first-child {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.social-grid strong {
+  font-size: 0.82rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.social-grid small {
+  max-width: 100%;
+  overflow: hidden;
+  color: inherit;
+  font-size: 0.56rem;
+  letter-spacing: 0.06em;
+  opacity: 0.78;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.social-grid :is(a, button) > span:last-child {
+  margin-top: 0.1rem;
+  color: inherit;
+  opacity: 0.85;
+}
+
+/* la minigriglia sbordava sul titolo nella colonna stretta */
+.lab-mini-grid {
+  display: none;
+}
+
+.lab-teaser-card > strong {
+  max-width: 100%;
+  font-family: var(--font-display);
+  font-weight: 900;
+  line-height: 0.92;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+}
+
+/* ---------- fotografia vera al posto delle sagome ---------- */
+.poster-photo {
+  position: absolute;
+  inset: 1.1rem;
+  display: block;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  background: var(--ink);
+}
+
+.poster-photo img {
+  object-fit: cover;
+}
+
+.insta-photo {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  background: var(--ink);
+}
+
+.insta-photo img {
+  object-fit: cover;
+}
+
+.insta-player {
+  aspect-ratio: 1;
+}
+
+.insta-player img {
+  object-fit: cover;
+}
+
+.reel-badge {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  transform: translate(-50%, -50%);
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 1rem;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.product-stage img {
+  object-fit: cover;
+}
+
+.product-photo {
+  z-index: 1;
+}
+
+/* ---------- drop e lab: intestazioni da poster, non da scheda ---------- */
+.shop-intro-card,
+.lab-heading-card {
+  min-height: 0;
+  padding: clamp(1.5rem, 2.8vw, 2.3rem);
+  border-radius: 0;
+  background: var(--asphalt);
+  color: var(--paper);
+}
+
+.shop-intro-card h1,
+.lab-heading-card h1 {
+  margin: 0.5rem 0 0.8rem;
+  color: var(--paper);
+  font-size: clamp(2.2rem, 5.2vw, 3.9rem);
+  line-height: 0.86;
+  letter-spacing: -0.008em;
+  text-shadow: none;
+}
+
+.shop-intro-card .section-kicker,
+.lab-heading-card .section-kicker {
+  color: var(--acid);
+}
+
+.shop-intro-card p,
+.lab-heading-card p {
+  max-width: 56ch;
+  color: rgb(245 237 222 / 82%);
+  font-size: 0.95rem;
+}
+
+.shop-info-card {
+  min-height: 0;
+  gap: 0.6rem;
+  padding: 1.2rem;
+  border-radius: 0;
+  background: var(--hot);
+  color: var(--paper);
+}
+
+.shop-info-card > div {
+  min-height: 96px;
+  padding: 0.8rem;
+  border: 2px solid var(--paper);
+  border-radius: 0;
+  background: transparent;
+}
+
+.shop-info-card > div span {
+  color: rgb(245 237 222 / 82%);
+}
+
+.shop-info-card > div strong {
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 3.2vw, 2.7rem);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+}
+
+.shop-info-card .source-pill {
+  border-color: var(--paper);
+  color: var(--paper);
+}
+
+/* il lab usa la stessa grammatica del drop */
+.lab-facts-card {
+  border-radius: 0;
+}
+
+.shop-info-card .source-pill {
+  background: transparent;
+  border-color: var(--paper);
+  color: var(--paper);
+}
+
+/* celle del lab coerenti con la banda del drop */
+.lab-facts-card {
+  gap: 0.6rem;
+  padding: 1.2rem;
+  border: 3px solid var(--ink);
+  border-radius: 0;
+  background: var(--hot);
+  color: var(--paper);
+}
+
+.lab-facts-card > div {
+  min-height: 96px;
+  padding: 0.8rem;
+  border: 2px solid var(--paper);
+  border-radius: 0;
+  background: transparent;
+}
+
+.lab-facts-card strong,
+.lab-facts-card > div strong {
+  color: var(--paper);
+  font-size: clamp(1.9rem, 3.2vw, 2.7rem);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+}
+
+.lab-facts-card span,
+.lab-facts-card > div span {
+  color: rgb(245 237 222 / 82%);
+}
+
+/* anteprima del lab: silhouette pulita, stessa lingua del manifesto */
+.preview-well .garment-object {
+  clip-path: polygon(
+    31% 0%,
+    41% 4%,
+    59% 4%,
+    69% 0%,
+    100% 13%,
+    100% 35%,
+    83% 41%,
+    83% 100%,
+    17% 100%,
+    17% 41%,
+    0% 35%,
+    0% 13%
+  );
+  border-radius: 0;
+  box-shadow: none;
+  width: auto;
+  height: 62%;
+  background:
+    radial-gradient(rgb(255 255 255 / 7%) 1px, transparent 1.2px) 0 0 / 4px 4px,
+    var(--garment-fill);
+  filter: drop-shadow(10px 12px 0 rgb(20 23 31 / 18%));
+}
+
+.preview-well .garment-object::before,
+.preview-well .garment-object::after,
+.preview-well .hood-piece {
+  display: none;
+}
+
+.preview-well .garment-collar {
+  top: 4%;
+  left: 43%;
+  width: 14%;
+  height: 6%;
+  border-radius: 0 0 999px 999px;
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.preview-well .bleach-shape {
+  width: 34%;
+  top: 50%;
+}

@@ -24,6 +24,7 @@ type Product = {
   color: string;
   reaction: string;
   art: ProductArt;
+  image?: string;
 };
 
 type CartItem = {
@@ -36,7 +37,7 @@ type CartItem = {
 const fallbackProducts: Product[] = [
   {
     id: "BW-T01",
-    name: "Mint Index",
+    name: "Serpenti",
     category: "tee",
     kind: "T-shirt 240 g",
     price: 49,
@@ -44,10 +45,11 @@ const fallbackProducts: Product[] = [
     color: "#171717",
     reaction: "#d88954",
     art: "patchwork",
+    image: "/feed/drago-tee.jpg",
   },
   {
     id: "BW-T02",
-    name: "Soft Ribbon",
+    name: "Ragno",
     category: "tee",
     kind: "T-shirt 240 g",
     price: 55,
@@ -55,10 +57,11 @@ const fallbackProducts: Product[] = [
     color: "#4d1d29",
     reaction: "#e8aa83",
     art: "ribbon",
+    image: "/feed/spiderman.jpg",
   },
   {
     id: "BW-T03",
-    name: "Night Index",
+    name: "Circus",
     category: "tee",
     kind: "T-shirt oversize",
     price: 59,
@@ -66,10 +69,11 @@ const fallbackProducts: Product[] = [
     color: "#17223c",
     reaction: "#cfa361",
     art: "index",
+    image: "/feed/santeria.jpg",
   },
   {
     id: "BW-H01",
-    name: "Quiet Seam",
+    name: "Drago",
     category: "hoodie",
     kind: "Felpa 400 g",
     price: 89,
@@ -77,10 +81,11 @@ const fallbackProducts: Product[] = [
     color: "#151515",
     reaction: "#e2c090",
     art: "seam",
+    image: "/feed/drago-hoodie.jpg",
   },
   {
     id: "BW-H02",
-    name: "Field Frame",
+    name: "Moto Evo",
     category: "hoodie",
     kind: "Felpa 400 g",
     price: 99,
@@ -88,10 +93,11 @@ const fallbackProducts: Product[] = [
     color: "#352018",
     reaction: "#d78a56",
     art: "frame",
+    image: "/feed/moto.jpg",
   },
   {
     id: "BW-O01",
-    name: "Studio Sample 001",
+    name: "Ali",
     category: "oneoff",
     kind: "Pezzo unico",
     price: 119,
@@ -99,6 +105,7 @@ const fallbackProducts: Product[] = [
     color: "#22201f",
     reaction: "#c5bbff",
     art: "sample",
+    image: "/feed/reel-aquila.jpg",
   },
 ];
 
@@ -154,35 +161,40 @@ const instagramPosts = [
     kind: "Post",
     date: "Lug 2026",
     title: "Felpa motocicletta",
-    caption: "Tema moto su felpa: il disegno si costruisce a mano, non arriva da un catalogo.",
+    caption: "Harley Evo 1340: motore, telaio e strada dipinti a mano su felpa nera.",
+    image: "/feed/moto.jpg",
     url: "https://www.instagram.com/bleach_wears/p/Daih1UgjMPw/",
   },
   {
     kind: "Post",
     date: "Set 2026",
-    title: "Maglietta Spider-Man",
-    caption: "Acrilico a mano su base rossa e nera, tema fumetto.",
+    title: "Maglietta ragno",
+    caption: "Ragno bianco su ragnatela rossa: acrilico a mano su cotone nero.",
+    image: "/feed/spiderman.jpg",
     url: "https://www.instagram.com/bleach_wears/p/DdYUsEQDI0E/",
   },
   {
     kind: "Post",
     date: "Set 2026",
-    title: "Maglietta drago",
-    caption: "Drago in acrilico: un tema che torna spesso, mai due volte identico.",
+    title: "Maglietta serpenti",
+    caption: "Due serpenti intrecciati tra fiori rossi: pennellata dopo pennellata.",
+    image: "/feed/drago-tee.jpg",
     url: "https://www.instagram.com/bleach_wears/p/Dd1o1ZSjOXK/",
   },
   {
     kind: "Post",
     date: "Ott 2026",
     title: "Felpa drago",
-    caption: "Lo stesso tema su felpa: cambia la base, e con lei il risultato.",
+    caption: "Draghi grigi su felpa blu notte: lo stesso tema, ogni volta un altro capo.",
+    image: "/feed/drago-hoodie.jpg",
     url: "https://www.instagram.com/bleach_wears/p/DeYkRbJjH9i/",
   },
   {
     kind: "Post",
     date: "Ott 2025",
-    title: "Santeria Toscana 31",
-    caption: "«Non smettete mai di esprimervi»: la serata fuori studio, con il grazie a Dante.",
+    title: "Maglietta Circus",
+    caption: "Tendone, elefante e lettering: acrilico su cotone nero.",
+    image: "/feed/santeria.jpg",
     url: "https://www.instagram.com/bleach_wears/p/DPbv5fwjPvo/",
   },
 ];
@@ -192,15 +204,17 @@ const instagramReels = [
     code: "De94I9YBFPi",
     kind: "Reel",
     date: "Ott 2026",
-    title: "Aquila e teschio",
-    caption: "L'ultimo video del profilo: aquila e teschio su felpa.",
+    title: "Ali e pugnale",
+    caption: "Ali e pugnale sul retro di una felpa: l’ultimo video uscito.",
+    image: "/feed/reel-aquila.jpg",
   },
   {
     code: "DRz4LmWDK2J",
     kind: "Reel",
     date: "Dic 2025",
-    title: "Reel di dicembre",
+    title: "Dal set di dicembre",
     caption: "Il video uscito insieme al post del 3 dicembre 2025.",
+    image: "/feed/reel-dicembre.jpg",
   },
 ];
 
@@ -528,6 +542,21 @@ export function BleachwearsApp() {
           </button>
         </header>
 
+        <div className="ticker-strip" aria-hidden="true">
+          <div className="ticker-track">
+            {[0, 1].map((group) => (
+              <span className="ticker-group" key={group}>
+                <b>bleachwears</b>
+                <i>candeggina su cotone</i>
+                <b>un pezzo alla volta</b>
+                <i>nessun reprint</i>
+                <b>fatto a mano · italia</b>
+                <i>drop 01 / 2026</i>
+              </span>
+            ))}
+          </div>
+        </div>
+
         <nav className="mobile-dock" aria-label="Navigazione mobile">
           {navItems.map((item) => (
             <button key={item.id} type="button" className={view === item.id ? "is-current" : ""} onClick={() => navigate(item.id)} aria-current={view === item.id ? "page" : undefined}>
@@ -596,12 +625,16 @@ export function BleachwearsApp() {
                     <article className={index === 0 ? "catalog-card is-featured" : "catalog-card"} key={product.id}>
                       <div className="product-stage" style={{ "--product-color": product.color, "--product-reaction": product.reaction } as CSSProperties}>
                         <span className="craft-pill">Fatto a mano</span>
-                        <GarmentVisual
-                          type={product.category === "hoodie" ? "hoodie" : "tee"}
-                          color={product.color}
-                          reaction={product.reaction}
-                          art={product.art}
-                        />
+                        {product.image ? (
+                          <Image className="product-photo" src={product.image} alt={`${product.name}, ${product.kind}`} fill sizes="(max-width: 680px) 88vw, 420px" />
+                        ) : (
+                          <GarmentVisual
+                            type={product.category === "hoodie" ? "hoodie" : "tee"}
+                            color={product.color}
+                            reaction={product.reaction}
+                            art={product.art}
+                          />
+                        )}
                       </div>
                       <div className="catalog-copy">
                         <div>
@@ -930,24 +963,48 @@ function BentoHome({
   return (
     <section className="screen home-screen" aria-labelledby="home-title">
       <div className="home-board">
-        <article className="bento-card home-hero-card">
-          <div className="hero-content">
-            <span className="status-chip"><span aria-hidden="true" /> Custom streetwear · Italia</span>
-            <h1 id="home-title">Indossa qualcosa che non esiste due volte.</h1>
-            <p>Partiamo da t-shirt e felpe scure. Togliamo colore, aggiungiamo un segno e lasciamo che la materia faccia il resto.</p>
-            <div className="hero-buttons">
-              <button type="button" className="mint-action" onClick={() => navigate("lab")}>Crea il tuo capo <span aria-hidden="true">→</span></button>
-              <button type="button" className="dark-ghost-action" onClick={() => navigate("shop")}>Esplora il drop</button>
+        <article className="poster-hero">
+          <div className="poster-copy">
+            <div className="poster-meta">
+              <span>Collettivo</span>
+              <span>Italia</span>
+              <span>Drop 01 / 2026</span>
+            </div>
+            <h1 id="home-title" className="poster-title" aria-label="Candeggina, cotone, mani: un pezzo su uno">
+              <span>Candeggina</span>
+              <span className="is-outline"><b aria-hidden="true">+</b>cotone</span>
+              <span><b aria-hidden="true">+</b>mani</span>
+              <span className="is-eq">= 1/1</span>
+            </h1>
+            <p className="poster-lead">
+              Sbiadiamo capi a mano, uno alla volta. Nessuna serie, nessuna stampa ripetibile:
+              si parte dalla stessa idea e si finisce con un pezzo che esiste solo lì.
+            </p>
+            <div className="poster-actions">
+              <button type="button" className="poster-cta" onClick={() => navigate("shop")}>Guarda il drop <span aria-hidden="true">→</span></button>
+              <button type="button" className="poster-cta is-ghost" onClick={() => navigate("lab")}>Fai il tuo pezzo</button>
             </div>
           </div>
-          <div className="hero-garment-well" aria-hidden="true">
-            <span className="floating-note">pezzo unico</span>
-            <GarmentVisual type="tee" color="#111514" reaction="#a8efcf" art="patchwork" />
+          <div className="poster-art">
+            <span className="poster-halftone" aria-hidden="true" />
+            <div className="poster-plate">
+              <span className="sticker is-tape" aria-hidden="true">drop 01 · 2026</span>
+              <span className="poster-photo">
+                <Image
+                  src="/feed/reel-aquila.jpg"
+                  alt="Felpa nera con ali e pugnale dipinti a mano sul retro"
+                  fill
+                  sizes="(max-width: 680px) 76vw, 400px"
+                  priority
+                />
+              </span>
+              <span className="sticker is-round" aria-hidden="true">no reprint · 1 of 1</span>
+            </div>
           </div>
         </article>
 
         <article className="bento-card social-card">
-          <div className="card-heading-row"><div><span className="section-kicker">Link hub</span><h2>Troviamoci.</h2></div><span className="availability-pill">Link in arrivo</span></div>
+          <div className="card-heading-row"><div><span className="section-kicker">Link hub</span><h2>Troviamoci.</h2></div><span className="availability-pill">Seguici</span></div>
           <div className="social-grid">
             {socials.map((social) =>
               social.href ? (
@@ -972,15 +1029,15 @@ function BentoHome({
 
         <article className="bento-card drop-preview-card">
           <div className="card-heading-row">
-            <div><span className="section-kicker">Drop selezionato</span><h2>Pronti adesso.</h2></div>
+            <div><span className="section-kicker">Sul banco</span><h2>Pronti adesso.</h2></div>
             <span className={catalogSource === "live" ? "source-pill is-live" : "source-pill"}>{catalogSource === "live" ? "Live" : "Preview"}</span>
           </div>
-          <div className="featured-list">
+          <div className="shelf-list">
             {products.length ? products.map((product) => (
-              <div key={product.id}>
-                <span className="featured-swatch" style={{ backgroundColor: product.color }} aria-hidden="true" />
-                <span><strong>{product.name}</strong><small>{product.kind}</small></span>
-                <b>{money(product.price)}</b>
+              <div className="shelf-row" key={product.id}>
+                <span className="shelf-swatch" style={{ backgroundColor: product.color }} aria-hidden="true" />
+                <span className="shelf-name"><strong>{product.name}</strong><small>{product.kind}</small></span>
+                <b className="shelf-price">{money(product.price)}</b>
               </div>
             )) : <p>Il prossimo drop sta prendendo forma.</p>}
           </div>
@@ -990,8 +1047,8 @@ function BentoHome({
         <article className="bento-card instagram-card" id="instagram">
           <div className="card-heading-row">
             <div>
-              <span className="section-kicker">Dal profilo</span>
-              <h2>Il gruppo, prima del sito.</h2>
+              <span className="section-kicker">Dal collettivo</span>
+              <h2>La bacheca.</h2>
             </div>
             <a className="insta-follow" href={INSTAGRAM_PROFILE} target="_blank" rel="noopener noreferrer">
               Segui @bleach_wears <span aria-hidden="true">↗</span>
@@ -999,23 +1056,21 @@ function BentoHome({
           </div>
 
           <p className="insta-intro">
-            Il progetto nasce tra amici: felpe e magliette lavorate a mano con la candeggina, una per una.
-            Si parte da una richiesta in direct — un tema, una base, una taglia — e nessun pezzo esce uguale a un altro.
-            Qui sotto due reel del profilo, inquadrati dentro la pagina, e cinque lavori raccontati.
+            Nasce tra amici, in direct: un tema, una base, una taglia. Il resto lo fa la candeggina.
+            Qui sotto due reel e cinque lavori, presi dal profilo così come sono usciti dalle mani.
           </p>
 
           <div className="insta-reels">
             {instagramReels.map((reel) => (
               <div className="insta-reel" key={reel.code}>
                 <div className="insta-player">
-                  <iframe
-                    src={`https://www.instagram.com/reel/${reel.code}/embed/`}
-                    title={`${reel.title} — reel di @bleach_wears`}
-                    loading="lazy"
-                    tabIndex={-1}
-                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                    allowFullScreen
+                  <Image
+                    src={reel.image}
+                    alt={`${reel.title} — lavoro di @bleach_wears`}
+                    fill
+                    sizes="(max-width: 680px) 90vw, 300px"
                   />
+                  <span className="reel-badge" aria-hidden="true">▶</span>
                 </div>
                 <div className="insta-reel-copy">
                   <span className="insta-meta">
@@ -1032,6 +1087,9 @@ function BentoHome({
           <div className="insta-wall">
             {instagramPosts.map((post) => (
               <article className="insta-post" key={post.url}>
+                <span className="insta-photo">
+                  <Image src={post.image} alt={`${post.title} — pezzo di @bleach_wears`} fill sizes="(max-width: 680px) 84vw, 230px" />
+                </span>
                 <span className="insta-meta">
                   <span className="insta-kind">{post.kind}</span>
                   <span className="insta-date">{post.date}</span>
@@ -1046,7 +1104,7 @@ function BentoHome({
 
         <article className="bento-card process-card">
           <span className="section-kicker">Come funziona</span>
-          <h2>Tre scelte, una reazione.</h2>
+          <h2>Dal niente al capo.</h2>
           <ol>
             <li><span>1</span><div><strong>Base</strong><small>T-shirt o felpa</small></div></li>
             <li><span>2</span><div><strong>Segno</strong><small>Archivio o tuo file</small></div></li>
@@ -1056,12 +1114,12 @@ function BentoHome({
 
         <article className="bento-card craft-card">
           <span className="section-kicker">Fatto a mano</span>
-          <blockquote>“La parte più bella è quella che non possiamo replicare.”</blockquote>
+          <blockquote>“Nessuno può rifarlo identico. Nemmeno noi.”</blockquote>
           <div><span>Unico</span><span>Locale</span><span>Lento</span></div>
         </article>
 
         <article className="bento-card newsletter-card">
-          <div><span className="section-kicker">Drop alert</span><h2>Solo quando c’è qualcosa di nuovo.</h2><p>Niente calendario editoriale. Ti scriviamo quando esce un capo o si apre un nuovo slot custom.</p></div>
+          <div><span className="section-kicker">Drop alert</span><h2>Quando esce roba nuova.</h2><p>Niente calendario. Scriviamo solo quando c’è un capo nuovo o uno slot libero nel lab.</p></div>
           <form onSubmit={handleNewsletter}>
             <label htmlFor="email">La tua email</label>
             <div><input id="email" type="email" required placeholder="nome@email.it" /><button type="submit" aria-label="Iscriviti alla lista">→</button></div>
