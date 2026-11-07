@@ -214,7 +214,8 @@ const instagramReels = [
     date: "Dic 2025",
     title: "Dal set di dicembre",
     caption: "Il video uscito insieme al post del 3 dicembre 2025.",
-    image: "/feed/reel-dicembre.jpg",
+    image: "/reels/reel-dicembre-poster.jpg",
+    video: "/reels/reel-dicembre.mp4",
   },
 ];
 
@@ -947,6 +948,34 @@ function BentoHome({
   products: Product[];
   catalogSource: CatalogSource;
 }) {
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [reelsInView, setReelsInView] = useState(false);
+  const reelSectionRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduceMotion(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    const node = reelSectionRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setReelsInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "320px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   function handleNewsletter(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     notify("Modulo in anteprima: l’iscrizione sarà collegata nella prossima fase");
@@ -1044,7 +1073,7 @@ function BentoHome({
           <button type="button" className="soft-button" onClick={() => navigate("shop")}>Vedi tutto il drop <span aria-hidden="true">→</span></button>
         </article>
 
-        <article className="bento-card instagram-card" id="instagram">
+        <article className="bento-card instagram-card" id="instagram" ref={reelSectionRef}>
           <div className="card-heading-row">
             <div>
               <span className="section-kicker">Dal collettivo</span>
@@ -1064,13 +1093,28 @@ function BentoHome({
             {instagramReels.map((reel) => (
               <div className="insta-reel" key={reel.code}>
                 <div className="insta-player">
-                  <Image
-                    src={reel.image}
-                    alt={`${reel.title} — lavoro di @bleach_wears`}
-                    fill
-                    sizes="(max-width: 680px) 90vw, 300px"
-                  />
-                  <span className="reel-badge" aria-hidden="true">▶</span>
+                  {reel.video && !reduceMotion && reelsInView ? (
+                    <video
+                      className="reel-video"
+                      src={reel.video}
+                      poster={reel.image}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      disablePictureInPicture
+                      tabIndex={-1}
+                      aria-label={`${reel.title} — video di @bleach_wears`}
+                    />
+                  ) : (
+                    <Image
+                      src={reel.image}
+                      alt={`${reel.title} — lavoro di @bleach_wears`}
+                      fill
+                      sizes="(max-width: 680px) 90vw, 300px"
+                    />
+                  )}
                 </div>
                 <div className="insta-reel-copy">
                   <span className="insta-meta">
