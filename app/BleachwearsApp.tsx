@@ -419,6 +419,16 @@ export function BleachwearsApp() {
     [catalogProducts, shopFilter],
   );
 
+  const shopCounts = useMemo(
+    () => ({
+      all: catalogProducts.length,
+      tee: catalogProducts.filter((product) => product.category === "tee").length,
+      hoodie: catalogProducts.filter((product) => product.category === "hoodie").length,
+      oneoff: catalogProducts.filter((product) => product.category === "oneoff").length,
+    }),
+    [catalogProducts],
+  );
+
   function navigate(next: View) {
     setView(next);
     if (window.location.hash !== `#${next}`) window.history.pushState(null, "", `#${next}`);
@@ -587,55 +597,77 @@ export function BleachwearsApp() {
 
           {view === "shop" && (
             <section className="screen shop-screen" aria-labelledby="shop-title">
-              <div className="shop-intro-grid">
-                <article className="bento-card shop-intro-card">
-                  <span className="section-kicker">Drop corrente</span>
+              <header className="drop-hero">
+                <div className="drop-hero-copy">
+                  <span className="section-kicker">Drop 01 / 2026</span>
                   <h1 id="shop-title">Capi diversi, per davvero.</h1>
                   <p>Candeggina e acrilico, lavorati a mano pezzo per pezzo. Ogni reazione è diversa, e la differenza è il capo.</p>
-                </article>
+                  <ul className="drop-facts">
+                    <li><strong>{String(catalogProducts.length).padStart(2, "0")}</strong><span>pezzi nel drop</span></li>
+                    <li><strong>7–14</strong><span>giorni di lavoro</span></li>
+                    <li><strong>1/1</strong><span>nessun reprint</span></li>
+                  </ul>
+                </div>
 
-                <aside className="bento-card shop-info-card" aria-label="Informazioni sul drop">
-                  <div><span>Disponibili</span><strong>{catalogProducts.length}</strong></div>
-                  <div><span>Tempo medio</span><strong>7–14 gg</strong></div>
+                <aside className="drop-ticket" aria-label="Dettagli del drop">
+                  <span className="ticket-head">Bleachwears · Drop 01</span>
+                  <strong className="ticket-number">{String(catalogProducts.length).padStart(2, "0")}</strong>
+                  <span className="ticket-label">pezzi sul banco</span>
+                  <div className="ticket-rule" aria-hidden="true" />
+                  <p>Acrilico a mano<br />Candeggina su cotone</p>
+                  <div className="ticket-bars" aria-hidden="true">
+                    {Array.from({ length: 24 }).map((_, index) => <span key={index} />)}
+                  </div>
                   <p className={catalogSource === "live" ? "source-pill is-live" : "source-pill"}>
                     <span aria-hidden="true" />{catalogSource === "live" ? "Catalogo live" : "Dati dimostrativi"}
                   </p>
                 </aside>
-              </div>
+              </header>
 
-              <div className="bento-card filter-card">
-                <div>
-                  <span className="section-kicker">Filtra</span>
-                  <p>{filteredProducts.length} risultati</p>
-                </div>
-                <div className="filter-pills" role="group" aria-label="Filtra i prodotti">
-                  {[
-                    ["all", "Tutto"],
-                    ["tee", "T-shirt"],
-                    ["hoodie", "Felpe"],
-                    ["oneoff", "One/off"],
-                  ].map(([id, label]) => (
-                    <button
-                      key={id}
-                      type="button"
-                      className={shopFilter === id ? "is-selected" : ""}
-                      onClick={() => setShopFilter(id as "all" | ProductCategory)}
-                      aria-pressed={shopFilter === id}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <div className="shop-layout">
+                <aside className="shop-rail" aria-label="Filtri del catalogo">
+                  <div className="rail-block">
+                    <span className="rail-title">Filtra</span>
+                    <div className="rail-filters" role="group" aria-label="Filtra i prodotti">
+                      {[
+                        ["all", "Tutto"],
+                        ["tee", "T-shirt"],
+                        ["hoodie", "Felpe"],
+                        ["oneoff", "One/off"],
+                      ].map(([id, label]) => (
+                        <button
+                          key={id}
+                          type="button"
+                          className={shopFilter === id ? "is-selected" : ""}
+                          onClick={() => setShopFilter(id as "all" | ProductCategory)}
+                          aria-pressed={shopFilter === id}
+                        >
+                          <span>{label}</span>
+                          <b>{String(shopCounts[id as "all" | ProductCategory]).padStart(2, "0")}</b>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rail-block rail-note">
+                    <span className="rail-title">Come funziona</span>
+                    <p>Ogni capo viene dipinto a mano dopo l’ordine. Nessun reprint, nessuna copia identica.</p>
+                  </div>
+                </aside>
+
+                <div className="shop-board">
+                  <div className="board-head">
+                    <span className="section-kicker">Sul banco</span>
+                    <p aria-live="polite">{String(filteredProducts.length).padStart(2, "0")} pezzi</p>
+                  </div>
 
               {filteredProducts.length ? (
                 <div className="catalog-grid">
                   {filteredProducts.map((product, index) => (
-                    <article className={index === 0 ? "catalog-card is-featured" : "catalog-card"} key={product.id}>
+                    <article className="catalog-card" key={product.id}>
                       <div className="product-stage" style={{ "--product-color": product.color, "--product-reaction": product.reaction } as CSSProperties}>
-                        <span className="craft-pill">Fatto a mano</span>
                         {product.image ? (
-                          <Image className="product-photo" src={product.image} alt={`${product.name}, ${product.kind}`} fill sizes="(max-width: 680px) 88vw, 420px" />
+                          <Image className="product-photo" src={product.image} alt={`${product.name}, ${product.kind}`} fill sizes="(max-width: 700px) 88vw, (max-width: 1080px) 44vw, 30vw" />
                         ) : (
                           <GarmentVisual
                             type={product.category === "hoodie" ? "hoodie" : "tee"}
@@ -644,25 +676,26 @@ export function BleachwearsApp() {
                             art={product.art}
                           />
                         )}
+                        <span className="piece-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                        <span className="craft-pill">Fatto a mano</span>
                       </div>
                       <div className="catalog-copy">
-                        <div>
-                          <p>{product.kind} · {product.id}</p>
-                          <h2>{product.name}</h2>
-                        </div>
-                        <strong>{money(product.price)}</strong>
-                      </div>
-                      <div className="catalog-meta">
-                        {product.technique && <span className="technique-pill">{product.technique}</span>}
-                        <span>{product.status}</span>
-                        <span>XS–XXL</span>
+                        <span className="price-tag">{money(product.price)}</span>
+                        <p className="piece-kind">{product.kind} · {product.id}</p>
+                        <h2>{product.name}</h2>
+                        <p className="piece-line">
+                          <span>{product.technique ?? "Fatto a mano"}</span>
+                          <span className={/limitata|1 disponibile/i.test(product.status) ? "is-scarce" : undefined}>{product.status}</span>
+                          <span>XS–XXL</span>
+                        </p>
                       </div>
                       <button
-                        className="inline-action"
+                        className="card-action"
                         type="button"
                         onClick={() => addToCart(product.name, `${product.kind} · ${product.status}`, product.price)}
                       >
-                        Aggiungi al carrello <span aria-hidden="true">→</span>
+                        <span>Aggiungi al carrello</span>
+                        <span className="card-action-arrow" aria-hidden="true">→</span>
                       </button>
                     </article>
                   ))}
@@ -676,11 +709,13 @@ export function BleachwearsApp() {
                 </div>
               )}
 
-              <button type="button" className="lab-invite-card" onClick={() => navigate("lab")}>
-                <span className="section-kicker">Non trovi il tuo?</span>
-                <strong>Parti da una base neutra e componilo tu.</strong>
-                <span className="round-arrow" aria-hidden="true">→</span>
-              </button>
+                  <button type="button" className="lab-invite-card" onClick={() => navigate("lab")}>
+                    <span className="section-kicker">Non trovi il tuo?</span>
+                    <strong>Parti da una base neutra e componilo tu.</strong>
+                    <span className="round-arrow" aria-hidden="true">→</span>
+                  </button>
+                </div>
+              </div>
             </section>
           )}
 

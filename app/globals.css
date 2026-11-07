@@ -5649,3 +5649,838 @@ p {
 .splat {
   min-width: 18px;
 }
+
+/* ============================================================
+   SHOP · DROP SHEET
+   Hero con lasciapassare, rail di filtri, catalogo d'arte.
+   ============================================================ */
+
+.shop-screen {
+  display: grid;
+  gap: clamp(16px, 2vw, 22px);
+}
+
+/* ---------- hero ---------- */
+.drop-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.62fr);
+  gap: clamp(1.2rem, 2.6vw, 2.6rem);
+  align-items: stretch;
+  padding: clamp(1.4rem, 3vw, 2.7rem);
+  border: 3px solid var(--ink);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: 9px 9px 0 var(--ink);
+  overflow: hidden;
+}
+
+.drop-hero::before {
+  content: "";
+  position: absolute;
+  right: -70px;
+  bottom: -120px;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(var(--hot) 1.7px, transparent 1.9px) 0 0 / 13px 13px;
+  opacity: 0.2;
+  transform: rotate(6deg);
+  pointer-events: none;
+}
+
+.drop-hero-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.drop-hero .section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.34rem 0.55rem;
+  border: 2px solid var(--ink);
+  background: var(--ink);
+  color: var(--acid);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.drop-hero h1 {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.7rem, 6.6vw, 5.4rem);
+  font-weight: 800;
+  line-height: 0.82;
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.drop-hero-copy > p {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.drop-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  width: 100%;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 3px solid var(--ink);
+}
+
+.drop-facts li {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.7rem 0.8rem 0.2rem;
+  border-right: 2px dashed rgb(20 23 31 / 30%);
+}
+
+.drop-facts li:first-child {
+  padding-left: 0;
+}
+
+.drop-facts li:last-child {
+  border-right: 0;
+}
+
+.drop-facts strong {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+}
+
+.drop-facts span {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ---------- lasciapassare ---------- */
+.drop-ticket {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  align-self: center;
+  padding: 1.1rem 1.15rem 1rem 1.5rem;
+  border: 3px solid var(--ink);
+  border-left: 0;
+  background: var(--asphalt);
+  color: var(--paper);
+  box-shadow: 9px 9px 0 var(--hot);
+  transform: rotate(-2.4deg);
+  transition: transform 300ms var(--ease);
+}
+
+.drop-ticket::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 12px;
+  border-right: 2px dashed rgb(245 237 222 / 34%);
+  background-image: radial-gradient(circle at 0 8px, var(--surface) 0 5px, transparent 5.5px);
+  background-size: 12px 16px;
+  background-repeat: repeat-y;
+}
+
+.drop-ticket:hover {
+  transform: rotate(-1deg);
+}
+
+.ticket-head {
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(245 237 222 / 66%);
+}
+
+.ticket-number {
+  font-family: var(--font-display);
+  font-size: clamp(4.2rem, 8.4vw, 6.6rem);
+  font-weight: 800;
+  line-height: 0.78;
+  letter-spacing: -0.02em;
+  color: var(--acid);
+}
+
+.ticket-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--paper);
+}
+
+.ticket-rule {
+  height: 0;
+  margin: 0.55rem 0 0.5rem;
+  border-top: 2px dashed rgb(245 237 222 / 30%);
+}
+
+.drop-ticket p {
+  margin: 0;
+  color: rgb(245 237 222 / 80%);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ticket-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 26px;
+  margin: 0.7rem 0 0.55rem;
+  color: rgb(245 237 222 / 62%);
+}
+
+.ticket-bars span {
+  flex: 1 1 0;
+  height: 100%;
+  background: currentColor;
+}
+
+.ticket-bars span:nth-child(3n) { height: 62%; }
+.ticket-bars span:nth-child(4n) { height: 84%; }
+.ticket-bars span:nth-child(5n) { height: 45%; background: var(--acid); }
+.ticket-bars span:nth-child(7n) { height: 70%; }
+
+.drop-ticket .source-pill {
+  align-self: flex-start;
+  margin-top: 0.15rem;
+  padding: 0.24rem 0.42rem;
+  border-color: rgb(245 237 222 / 45%);
+  color: var(--paper);
+  font-size: 0.52rem;
+}
+
+.drop-ticket .source-pill.is-live {
+  border-color: var(--acid);
+  background: var(--acid);
+  color: var(--ink);
+}
+
+/* ---------- layout con rail ---------- */
+.shop-layout {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  gap: clamp(16px, 2vw, 22px);
+  align-items: start;
+}
+
+.shop-rail {
+  position: sticky;
+  top: 104px;
+  display: grid;
+  gap: 14px;
+}
+
+.rail-block {
+  padding: 0.9rem 0.85rem 0.85rem;
+  border: 3px solid var(--ink);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
+.rail-title {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.rail-filters {
+  display: grid;
+  gap: 4px;
+  margin-top: 0.5rem;
+}
+
+.rail-filters button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.5rem 0.55rem;
+  border: 2px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background 160ms var(--ease), color 160ms var(--ease), border-color 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+
+.rail-filters button b {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.rail-filters button:hover {
+  border-color: var(--ink);
+}
+
+.rail-filters button.is-selected {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--acid);
+  box-shadow: 3px 3px 0 var(--hot);
+}
+
+.rail-filters button.is-selected b {
+  color: var(--paper);
+}
+
+.rail-filters button:focus-visible,
+.card-action:focus-visible {
+  outline: 3px solid var(--hot);
+  outline-offset: 3px;
+}
+
+.rail-note p {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+/* ---------- banco ---------- */
+.shop-board {
+  min-width: 0;
+}
+
+.board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0.8rem;
+  border: 3px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.board-head .section-kicker {
+  padding: 0;
+  background: transparent;
+  color: var(--acid);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.board-head p {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(245 237 222 / 72%);
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.catalog-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 3px solid var(--ink);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: 7px 7px 0 var(--ink);
+  transition: transform 240ms var(--ease), box-shadow 240ms var(--ease);
+}
+
+.catalog-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 10px 10px 0 var(--hot);
+}
+
+.catalog-card .product-stage {
+  position: relative;
+  display: block;
+  min-height: 0;
+  margin: 0;
+  aspect-ratio: 1;
+  border: 0;
+  border-bottom: 3px solid var(--ink);
+  border-radius: 0;
+  background: var(--asphalt);
+  overflow: hidden;
+}
+
+.catalog-card .product-stage img {
+  object-fit: cover;
+  transition: transform 700ms var(--ease);
+}
+
+.catalog-card:hover .product-stage img {
+  transform: scale(1.045);
+}
+
+.catalog-card .product-stage .garment-object {
+  width: min(58%, 240px);
+}
+
+.product-stage::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  box-shadow: inset 0 0 0 1px rgb(245 237 222 / 14%);
+  pointer-events: none;
+}
+
+.piece-index {
+  position: absolute;
+  z-index: 3;
+  top: 0.35rem;
+  left: 0.7rem;
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: rgb(245 237 222 / 62%);
+  transition: color 240ms var(--ease);
+}
+
+.catalog-card:hover .piece-index {
+  color: var(--acid);
+}
+
+.catalog-card .craft-pill {
+  position: absolute;
+  z-index: 3;
+  top: auto;
+  bottom: 0.7rem;
+  left: 0.7rem;
+  padding: 0.28rem 0.44rem;
+  border: 2px solid var(--ink);
+  background: var(--acid);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transform: rotate(-3deg);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.catalog-copy {
+  position: relative;
+  display: grid;
+  gap: 0.2rem;
+  padding: 1.15rem 1rem 0.95rem;
+}
+
+.price-tag {
+  position: absolute;
+  top: 0;
+  right: 0.9rem;
+  padding: 0.3rem 0.5rem;
+  border: 2px solid var(--ink);
+  background: var(--acid);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transform: translateY(-58%) rotate(-4deg);
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: transform 240ms var(--ease);
+}
+
+.catalog-card:hover .price-tag {
+  transform: translateY(-62%) rotate(3deg);
+}
+
+.piece-kind {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.catalog-copy h2 {
+  margin: 0.1rem 0 0.45rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 2.4vw, 2.15rem);
+  font-weight: 800;
+  line-height: 0.88;
+  letter-spacing: -0.008em;
+  text-transform: uppercase;
+}
+
+.piece-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0;
+}
+
+.piece-line span {
+  padding: 0.22rem 0.4rem;
+  border: 1.5px solid rgb(20 23 31 / 26%);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.card-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  min-height: 54px;
+  margin-top: auto;
+  padding: 0.6rem 1rem;
+  border: 0;
+  border-top: 3px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: background 200ms var(--ease), color 200ms var(--ease);
+}
+
+.card-action-arrow {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--acid);
+  color: var(--ink);
+  font-size: 0.95rem;
+  transition: transform 260ms var(--ease), background 200ms var(--ease), color 200ms var(--ease);
+}
+
+.catalog-card:hover .card-action,
+.card-action:focus-visible {
+  background: var(--acid);
+  color: var(--ink);
+}
+
+.catalog-card:hover .card-action-arrow,
+.card-action:focus-visible .card-action-arrow {
+  background: var(--ink);
+  color: var(--acid);
+  transform: rotate(-45deg);
+}
+
+/* ---------- invito al lab ---------- */
+.shop-board .lab-invite-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 18px;
+  padding: clamp(1.1rem, 2.4vw, 1.7rem);
+  border: 3px solid var(--ink);
+  border-radius: var(--radius-card);
+  background: var(--hot);
+  color: var(--paper);
+  text-align: left;
+  box-shadow: 8px 8px 0 var(--ink);
+  transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
+}
+
+.shop-board .lab-invite-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 11px 11px 0 var(--ink);
+}
+
+.shop-board .lab-invite-card .section-kicker {
+  padding: 0;
+  background: transparent;
+  color: rgb(245 237 222 / 86%);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.shop-board .lab-invite-card strong {
+  display: block;
+  margin-top: 0.3rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.8vw, 2.2rem);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.008em;
+  text-transform: uppercase;
+}
+
+.shop-board .lab-invite-card .round-arrow {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 3px solid var(--paper);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 1.3rem;
+  transition: transform 260ms var(--ease);
+}
+
+.shop-board .lab-invite-card:hover .round-arrow {
+  transform: rotate(-45deg);
+}
+
+/* ---------- adattamenti ---------- */
+@media (max-width: 1160px) {
+  .shop-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .shop-rail {
+    position: static;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .rail-block {
+    padding: 0.7rem 0.75rem;
+  }
+
+  .rail-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 0.4rem;
+  }
+
+  .rail-filters button {
+    flex: 0 0 auto;
+    gap: 0.55rem;
+    min-height: 40px;
+    border-color: var(--ink);
+  }
+
+  .rail-note {
+    display: none;
+  }
+
+  .catalog-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+
+@media (max-width: 900px) {
+  .drop-hero {
+    grid-template-columns: 1fr;
+    padding: 1.3rem;
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+
+  .drop-ticket {
+    align-self: stretch;
+    max-width: 330px;
+    margin-top: 0.4rem;
+  }
+
+  .catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .drop-hero h1 {
+    font-size: clamp(2.4rem, 11vw, 3.4rem);
+  }
+
+  .drop-facts li {
+    padding: 0.6rem 0.5rem 0.1rem;
+  }
+
+  .drop-facts li:first-child {
+    padding-left: 0;
+  }
+
+  .drop-ticket {
+    max-width: none;
+    transform: rotate(-1.4deg);
+  }
+
+  .catalog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .shop-board .lab-invite-card {
+    grid-template-columns: 1fr auto;
+    gap: 0.7rem;
+  }
+
+  .shop-board .lab-invite-card .round-arrow {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drop-ticket,
+  .catalog-card,
+  .catalog-card:hover,
+  .catalog-card:hover .product-stage img,
+  .catalog-card:hover .price-tag,
+  .card-action-arrow {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* le vecchie regole a 12 colonne non devono piu posizionare le schede */
+.catalog-card,
+.catalog-card.is-featured,
+.catalog-card:last-child:nth-child(3n) {
+  grid-column: auto;
+  grid-row: auto;
+}
+
+/* griglia a 3 colonne anche sopra le vecchie regole a 12 */
+.shop-board .catalog-grid > .catalog-card,
+.shop-board .catalog-grid > .catalog-card.is-featured,
+.shop-board .catalog-grid > .catalog-card:last-child:nth-child(3n) {
+  grid-column: span 1;
+}
+
+/* il prezzo deve stare sopra la foto, non sotto */
+.shop-board .catalog-copy {
+  z-index: 2;
+}
+
+/* sotto i 1160 la rail diventa una barra di filtri */
+@media (max-width: 1160px) {
+  .shop-rail .rail-block:first-child {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0.65rem;
+  }
+
+  .shop-rail .rail-title {
+    margin: 0;
+  }
+
+  .shop-rail .rail-filters {
+    margin-top: 0;
+    justify-content: flex-end;
+  }
+}
+
+/* a una colonna il lasciapassare resta un tagliando, non una fascia */
+@media (max-width: 900px) {
+  .drop-ticket {
+    max-width: 460px;
+    width: 100%;
+    box-shadow: 6px 6px 0 var(--hot);
+  }
+}
+
+@media (max-width: 620px) {
+  .drop-ticket {
+    max-width: none;
+  }
+}
+
+/* la pill dei dati resta leggibile sul lasciapassare scuro */
+.drop-ticket .source-pill {
+  background: transparent;
+  border-color: rgb(245 237 222 / 40%);
+  color: rgb(245 237 222 / 80%);
+  font-size: 0.6rem;
+}
+
+.drop-ticket .source-pill > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--acid);
+}
+
+/* titolo piu grande: deve spezzarsi in due righe da poster */
+@media (min-width: 901px) {
+  .drop-hero {
+    grid-template-columns: minmax(0, 1.52fr) minmax(280px, 0.72fr);
+  }
+}
+
+.drop-hero h1 {
+  font-size: clamp(2.7rem, 7.4vw, 7rem);
+  line-height: 0.8;
+}
+
+/* etichette dei numeri leggibili anche a 390 */
+@media (max-width: 620px) {
+  .drop-facts span {
+    font-size: 0.52rem;
+    letter-spacing: 0.05em;
+    line-height: 1.25;
+  }
+
+  .drop-facts strong {
+    font-size: 1.55rem;
+  }
+}
+
+/* i pezzi limitati si vedono subito */
+.piece-line span.is-scarce {
+  border-color: var(--hot);
+  background: var(--hot);
+  color: var(--paper);
+}
