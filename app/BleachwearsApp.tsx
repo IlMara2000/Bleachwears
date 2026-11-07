@@ -973,7 +973,19 @@ function BentoHome({
       { rootMargin: "320px" },
     );
     observer.observe(node);
-    return () => observer.disconnect();
+    // rete di sicurezza: se l'osservatore non scatta (schede in background o
+    // browser che lo sospendono) montiamo comunque il video quando la bacheca
+    // e a meno di due schermate di distanza.
+    const fallback = window.setTimeout(() => {
+      if (node.getBoundingClientRect().top < window.innerHeight * 2) {
+        setReelsInView(true);
+        observer.disconnect();
+      }
+    }, 2500);
+    return () => {
+      window.clearTimeout(fallback);
+      observer.disconnect();
+    };
   }, []);
 
   function handleNewsletter(event: FormEvent<HTMLFormElement>) {
