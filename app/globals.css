@@ -4087,8 +4087,11 @@ p {
   z-index: 2;
   background: transparent;
   cursor: default;
-  touch-action: pan-y;
+  touch-action: none;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .insta-reel-copy {
@@ -4999,13 +5002,20 @@ p {
 
 .insta-player img {
   object-fit: cover;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 .reel-badge {
   position: absolute;
-  z-index: 3;
+  z-index: 1;
   top: 50%;
   left: 50%;
+  pointer-events: none;
+  -webkit-touch-callout: none;
+  user-select: none;
   display: grid;
   place-items: center;
   width: 54px;
