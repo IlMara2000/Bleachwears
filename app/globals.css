@@ -159,85 +159,10 @@ button:disabled {
   gap: 16px;
 }
 
-.home-hero-card {
-  min-height: 520px;
-  display: grid;
-  grid-column: span 8;
-  grid-row: span 2;
-  grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
-  overflow: hidden;
-  color: var(--white);
-}
-
-.hero-content {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: clamp(2rem, 3.7vw, 3.6rem);
-}
-
-.status-chip {
-  width: fit-content;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.52rem 0.78rem;
-}
-
-.status-chip > span {
-  width: 7px;
-  height: 7px;
-}
-
-.hero-content > p {
-  margin: 0;
-}
-
-.hero-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-  margin-top: 1.8rem;
-}
-
-.mint-action,
-.dark-ghost-action,
-.soft-button,
-.solid-action,
-.ghost-action,
-.inline-action,
-.primary-wide-action {
+.soft-button, .solid-action, .ghost-action, .primary-wide-action {
   min-height: 46px;
   padding: 0.75rem 1rem;
   transition: transform 180ms var(--ease), box-shadow 180ms var(--ease), background 180ms var(--ease);
-}
-
-.mint-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.65rem;
-}
-
-.hero-garment-well {
-  display: grid;
-  place-items: center;
-  margin: 1rem 1rem 1rem 0;
-  overflow: hidden;
-}
-
-.hero-garment-well::before {
-  content: "";
-  position: absolute;
-  width: 76%;
-  aspect-ratio: 1;
-}
-
-.floating-note {
-  position: absolute;
-  z-index: 2;
-  top: 1rem;
-  right: 1rem;
-  padding: 0.45rem 0.65rem;
 }
 
 .social-card {
@@ -356,47 +281,6 @@ button:disabled {
   padding: 0.45rem 0.68rem;
   background: var(--surface-soft);
   color: var(--muted);
-}
-
-.featured-list {
-  display: grid;
-  margin-top: 1.3rem;
-  border-top: 1px solid var(--line);
-}
-
-.featured-list > div {
-  min-height: 68px;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.featured-list > p {
-  color: var(--muted);
-}
-
-.featured-swatch {
-  width: 35px;
-  height: 35px;
-}
-
-.featured-list > div > span:nth-child(2) {
-  display: grid;
-  gap: 0.12rem;
-}
-
-.featured-list strong {
-  font-size: 0.9rem;
-}
-
-.featured-list small {
-  color: var(--muted);
-  font-size: 0.72rem;
-}
-
-.featured-list b {
-  font-weight: 630;
 }
 
 .soft-button {
@@ -740,14 +624,12 @@ button:disabled {
   left: 58%;
 }
 
-.shop-intro-grid,
 .lab-heading-grid {
   display: grid;
   grid-template-columns: minmax(0, 8fr) minmax(300px, 4fr);
   gap: 16px;
 }
 
-.shop-intro-card,
 .lab-heading-card {
   min-height: 315px;
   display: flex;
@@ -756,13 +638,11 @@ button:disabled {
   padding: clamp(2rem, 4.5vw, 4rem);
 }
 
-.shop-intro-card h1,
 .lab-heading-card h1 {
   max-width: 860px;
   margin: 0.65rem 0 1rem;
 }
 
-.shop-intro-card p,
 .lab-heading-card p {
   max-width: 670px;
   margin: 0;
@@ -771,78 +651,11 @@ button:disabled {
   line-height: 1.55;
 }
 
-.shop-info-card {
-  min-height: 315px;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  align-content: space-between;
-  gap: 0.75rem;
-  padding: 1.5rem;
-}
-
-.shop-info-card > div {
-  min-height: 145px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 1rem;
-  background: var(--surface);
-}
-
-.shop-info-card > div span,
 .lab-facts-card span {
   color: var(--muted);
   font-size: 0.74rem;
 }
 
-.shop-info-card > div strong {
-  font-size: 2rem;
-}
-
-.shop-info-card .source-pill {
-  grid-column: 1 / -1;
-  margin: 0;
-}
-
-.shop-info-card .source-pill > span {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.filter-card {
-  min-height: 84px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 16px;
-  padding: 0.9rem 1rem 0.9rem 1.35rem;
-}
-
-.filter-card > div:first-child {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.filter-card > div:first-child p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.75rem;
-}
-
-.filter-pills {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.4rem;
-}
-
-.filter-pills button,
 .choice-pills button {
   min-height: 44px;
   padding: 0.62rem 0.9rem;
@@ -866,10 +679,6 @@ button:disabled {
   transition: transform 200ms var(--ease), box-shadow 200ms var(--ease);
 }
 
-.catalog-card.is-featured {
-  grid-column: span 8;
-}
-
 .catalog-card:last-child:nth-child(3n) {
   grid-column: span 8;
 }
@@ -883,7 +692,6 @@ button:disabled {
   margin: 8px;
 }
 
-.catalog-card.is-featured .product-stage,
 .catalog-card:last-child:nth-child(3n) .product-stage {
   min-height: 420px;
 }
@@ -893,7 +701,6 @@ button:disabled {
   filter: drop-shadow(0 25px 18px rgb(23 26 28 / 17%));
 }
 
-.catalog-card.is-featured .product-stage .garment-object,
 .catalog-card:last-child:nth-child(3n) .product-stage .garment-object {
   width: min(48%, 315px);
 }
@@ -932,26 +739,6 @@ button:disabled {
   flex: 0 0 auto;
   font-size: 1rem;
   font-weight: 630;
-}
-
-.catalog-meta {
-  display: flex;
-  gap: 0.45rem;
-  padding: 0.85rem 1.2rem 1rem;
-}
-
-.catalog-meta span {
-  border-radius: 999px;
-  padding: 0.36rem 0.55rem;
-  background: var(--canvas);
-  color: var(--muted);
-}
-
-.inline-action {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: auto 1.2rem 1.2rem;
 }
 
 .empty-catalog {
@@ -1991,124 +1778,15 @@ strong {
 }
 
 /* ---------- hero ---------- */
-.home-hero-card {
-  position: relative;
-  isolation: isolate;
-  border: 3px solid var(--ink);
-  border-color: var(--ink);
-  background: var(--ink);
-}
-
-.home-hero-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background: repeating-conic-gradient(from 6deg at 84% 8%, rgb(239 181 60 / 17%) 0 6deg, transparent 6deg 12deg);
-  pointer-events: none;
-}
-
-.hero-content,
-.hero-garment-well {
-  position: relative;
-  z-index: 1;
-}
-
-.status-chip {
-  border: 2px solid var(--acid);
-  border-radius: 0;
-  background: transparent;
-  color: var(--acid);
-  font-family: var(--font-mono);
-  font-size: 0.66rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.status-chip > span {
-  border-radius: 0;
-  background: var(--acid);
-  box-shadow: none;
-}
-
-.hero-content h1 {
-  font-family: var(--font-display);
-  font-weight: 800;
-  text-transform: uppercase;
-  text-shadow: 5px 5px 0 var(--hot);
-}
-
-.hero-content > p {
-  color: rgb(252 247 236 / 74%);
-  font-size: clamp(1rem, 1.3vw, 1.12rem);
-  line-height: 1.55;
-}
-
-.hero-garment-well {
-  border: 3px solid var(--acid);
-  border-radius: 4px;
-  background:
-    radial-gradient(circle at 50% 42%, rgb(30 76 140 / 45%), transparent 64%),
-    repeating-linear-gradient(45deg, #221c17 0 14px, #2a231d 14px 28px);
-}
-
-.hero-garment-well::before {
-  border-radius: 0;
-  background: rgb(239 181 60 / 6%);
-}
-
-.floating-note {
-  border: 2px solid var(--ink);
-  border-radius: 0;
-  background: var(--acid);
-  color: var(--ink);
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  transform: rotate(-6deg);
-  box-shadow: 3px 3px 0 var(--ink);
-}
 
 /* ---------- bottoni ---------- */
-.mint-action,
-.dark-ghost-action,
-.soft-button,
-.solid-action,
-.ghost-action,
-.inline-action,
-.primary-wide-action {
+.soft-button, .solid-action, .ghost-action, .primary-wide-action {
   border-radius: 0;
   font-family: var(--font-mono);
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-}
-
-.mint-action {
-  border: 3px solid var(--ink);
-  background: var(--acid);
-  color: var(--ink);
-  box-shadow: 5px 5px 0 var(--hot);
-}
-
-.mint-action:hover {
-  transform: translate(3px, 3px);
-  box-shadow: 1px 1px 0 var(--hot);
-}
-
-.dark-ghost-action {
-  border: 2px solid rgb(252 247 236 / 55%);
-  background: transparent;
-  color: var(--surface);
-}
-
-.dark-ghost-action:hover {
-  border-color: var(--acid);
-  color: var(--acid);
 }
 
 .soft-button {
@@ -2162,21 +1840,6 @@ strong {
   background: var(--surface-deep);
   color: var(--muted);
   box-shadow: none;
-}
-
-.inline-action {
-  border: 3px solid var(--ink);
-  background: var(--acid);
-  color: var(--ink);
-  font-weight: 700;
-  box-shadow: 4px 4px 0 var(--ink);
-}
-
-.inline-action:hover {
-  background: var(--ink);
-  color: var(--acid);
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--ink);
 }
 
 /* ---------- card della home ---------- */
@@ -2270,28 +1933,6 @@ strong {
   background: rgb(252 247 236 / 90%);
 }
 
-.featured-list > div {
-  border-bottom: 2px dashed rgb(20 23 31 / 35%);
-}
-
-.featured-swatch {
-  border: 2px solid var(--ink);
-  border-radius: 0;
-}
-
-.featured-list b {
-  border: 2px solid var(--ink);
-  background: var(--acid);
-  padding: 0 0.3rem;
-  font-family: var(--font-mono);
-  font-size: 0.74rem;
-}
-
-.featured-list strong {
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
 .process-card ol li > span {
   border: 2px solid var(--ink);
   border-radius: 0;
@@ -2368,11 +2009,7 @@ strong {
 }
 
 /* ---------- shop ---------- */
-.shop-intro-card {
-  background: var(--acid-soft);
-}
 
-.shop-intro-card h1,
 .lab-heading-card h1 {
   font-family: var(--font-display);
   font-weight: 800;
@@ -2380,22 +2017,11 @@ strong {
   text-shadow: 3px 3px 0 var(--hot);
 }
 
-.shop-info-card {
-  background: var(--ink);
-  color: var(--surface);
-}
-
-.shop-info-card > div strong,
 .lab-facts-card > div strong {
   color: var(--acid);
   font-family: var(--font-display);
   font-weight: 800;
   letter-spacing: -0.02em;
-}
-
-.shop-info-card .section-kicker,
-.shop-info-card > div span {
-  color: rgb(252 247 236 / 66%);
 }
 
 .source-pill {
@@ -2414,28 +2040,6 @@ strong {
   color: var(--ink);
 }
 
-.filter-card {
-  background: var(--surface);
-}
-
-.filter-pills button {
-  border: 2px solid var(--ink);
-  border-radius: 0;
-  background: var(--surface);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.filter-pills button.is-selected {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--acid);
-  box-shadow: 3px 3px 0 var(--hot);
-}
-
 .catalog-grid {
   row-gap: 18px;
 }
@@ -2452,10 +2056,6 @@ strong {
   box-shadow: 10px 10px 0 var(--hot);
 }
 
-.catalog-card.is-featured {
-  box-shadow: 9px 9px 0 var(--electric);
-}
-
 .product-stage {
   border: 2px solid var(--ink);
   border-radius: 4px;
@@ -2463,7 +2063,6 @@ strong {
     repeating-linear-gradient(45deg, #f2e8d2 0 14px, #ece0c6 14px 28px);
 }
 
-.catalog-card.is-featured .product-stage,
 .catalog-card:last-child:nth-child(3n) .product-stage {
   background:
     repeating-linear-gradient(-45deg, #e7e1ff 0 16px, #ded8ff 16px 32px);
@@ -2497,16 +2096,11 @@ strong {
   font-size: 0.85rem;
 }
 
-.catalog-copy p,
-.catalog-meta span {
+.catalog-copy p {
   font-family: var(--font-mono);
   font-size: 0.62rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-}
-
-.catalog-meta {
-  border-top: 2px dashed rgb(20 23 31 / 30%);
 }
 
 .lab-invite-card {
@@ -2948,10 +2542,6 @@ strong {
 }
 
 @media (max-width: 1180px) {
-  .home-hero-card {
-    grid-column: span 12;
-    grid-template-columns: 1.15fr 0.85fr;
-  }
 
   .social-card {
     grid-column: span 7;
@@ -3001,10 +2591,6 @@ strong {
     display: none;
   }
 
-  .home-hero-card {
-    min-height: 650px;
-  }
-
   .social-card,
   .lab-teaser-card,
   .drop-preview-card,
@@ -3021,12 +2607,10 @@ strong {
     padding: 2rem;
   }
 
-  .shop-intro-grid,
   .lab-heading-grid {
     grid-template-columns: 1fr;
   }
 
-  .shop-info-card,
   .lab-facts-card {
     min-height: 230px;
   }
@@ -3035,7 +2619,6 @@ strong {
     grid-column: span 6;
   }
 
-  .catalog-card.is-featured,
   .catalog-card:last-child:nth-child(3n) {
     grid-column: span 12;
   }
@@ -3152,41 +2735,6 @@ strong {
     gap: 10px;
   }
 
-  .home-hero-card {
-    min-height: auto;
-    grid-template-columns: 1fr;
-  }
-
-  .hero-content {
-    padding: 1rem;
-  }
-
-  .hero-content > p {
-    font-size: 0.88rem;
-    line-height: 1.48;
-  }
-
-  .hero-buttons {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.4rem;
-    margin-top: 0.6rem;
-  }
-
-  .hero-buttons button {
-    justify-content: center;
-    min-width: 0;
-    min-height: 44px;
-    padding: 0.68rem 0.45rem;
-    font-size: 0.75rem;
-    letter-spacing: -0.025em;
-    white-space: nowrap;
-  }
-
-  .hero-garment-well {
-    display: none;
-  }
-
   .social-card,
   .drop-preview-card,
   .process-card,
@@ -3232,37 +2780,24 @@ strong {
     grid-template-columns: 1fr;
   }
 
-  .shop-intro-card,
   .lab-heading-card {
     min-height: 195px;
     padding: 1.3rem;
   }
 
-  .shop-intro-card h1,
   .lab-heading-card h1 {
     margin: 0.5rem 0 0.65rem;
     letter-spacing: -0.06em;
   }
 
-  .shop-intro-card p,
   .lab-heading-card p {
     font-size: 0.9rem;
     line-height: 1.42;
   }
 
-  .shop-info-card,
   .lab-facts-card {
     min-height: 118px;
     padding: 8px;
-  }
-
-  .shop-info-card > div {
-    min-height: 74px;
-    padding: 0.75rem;
-  }
-
-  .shop-info-card > div strong {
-    font-size: 1.5rem;
   }
 
   .lab-facts-card > div {
@@ -3274,52 +2809,19 @@ strong {
     font-size: 2.25rem;
   }
 
-  .filter-card {
-    align-items: flex-start;
-    flex-direction: column;
-    margin-top: 10px;
-    gap: 0.65rem;
-    padding: 0.8rem;
-  }
-
-  .filter-pills {
-    width: 100%;
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .filter-pills::-webkit-scrollbar {
-    display: none;
-  }
-
-  .filter-pills button {
-    flex: 0 0 auto;
-  }
-
   .catalog-grid {
     margin-top: 10px;
   }
 
-  .catalog-card,
-  .catalog-card.is-featured,
-  .catalog-card:last-child:nth-child(3n) {
+  .catalog-card, .catalog-card:last-child:nth-child(3n) {
     grid-column: span 12;
   }
 
-  .product-stage,
-  .catalog-card.is-featured .product-stage,
-  .catalog-card:last-child:nth-child(3n) .product-stage {
+  .product-stage, .catalog-card:last-child:nth-child(3n) .product-stage {
     min-height: 300px;
   }
 
-  .catalog-card.is-featured .product-stage .garment-object,
-  .catalog-card:last-child:nth-child(3n) .product-stage .garment-object,
-  .product-stage .garment-object {
+  .catalog-card:last-child:nth-child(3n) .product-stage .garment-object, .product-stage .garment-object {
     width: min(56%, 240px);
   }
 
@@ -3460,41 +2962,19 @@ strong {
 }
 
 @media (max-width: 380px) {
-  .hero-content {
-    padding: 1.15rem;
-  }
 
-  .hero-content h1 {
-    font-size: 2.25rem;
-  }
-
-  .shop-intro-card,
   .lab-heading-card {
     min-height: 180px;
     padding: 1rem;
   }
 
-  .shop-intro-card h1,
   .lab-heading-card h1 {
     font-size: 2.2rem;
   }
 
-  .shop-intro-card p,
   .lab-heading-card p {
     font-size: 0.82rem;
     line-height: 1.36;
-  }
-
-  .shop-info-card {
-    min-height: 90px;
-  }
-
-  .shop-info-card .source-pill {
-    display: none;
-  }
-
-  .shop-info-card > div {
-    min-height: 74px;
   }
 
   .lab-facts-card {
@@ -3631,32 +3111,7 @@ strong {
     margin: 0.75rem 0;
   }
 
-  .home-hero-card {
-    min-height: calc(100dvh - 110px);
-  }
-
-  .hero-content {
-    padding: 1.35rem;
-  }
-
-  .hero-content h1 {
-    margin: 0.9rem 0 0.6rem;
-    font-size: clamp(2.05rem, 5vw, 3.15rem);
-  }
-
-  .hero-content > p {
-    font-size: 0.82rem;
-    line-height: 1.42;
-  }
-
-  .hero-buttons {
-    margin-top: 0.7rem;
-  }
-
-  .shop-intro-card,
-  .lab-heading-card,
-  .shop-info-card,
-  .lab-facts-card {
+  .lab-heading-card, .lab-facts-card {
     min-height: 230px;
   }
 
@@ -3670,7 +3125,6 @@ strong {
 }
 
 @media (orientation: landscape) and (min-width: 700px) and (max-width: 920px) and (max-height: 620px) {
-  .shop-intro-grid,
   .lab-heading-grid {
     grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
   }
@@ -3749,14 +3203,6 @@ strong {
     border-radius: 2px;
   }
 
-  .hero-content h1 {
-    max-width: none;
-  }
-
-  .home-hero-card {
-    border-width: 3px;
-  }
-
   .home-screen::before {
     height: 10px;
     margin-bottom: 12px;
@@ -3798,21 +3244,8 @@ p {
 }
 
 /* hero */
-.hero-content h1 {
-  max-width: min(100%, 23ch);
-  margin: 1.9rem 0 1.1rem;
-  font-size: clamp(2.9rem, 4.6vw, 4.8rem);
-  line-height: 0.94;
-  letter-spacing: -0.008em;
-  text-wrap: balance;
-}
-
-.hero-content > p {
-  max-width: 44ch;
-}
 
 /* pagine shop e lab */
-.shop-intro-card h1,
 .lab-heading-card h1 {
   font-size: clamp(2.3rem, 3.5vw, 3.7rem);
   line-height: 0.94;
@@ -3873,25 +3306,13 @@ p {
 }
 
 @media (max-width: 920px) {
-  .hero-content h1 {
-    max-width: 100%;
-    font-size: clamp(2.6rem, 7vw, 3.6rem);
-  }
 
-  .shop-intro-card h1,
   .lab-heading-card h1 {
     font-size: clamp(2.2rem, 6.4vw, 3rem);
   }
 }
 
 @media (max-width: 680px) {
-  .hero-content h1 {
-    margin: 0.8rem 0 0.45rem;
-    font-size: clamp(2.15rem, 9.2vw, 2.9rem);
-    line-height: 0.95;
-    letter-spacing: -0.005em;
-    text-shadow: 3px 3px 0 var(--hot);
-  }
 
   .card-heading-row h2,
   .catalog-copy h2,
@@ -3901,7 +3322,6 @@ p {
     line-height: 0.98;
   }
 
-  .shop-intro-card h1,
   .lab-heading-card h1 {
     font-size: clamp(2.05rem, 8vw, 2.6rem);
     line-height: 0.95;
@@ -5029,7 +4449,6 @@ p {
 }
 
 /* ---------- drop e lab: intestazioni da poster, non da scheda ---------- */
-.shop-intro-card,
 .lab-heading-card {
   min-height: 0;
   padding: clamp(1.5rem, 2.8vw, 2.3rem);
@@ -5038,7 +4457,6 @@ p {
   color: var(--paper);
 }
 
-.shop-intro-card h1,
 .lab-heading-card h1 {
   margin: 0.5rem 0 0.8rem;
   color: var(--paper);
@@ -5048,62 +4466,19 @@ p {
   text-shadow: none;
 }
 
-.shop-intro-card .section-kicker,
 .lab-heading-card .section-kicker {
   color: var(--acid);
 }
 
-.shop-intro-card p,
 .lab-heading-card p {
   max-width: 56ch;
   color: rgb(245 237 222 / 82%);
   font-size: 0.95rem;
 }
 
-.shop-info-card {
-  min-height: 0;
-  gap: 0.6rem;
-  padding: 1.2rem;
-  border-radius: 0;
-  background: var(--hot);
-  color: var(--paper);
-}
-
-.shop-info-card > div {
-  min-height: 96px;
-  padding: 0.8rem;
-  border: 2px solid var(--paper);
-  border-radius: 0;
-  background: transparent;
-}
-
-.shop-info-card > div span {
-  color: rgb(245 237 222 / 82%);
-}
-
-.shop-info-card > div strong {
-  color: var(--paper);
-  font-family: var(--font-display);
-  font-size: clamp(1.9rem, 3.2vw, 2.7rem);
-  font-weight: 900;
-  line-height: 0.9;
-  letter-spacing: -0.01em;
-}
-
-.shop-info-card .source-pill {
-  border-color: var(--paper);
-  color: var(--paper);
-}
-
 /* il lab usa la stessa grammatica del drop */
 .lab-facts-card {
   border-radius: 0;
-}
-
-.shop-info-card .source-pill {
-  background: transparent;
-  border-color: var(--paper);
-  color: var(--paper);
 }
 
 /* celle del lab coerenti con la banda del drop */
@@ -5517,16 +4892,6 @@ p {
 }
 
 /* badge tecnica nel catalogo */
-.technique-pill {
-  border: 2px solid var(--ink);
-  background: var(--acid);
-  padding: 0.08rem 0.4rem;
-  font-family: var(--font-mono);
-  font-size: 0.52rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
 
 /* movimento diffuse */
 .home-board > * {
@@ -6384,17 +5749,13 @@ p {
 }
 
 /* le vecchie regole a 12 colonne non devono piu posizionare le schede */
-.catalog-card,
-.catalog-card.is-featured,
-.catalog-card:last-child:nth-child(3n) {
+.catalog-card, .catalog-card:last-child:nth-child(3n) {
   grid-column: auto;
   grid-row: auto;
 }
 
 /* griglia a 3 colonne anche sopra le vecchie regole a 12 */
-.shop-board .catalog-grid > .catalog-card,
-.shop-board .catalog-grid > .catalog-card.is-featured,
-.shop-board .catalog-grid > .catalog-card:last-child:nth-child(3n) {
+.shop-board .catalog-grid > .catalog-card, .shop-board .catalog-grid > .catalog-card:last-child:nth-child(3n) {
   grid-column: span 1;
 }
 
