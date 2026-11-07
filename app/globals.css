@@ -5230,3 +5230,422 @@ p {
     width: 100%;
   }
 }
+
+/* ============================================================
+   mini game — splash: si colora il capo in acrilico
+   ============================================================ */
+
+.splash-card {
+  position: relative;
+  grid-column: span 12;
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(280px, 0.94fr);
+  gap: clamp(1.1rem, 2.4vw, 2.2rem);
+  align-items: center;
+  padding: clamp(1.2rem, 2.6vw, 2.2rem);
+  overflow: hidden;
+  border: 3px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 9px 9px 0 var(--ink);
+}
+
+.splash-card::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: -70px;
+  right: -60px;
+  width: 240px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background-image: radial-gradient(var(--hot) 1.6px, transparent 1.7px);
+  background-size: 10px 10px;
+  opacity: 0.5;
+}
+
+.splash-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.splash-copy h2 {
+  margin: 0.4rem 0 0.6rem;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4.6vw, 3.4rem);
+  font-weight: 900;
+  line-height: 0.86;
+  letter-spacing: -0.008em;
+  text-transform: uppercase;
+  max-width: 16ch;
+}
+
+.splash-copy > p {
+  max-width: 48ch;
+  margin: 0 0 0.9rem;
+  color: rgb(20 23 31 / 78%);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.splash-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.9rem;
+}
+
+.splash-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem 0.4rem 0.4rem;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: transform 140ms var(--ease), box-shadow 140ms var(--ease);
+}
+
+.splash-swatch > span {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--ink);
+  background: var(--swatch);
+}
+
+.splash-swatch:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.splash-swatch.is-current {
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 3px 3px 0 var(--hot);
+}
+
+.splash-hud {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  border: 2px solid var(--ink);
+}
+
+.splash-hud > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.45rem 0.55rem;
+  border-right: 2px solid var(--ink);
+  background: var(--surface);
+}
+
+.splash-hud > div:last-child {
+  border-right: 0;
+}
+
+.splash-hud span {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.splash-hud strong {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 0.95;
+  text-transform: uppercase;
+  color: var(--ink);
+  animation: drop-pop 260ms var(--ease);
+}
+
+.splash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.splash-actions .poster-cta {
+  border-color: var(--ink);
+  box-shadow: 5px 5px 0 var(--hot);
+  padding: 0.7rem 1rem;
+  font-size: 0.68rem;
+}
+
+.splash-actions .poster-cta.is-ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--ink);
+  box-shadow: none;
+}
+
+.splash-actions .poster-cta.is-ghost:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.splash-actions .poster-cta:disabled {
+  opacity: 0.4;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* il capo da colorare */
+.splash-stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  min-height: 340px;
+  padding: 1rem;
+  border: 3px solid var(--ink);
+  background:
+    radial-gradient(rgb(239 181 60 / 22%) 1px, transparent 1.4px) 0 0 / 12px 12px,
+    var(--asphalt);
+  cursor: crosshair;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+
+.splash-stage.is-ready {
+  border-color: var(--acid);
+  animation: ready-glow 1.8s ease-in-out infinite;
+}
+
+.splash-stage:focus-visible {
+  outline: 3px solid var(--acid);
+  outline-offset: 3px;
+}
+
+.splash-stage .garment-object {
+  position: relative;
+  width: auto;
+  height: 82%;
+  min-height: 240px;
+  border-radius: 0;
+  box-shadow: none;
+  background:
+    radial-gradient(rgb(255 255 255 / 7%) 1px, transparent 1.2px) 0 0 / 4px 4px,
+    var(--garment-fill);
+  clip-path: polygon(
+    31% 0%,
+    41% 4%,
+    59% 4%,
+    69% 0%,
+    100% 13%,
+    100% 35%,
+    83% 41%,
+    83% 100%,
+    17% 100%,
+    17% 41%,
+    0% 35%,
+    0% 13%
+  );
+  filter: drop-shadow(10px 12px 0 rgb(0 0 0 / 35%));
+}
+
+.splash-stage .garment-object::before,
+.splash-stage .garment-object::after,
+.splash-stage .hood-piece {
+  display: none;
+}
+
+.splash-stage .garment-collar {
+  top: 3.5%;
+  left: 43%;
+  width: 14%;
+  height: 6%;
+  border-radius: 0 0 999px 999px;
+  background: var(--asphalt);
+  box-shadow: none;
+}
+
+.splash-stage .bleach-shape {
+  display: none;
+}
+
+.splat {
+  position: absolute;
+  z-index: 2;
+  aspect-ratio: 1;
+  border-radius: 52% 48% 38% 62% / 54% 46% 54% 46%;
+  opacity: 0.95;
+  pointer-events: none;
+  animation: splat-pop 300ms var(--ease);
+  box-shadow: 0 0 0 2px rgb(0 0 0 / 12%);
+}
+
+.splat::after {
+  content: "";
+  position: absolute;
+  inset: -35%;
+  border-radius: 50%;
+  border: 2px solid rgb(245 237 222 / 45%);
+  opacity: 0;
+  animation: splat-ring 700ms var(--ease) 120ms;
+}
+
+.splash-hint {
+  position: absolute;
+  left: 0.7rem;
+  bottom: 0.55rem;
+  z-index: 3;
+  padding: 0.18rem 0.45rem;
+  border: 2px solid var(--acid);
+  background: var(--asphalt);
+  color: var(--acid);
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* badge tecnica nel catalogo */
+.technique-pill {
+  border: 2px solid var(--ink);
+  background: var(--acid);
+  padding: 0.08rem 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* movimento diffuse */
+.home-board > * {
+  animation: rise-in 520ms var(--ease) both;
+}
+
+.home-board > *:nth-child(2) { animation-delay: 60ms; }
+.home-board > *:nth-child(3) { animation-delay: 110ms; }
+.home-board > *:nth-child(4) { animation-delay: 160ms; }
+.home-board > *:nth-child(5) { animation-delay: 210ms; }
+.home-board > *:nth-child(6) { animation-delay: 260ms; }
+.home-board > *:nth-child(7) { animation-delay: 310ms; }
+.home-board > *:nth-child(8) { animation-delay: 360ms; }
+.home-board > *:nth-child(n + 9) { animation-delay: 400ms; }
+
+.catalog-card {
+  transition: transform 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+
+.catalog-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 var(--ink);
+}
+
+.shelf-row {
+  transition: background 140ms var(--ease);
+}
+
+.shelf-row:hover {
+  background: rgb(239 181 60 / 18%);
+}
+
+@keyframes splat-pop {
+  0% { scale: 0.15; opacity: 0; }
+  60% { scale: 1.22; opacity: 1; }
+  100% { scale: 1; opacity: 0.95; }
+}
+
+@keyframes splat-ring {
+  0% { opacity: 0.7; scale: 0.5; }
+  100% { opacity: 0; scale: 1.15; }
+}
+
+@keyframes drop-pop {
+  0% { transform: scale(0.65); }
+  60% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes ready-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(239 181 60 / 0%); }
+  50% { box-shadow: 0 0 0 6px rgb(239 181 60 / 30%); }
+}
+
+@media (max-width: 980px) {
+  .splash-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .splash-stage {
+    order: -1;
+    min-height: 300px;
+  }
+
+  .splash-hud {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .splash-card {
+    padding: 1.1rem;
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+
+  .splash-stage {
+    min-height: 260px;
+  }
+
+  .splash-copy h2 {
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+
+  .splash-hud strong {
+    font-size: 1.1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-board > *,
+  .splat,
+  .splat::after,
+  .splash-hud strong,
+  .splash-stage.is-ready {
+    animation: none;
+  }
+}
+
+/* il capo deve leggersi sul fondo scuro */
+.splash-stage .garment-object {
+  background:
+    radial-gradient(rgb(255 255 255 / 8%) 1px, transparent 1.2px) 0 0 / 4px 4px,
+    #1b2028;
+  box-shadow: inset 0 0 0 3px rgb(245 237 222 / 26%);
+}
+
+.splash-hud > div {
+  padding: 0.5rem 0.55rem 0.6rem;
+}
+
+.splash-hud strong {
+  line-height: 1;
+}
+
+.splat {
+  min-width: 18px;
+}

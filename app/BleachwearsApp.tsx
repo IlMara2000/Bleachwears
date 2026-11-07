@@ -25,6 +25,7 @@ type Product = {
   reaction: string;
   art: ProductArt;
   image?: string;
+  technique?: string;
 };
 
 type CartItem = {
@@ -46,6 +47,7 @@ const fallbackProducts: Product[] = [
     reaction: "#d88954",
     art: "patchwork",
     image: "/feed/drago-tee.jpg",
+    technique: "Acrilico a mano",
   },
   {
     id: "BW-T02",
@@ -58,6 +60,7 @@ const fallbackProducts: Product[] = [
     reaction: "#e8aa83",
     art: "ribbon",
     image: "/feed/spiderman.jpg",
+    technique: "Acrilico a mano",
   },
   {
     id: "BW-T03",
@@ -70,6 +73,7 @@ const fallbackProducts: Product[] = [
     reaction: "#cfa361",
     art: "index",
     image: "/feed/santeria.jpg",
+    technique: "Acrilico a mano",
   },
   {
     id: "BW-H01",
@@ -82,6 +86,7 @@ const fallbackProducts: Product[] = [
     reaction: "#e2c090",
     art: "seam",
     image: "/feed/drago-hoodie.jpg",
+    technique: "Acrilico a mano",
   },
   {
     id: "BW-H02",
@@ -94,6 +99,7 @@ const fallbackProducts: Product[] = [
     reaction: "#d78a56",
     art: "frame",
     image: "/feed/moto.jpg",
+    technique: "Acrilico a mano",
   },
   {
     id: "BW-O01",
@@ -106,6 +112,7 @@ const fallbackProducts: Product[] = [
     reaction: "#c5bbff",
     art: "sample",
     image: "/feed/reel-aquila.jpg",
+    technique: "Acrilico a mano",
   },
 ];
 
@@ -572,6 +579,7 @@ export function BleachwearsApp() {
             <BentoHome
               navigate={navigate}
               notify={setToast}
+              addToCart={addToCart}
               products={catalogProducts.slice(0, 3)}
               catalogSource={catalogSource}
             />
@@ -583,7 +591,7 @@ export function BleachwearsApp() {
                 <article className="bento-card shop-intro-card">
                   <span className="section-kicker">Drop corrente</span>
                   <h1 id="shop-title">Capi diversi, per davvero.</h1>
-                  <p>Ogni lavorazione reagisce in modo proprio. Le variazioni sono parte del pezzo, non un difetto da nascondere.</p>
+                  <p>Candeggina e acrilico, lavorati a mano pezzo per pezzo. Ogni reazione è diversa, e la differenza è il capo.</p>
                 </article>
 
                 <aside className="bento-card shop-info-card" aria-label="Informazioni sul drop">
@@ -645,6 +653,7 @@ export function BleachwearsApp() {
                         <strong>{money(product.price)}</strong>
                       </div>
                       <div className="catalog-meta">
+                        {product.technique && <span className="technique-pill">{product.technique}</span>}
                         <span>{product.status}</span>
                         <span>XS–XXL</span>
                       </div>
@@ -937,14 +946,156 @@ export function BleachwearsApp() {
   );
 }
 
+const acrylicColors = [
+  { id: "osso", name: "Osso", hex: "#f5edde" },
+  { id: "rosso", name: "Rosso", hex: "#c0272d" },
+  { id: "giallo", name: "Giallo", hex: "#efb53c" },
+  { id: "acqua", name: "Acqua", hex: "#2f8076" },
+];
+
+type Splat = {
+  id: number;
+  x: number;
+  y: number;
+  color: string;
+  size: number;
+  rotate: number;
+};
+
+const SPLAT_GOAL = 6;
+
+function SplashGame({ addToCart }: { addToCart: (name: string, detail: string, price: number) => void }) {
+  const [colorIndex, setColorIndex] = useState(0);
+  const [splats, setSplats] = useState<Splat[]>([]);
+  const sequence = useRef(0);
+  const color = acrylicColors[colorIndex];
+  const price = 49 + splats.length;
+  const ready = splats.length >= SPLAT_GOAL;
+
+  function paint(clientX: number, clientY: number, box: DOMRect) {
+    const x = Math.min(90, Math.max(10, ((clientX - box.left) / box.width) * 100));
+    const y = Math.min(90, Math.max(10, ((clientY - box.top) / box.height) * 100));
+    sequence.current += 1;
+    setSplats((current) =>
+      [
+        ...current.slice(-11),
+        {
+          id: sequence.current,
+          x,
+          y,
+          color: color.hex,
+          size: 14 + Math.round(Math.random() * 12),
+          rotate: Math.round(Math.random() * 360),
+        },
+      ],
+    );
+  }
+
+  return (
+    <article className="splash-card" id="splash">
+      <div className="splash-copy">
+        <span className="section-kicker">Mini game · acrilico</span>
+        <h2>Colora tu. Lo dipingiamo noi.</h2>
+        <p>
+          Oltre alla candeggina lavoriamo l’acrilico a mano, goccia dopo goccia. Scegli un colore e tocca il capo:
+          ogni goccia aggiunge un euro e un colpo di pennello. A {SPLAT_GOAL} gocce il pezzo è pronto per il carrello.
+        </p>
+
+        <div className="splash-palette" role="group" aria-label="Scegli il colore acrilico">
+          {acrylicColors.map((option, index) => (
+            <button
+              key={option.id}
+              type="button"
+              className={index === colorIndex ? "splash-swatch is-current" : "splash-swatch"}
+              style={{ "--swatch": option.hex } as CSSProperties}
+              onClick={() => setColorIndex(index)}
+              aria-pressed={index === colorIndex}
+            >
+              <span aria-hidden="true" />
+              {option.name}
+            </button>
+          ))}
+        </div>
+
+        <div className="splash-hud" aria-live="polite">
+          <div>
+            <span>Gocce</span>
+            <strong key={`drops-${splats.length}`}>{splats.length}</strong>
+          </div>
+          <div>
+            <span>Prezzo</span>
+            <strong>{money(price)}</strong>
+          </div>
+          <div>
+            <span>Stato</span>
+            <strong>{ready ? "Pronto" : splats.length ? "In corso" : "Da colorare"}</strong>
+          </div>
+        </div>
+
+        <div className="splash-actions">
+          <button
+            type="button"
+            className="poster-cta"
+            disabled={!ready}
+            onClick={() => {
+              addToCart("Pezzo acrilico", `Acrilico a mano · ${splats.length} gocce`, price);
+              setSplats([]);
+            }}
+          >
+            {ready ? "Mettilo nel carrello" : `Ancora ${Math.max(0, SPLAT_GOAL - splats.length)} gocce`}
+          </button>
+          <button type="button" className="poster-cta is-ghost" disabled={!splats.length} onClick={() => setSplats([])}>
+            Svuota
+          </button>
+        </div>
+      </div>
+
+      <div
+        className={ready ? "splash-stage is-ready" : "splash-stage"}
+        role="button"
+        tabIndex={0}
+        aria-label={`Anteprima del capo da colorare, ${splats.length} gocce. Tocca o premi invio per aggiungere una goccia di ${color.name}.`}
+        onPointerDown={(event) => paint(event.clientX, event.clientY, event.currentTarget.getBoundingClientRect())}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          const box = event.currentTarget.getBoundingClientRect();
+          paint(box.left + box.width * (0.28 + Math.random() * 0.44), box.top + box.height * (0.28 + Math.random() * 0.44), box);
+        }}
+      >
+        <GarmentVisual type="tee" color="#14171f" reaction={color.hex} art="sample" />
+        {splats.map((splat) => (
+          <span
+            key={splat.id}
+            className="splat"
+            aria-hidden="true"
+            style={{
+              left: `${splat.x}%`,
+              top: `${splat.y}%`,
+              width: `${splat.size}px`,
+              background: splat.color,
+              transform: `translate(-50%, -50%) rotate(${splat.rotate}deg)`,
+            }}
+          />
+        ))}
+        <span className="splash-hint" aria-hidden="true">
+          {ready ? "pezzo pronto" : splats.length ? "continua a toccare" : "tocca il capo"}
+        </span>
+      </div>
+    </article>
+  );
+}
+
 function BentoHome({
   navigate,
   notify,
+  addToCart,
   products,
   catalogSource,
 }: {
   navigate: (view: View) => void;
   notify: (message: string) => void;
+  addToCart: (name: string, detail: string, price: number) => void;
   products: Product[];
   catalogSource: CatalogSource;
 }) {
@@ -1018,7 +1169,7 @@ function BentoHome({
               <span className="is-eq">= 1/1</span>
             </h1>
             <p className="poster-lead">
-              Sbiadiamo capi a mano, uno alla volta. Nessuna serie, nessuna stampa ripetibile:
+              Candeggina o acrilico, sempre a mano. Nessuna serie, nessuna stampa ripetibile:
               si parte dalla stessa idea e si finisce con un pezzo che esiste solo lì.
             </p>
             <div className="poster-actions">
@@ -1043,6 +1194,8 @@ function BentoHome({
             </div>
           </div>
         </article>
+
+        <SplashGame addToCart={addToCart} />
 
         <article className="bento-card social-card">
           <div className="card-heading-row"><div><span className="section-kicker">Link hub</span><h2>Troviamoci.</h2></div><span className="availability-pill">Seguici</span></div>
