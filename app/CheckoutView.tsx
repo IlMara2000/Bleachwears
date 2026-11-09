@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { SHIPPING_METHODS, computeTotals, money, shippingCost } from "@/lib/shop/catalog";
 import { SELLER } from "@/lib/shop/business";
 
@@ -46,6 +46,14 @@ type Result = {
   message?: string;
 };
 
+/* Esito letto da Stripe al ritorno: la query string da sola non basta. */
+type PaymentCheck =
+  | { state: "checking" }
+  | { state: "paid"; total?: number }
+  | { state: "unpaid" }
+  | { state: "unknown" }
+  | { state: "error"; message?: string };
+
 const STEPS = ["Contatti", "Consegna", "Pagamento"] as const;
 
 export function CheckoutView({
@@ -60,7 +68,7 @@ export function CheckoutView({
 }: {
   items: CheckoutItem[];
   shipping: string;
-  returnInfo: { orderId: string; cancelled: boolean } | null;
+  returnInfo: { orderId: string; cancelled: boolean; sessionId: string | null } | null;
   onShippingChange: (id: string) => void;
   onRemove: (id: string) => void;
   onBackToShop: () => void;
@@ -74,6 +82,43 @@ export function CheckoutView({
   const [result, setResult] = useState<Result | null>(null);
   const [accepted, setAccepted] = useState(false);
   const paidReturn = returnInfo;
+  const [paymentCheck, setPaymentCheck] = useState<PaymentCheck | null>(() => {
+    if (!paidReturn || paidReturn.cancelled) return null;
+    return paidReturn.sessionId ? { state: "checking" } : { state: "unknown" };
+  });
+
+  useEffect(() => {
+    if (!paidReturn || paidReturn.cancelled || !paidReturn.sessionId) return;
+    let alive = true;
+    const timer = setTimeout(() => {
+      if (alive) setPaymentCheck((current) => (current?.state === "checking" ? { state: "error" } : current));
+    }, 15000);
+
+    (async () => {
+      try {
+        const response = await fetch(
+          `/api/checkout/confirm?session_id=${encodeURIComponent(paidReturn.sessionId ?? "")}`,
+          { cache: "no-store" },
+        );
+        const payload = (await response.json()) as { ok?: boolean; paid?: boolean; total?: number; error?: string };
+        if (!alive) return;
+        if (!response.ok || !payload.ok) {
+          setPaymentCheck({ state: "error", message: payload.error });
+          return;
+        }
+        setPaymentCheck(payload.paid ? { state: "paid", total: payload.total } : { state: "unpaid" });
+      } catch {
+        if (alive) setPaymentCheck({ state: "error" });
+      } finally {
+        clearTimeout(timer);
+      }
+    })();
+
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [paidReturn]);
 
   const pickup = shipping === "pickup";
   const subtotal = items.reduce((sum, item) => sum + item.price * (item.quantity ?? 1), 0);
@@ -205,20 +250,41 @@ export function CheckoutView({
   }
 
   if (paidReturn) {
+    const cancelled = paidReturn.cancelled;
+    const paid = paymentCheck?.state === "paid";
+    const checking = !cancelled && paymentCheck?.state === "checking";
+    const total = paid ? paymentCheck.total : undefined;
+
     return (
       <section className="screen checkout-screen" aria-labelledby="checkout-done-title">
         <div className="checkout-done">
-          <span className="section-kicker">{paidReturn.cancelled ? "Pagamento annullato" : "Ordine confermato"}</span>
+          <span className="section-kicker">
+            {cancelled ? "Pagamento annullato" : paid ? "Pagamento ricevuto" : "Pagamento con carta"}
+          </span>
           <h1 id="checkout-done-title">
-            {paidReturn.cancelled ? "Nessun addebito." : "È tuo. Adesso lo dipingiamo."}
+            {cancelled
+              ? "Nessun addebito."
+              : checking
+                ? "Verifico il pagamento…"
+                : paid
+                  ? "È tuo. Adesso lo dipingiamo."
+                  : "Pagamento non completato."}
           </h1>
           <p className="checkout-ref">
             Riferimento <strong>{paidReturn.orderId}</strong>
+            {typeof total === "number" ? ` · ${money(total)}` : ""}
           </p>
-          <p>
-            {paidReturn.cancelled
+          <p aria-live="polite">
+            {cancelled
               ? "Il carrello è ancora qui, con i capi che avevi scelto: puoi riprovare quando vuoi."
-              : "Ti scriviamo sull’email dell’ordine appena il capo entra in lavorazione. Servono 7–14 giorni di lavoro prima della spedizione."}
+              : checking
+                ? "Sto leggendo la conferma di Stripe. Qualche secondo e ti dico com’è andata."
+                : paid
+                  ? "Ti scriviamo sull’email dell’ordine appena il capo entra in lavorazione. Servono 7–14 giorni di lavoro prima della spedizione."
+                  : paymentCheck?.state === "error"
+                    ? paymentCheck.message ??
+                      "Non riesco a leggere lo stato del pagamento da qui. Nessun addebito viene dato per buono senza conferma di Stripe: se hai ricevuto la ricevuta, l’ordine è nostro e ti scriviamo appena lo vediamo."
+                    : "Stripe non ci risulta aver completato il pagamento, quindi non abbiamo addebitato nulla. Il carrello è ancora qui: puoi riprovare quando vuoi."}
           </p>
           <button type="button" className="solid-action" onClick={onBackToShop}>Torna al drop</button>
         </div>
@@ -405,8 +471,9 @@ export function CheckoutView({
               <div className="payment-note">
                 <strong>Pagamento con carta</strong>
                 <p>
-                  Il checkout è collegato a Stripe: quando la chiave è attiva vieni portato alla pagina di pagamento
-                  sicura e torni qui alla conferma. Finché non lo è, l’ordine viene registrato senza addebiti.
+                  Il pagamento avviene sulla pagina sicura di Stripe, poi torni qui. La conferma la leggiamo
+                  direttamente da Stripe: se il pagamento non risulta, non addebitiamo nulla. Se il collegamento
+                  non è attivo, l’ordine viene solo registrato e ti ricontattiamo noi.
                 </p>
               </div>
 

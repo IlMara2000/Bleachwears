@@ -71,9 +71,10 @@ test("ships the comic-ink identity, installable assets and a safe Supabase catal
 });
 
 test("prices orders on the server and keeps the orders table private", async () => {
-  const [catalog, route, ordersMigration] = await Promise.all([
+  const [catalog, route, store, ordersMigration] = await Promise.all([
     readFile(new URL("lib/shop/catalog.ts", root), "utf8"),
     readFile(new URL("app/api/checkout/route.ts", root), "utf8"),
+    readFile(new URL("lib/shop/orders.ts", root), "utf8"),
     readFile(new URL("supabase/migrations/20261109120000_orders.sql", root), "utf8"),
   ]);
 
@@ -86,12 +87,43 @@ test("prices orders on the server and keeps the orders table private", async () 
   assert.match(route, /priceLine\(/);
   assert.match(route, /computeTotals\(/);
   assert.match(route, /STRIPE_SECRET_KEY/);
-  assert.match(route, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(store, /SUPABASE_SERVICE_ROLE_KEY/);
   assert.doesNotMatch(route, /unitPrice\s*:\s*text\(/);
 
   assert.match(ordersMigration, /create table if not exists public\.orders/i);
   assert.match(ordersMigration, /enable row level security/i);
   assert.match(ordersMigration, /revoke all on public\.orders from anon, authenticated/i);
+});
+
+test("creates and verifies card payments on the server only", async () => {
+  const [stripe, route, confirm, webhook, checkoutView, app, envExample] = await Promise.all([
+    readFile(new URL("lib/shop/stripe.ts", root), "utf8"),
+    readFile(new URL("app/api/checkout/route.ts", root), "utf8"),
+    readFile(new URL("app/api/checkout/confirm/route.ts", root), "utf8"),
+    readFile(new URL("app/api/stripe/webhook/route.ts", root), "utf8"),
+    readFile(new URL("app/CheckoutView.tsx", root), "utf8"),
+    readFile(new URL("app/BleachwearsApp.tsx", root), "utf8"),
+    readFile(new URL(".env.example", root), "utf8"),
+  ]);
+
+  assert.match(stripe, /api\.stripe\.com\/v1/);
+  assert.match(stripe, /createHmac\("sha256", secret\)/);
+  assert.match(stripe, /timingSafeEqual/);
+  assert.match(stripe, /toleranceSeconds/);
+  assert.match(stripe, /\{CHECKOUT_SESSION_ID\}/);
+  assert.match(stripe, /Idempotency-Key/);
+  assert.match(stripe, /metadata\[order\]/);
+  assert.match(route, /createCheckoutSession/);
+  assert.match(route, /saveOrder/);
+  assert.match(confirm, /retrieveCheckoutSession/);
+  assert.match(confirm, /markOrderStatus\(orderId, "paid"/);
+  assert.match(webhook, /STRIPE_WEBHOOK_SECRET/);
+  assert.match(webhook, /verifyStripeSignature/);
+  assert.match(envExample, /STRIPE_WEBHOOK_SECRET=/);
+
+  /* La chiave segreta non deve mai finire nel codice che arriva al browser. */
+  assert.doesNotMatch(checkoutView, /STRIPE_SECRET_KEY|api\.stripe\.com/);
+  assert.doesNotMatch(app, /STRIPE_SECRET_KEY|api\.stripe\.com/);
 });
 
 test("renders the legal pages with shipping data from the shared catalog", async () => {

@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import {
   computeTotals,
-  getShippingMethod,
   money,
   orderReference,
   priceLine,
   type OrderLineInput,
   type PricedLine,
 } from "@/lib/shop/catalog";
+import { saveOrder, type StoredOrder } from "@/lib/shop/orders";
+import { createCheckoutSession } from "@/lib/shop/stripe";
 
 export const runtime = "nodejs";
 
@@ -18,24 +19,6 @@ type CheckoutBody = {
   shipping?: string;
 };
 
-type StoredOrder = {
-  id: string;
-  createdAt: string;
-  status: string;
-  customer: CheckoutBody["customer"];
-  address: CheckoutBody["address"];
-  shipping: string;
-  lines: PricedLine[];
-  subtotal: number;
-  shippingCost: number;
-  total: number;
-  paymentProvider: string;
-  paymentRef: string | null;
-};
-
-/* Le richieste restano in memoria quando Supabase non è configurato: è una rete
-   di sicurezza per non perdere l'ordine durante la fase di collegamento. */
-const memoryOrders = new Map<string, StoredOrder>();
 const attempts = new Map<string, { count: number; reset: number }>();
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
@@ -56,87 +39,10 @@ function limited(ip: string) {
   return entry.count > 8;
 }
 
-async function persist(order: StoredOrder) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  memoryOrders.set(order.id, order);
-  if (!url || !key) return false;
-
-  try {
-    const response = await fetch(`${url}/rest/v1/orders`, {
-      method: "POST",
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({
-        id: order.id,
-        status: order.status,
-        customer: order.customer,
-        address: order.address,
-        shipping_method: order.shipping,
-        lines: order.lines,
-        subtotal_cents: Math.round(order.subtotal * 100),
-        shipping_cents: Math.round(order.shippingCost * 100),
-        total_cents: Math.round(order.total * 100),
-        payment_provider: order.paymentProvider,
-        payment_ref: order.paymentRef,
-      }),
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
-async function createStripeSession(order: StoredOrder, origin: string) {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) return null;
-
-  const body = new URLSearchParams();
-  body.set("mode", "payment");
-  body.set("success_url", `${origin}/?ordine=${order.id}&stato=pagato#checkout`);
-  body.set("cancel_url", `${origin}/?ordine=${order.id}&stato=annullato#checkout`);
-  body.set("customer_email", order.customer?.email ?? "");
-  body.set("client_reference_id", order.id);
-  body.set("metadata[order]", order.id);
-  body.set("payment_method_types[0]", "card");
-
-  order.lines.forEach((line, index) => {
-    body.set(`line_items[${index}][quantity]`, String(line.quantity));
-    body.set(`line_items[${index}][price_data][currency]`, "eur");
-    body.set(`line_items[${index}][price_data][unit_amount]`, String(Math.round(line.unitPrice * 100)));
-    body.set(`line_items[${index}][price_data][product_data][name]`, `${line.name}${line.size ? ` · ${line.size}` : ""}`);
-    body.set(`line_items[${index}][price_data][product_data][description]`, line.detail.slice(0, 140));
-  });
-
-  if (order.shippingCost > 0) {
-    const method = getShippingMethod(order.shipping);
-    body.set(`line_items[${order.lines.length}][quantity]`, "1");
-    body.set(`line_items[${order.lines.length}][price_data][currency]`, "eur");
-    body.set(`line_items[${order.lines.length}][price_data][unit_amount]`, String(Math.round(order.shippingCost * 100)));
-    body.set(`line_items[${order.lines.length}][price_data][product_data][name]`, `Spedizione · ${method.label}`);
-  }
-
-  const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-    console.error("Stripe checkout error", response.status, detail.slice(0, 400));
-    return null;
-  }
-
-  const session = (await response.json()) as { id?: string; url?: string };
-  return session.url ? { url: session.url, id: session.id ?? "" } : null;
+function siteOrigin(request: Request) {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (configured) return configured.replace(/\/$/, "");
+  return new URL(request.url).origin;
 }
 
 export async function POST(request: Request) {
@@ -214,7 +120,7 @@ export async function POST(request: Request) {
   const order: StoredOrder = {
     id: orderReference(),
     createdAt: new Date().toISOString(),
-    status: paymentMode === "stripe" ? "awaiting_payment" : "request_received",
+    status: paymentMode === "stripe" ? "payment_pending" : "request_received",
     customer,
     address,
     shipping: shippingId,
@@ -227,18 +133,19 @@ export async function POST(request: Request) {
   };
 
   if (paymentMode === "stripe") {
-    const origin =
-      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || new URL(request.url).origin;
-    const session = await createStripeSession(order, origin);
+    const session = await createCheckoutSession(order, siteOrigin(request));
     if (!session) {
       return NextResponse.json(
-        { ok: false, error: "Il pagamento non è raggiungibile in questo momento. Riprova tra poco." },
+        {
+          ok: false,
+          error:
+            "Il pagamento con carta non risponde in questo momento. Nessun importo è stato addebitato: riprova tra poco o scrivici.",
+        },
         { status: 502 },
       );
     }
     order.paymentRef = session.id;
-    order.status = "payment_pending";
-    await persist(order);
+    await saveOrder(order);
     return NextResponse.json({
       ok: true,
       mode: "stripe",
@@ -249,7 +156,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const stored = await persist(order);
+  const stored = await saveOrder(order);
   return NextResponse.json({
     ok: true,
     mode: "manual",

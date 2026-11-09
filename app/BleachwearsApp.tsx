@@ -165,13 +165,21 @@ export function BleachwearsApp() {
   const [cartOpen, setCartOpen] = useState(false);
   const [productOpen, setProductOpen] = useState<Product | null>(null);
   const [shippingMethod, setShippingMethod] = useState("standard");
-  const [stripeReturn, setStripeReturn] = useState<{ orderId: string; cancelled: boolean } | null>(() => {
+  const [stripeReturn, setStripeReturn] = useState<{
+    orderId: string;
+    cancelled: boolean;
+    sessionId: string | null;
+  } | null>(() => {
     if (typeof window === "undefined") return null;
     const params = new URLSearchParams(window.location.search);
     const orderId = params.get("ordine");
     const state = params.get("stato");
     if (!orderId || (state !== "pagato" && state !== "annullato")) return null;
-    return { orderId, cancelled: state === "annullato" };
+    return {
+      orderId,
+      cancelled: state === "annullato",
+      sessionId: state === "pagato" ? params.get("session_id") : null,
+    };
   });
   const [toast, setToast] = useState("");
   const [catalogProducts, setCatalogProducts] = useState<Product[]>(fallbackProducts);
