@@ -153,9 +153,6 @@ export default function Studio() {
   const generatedRef = useRef<Generated | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  sourceRef.current = source;
-  generatedRef.current = generated;
-
   useEffect(() => {
     let alive = true;
     fetch("/api/bwslab/status")
@@ -172,7 +169,6 @@ export default function Studio() {
   /* Real elapsed time, never a guessed percentage. */
   useEffect(() => {
     if (phase !== "working") return;
-    setElapsed(0);
     const started = Date.now();
     const timer = window.setInterval(() => setElapsed(Math.round((Date.now() - started) / 1000)), 500);
     return () => window.clearInterval(timer);
@@ -194,6 +190,7 @@ export default function Studio() {
       if (sourceRef.current) URL.revokeObjectURL(sourceRef.current.url);
       if (generatedRef.current) URL.revokeObjectURL(generatedRef.current.url);
       generatedRef.current = null;
+      sourceRef.current = prepared;
       setGenerated(null);
       setSource(prepared);
       setPhase("ready");
@@ -210,6 +207,7 @@ export default function Studio() {
     if (!current) return;
 
     setError(null);
+    setElapsed(0);
     setPhase("working");
     setRun((value) => value + 1);
 
