@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { LOCAL_ENGINE_LABEL, preloadLocalEngine, renderStencil } from "@/lib/stencil/local";
 import styles from "./stencil.module.css";
 
 type Phase = "idle" | "ready" | "working" | "done";
@@ -23,7 +24,7 @@ type Generated = {
   fileName: string;
 };
 
-type Status = { configured: boolean; model: string; resolution: string };
+type Status = { configured: boolean; provider?: string; model: string; resolution: string };
 
 /** Long edge sent upstream: enough for a 2K output, small enough to upload fast. */
 const MAX_EDGE = 2400;
@@ -148,6 +149,14 @@ export default function Studio() {
   const [split, setSplit] = useState(50);
   const [run, setRun] = useState(0);
 
+  /* No key means the browser does the work: same studio, zero running costs. */
+  const local = !status?.configured;
+  const modelLabel = local
+    ? LOCAL_ENGINE_LABEL
+    : (status?.model ?? "nano-banana-2.1")
+        .replace(/^gemini-/, "")
+        .replace(/^@cf\/black-forest-labs\//, "");
+
   const inputRef = useRef<HTMLInputElement>(null);
   const sourceRef = useRef<Prepared | null>(null);
   const generatedRef = useRef<Generated | null>(null);
@@ -165,6 +174,11 @@ export default function Studio() {
       alive = false;
     };
   }, []);
+
+  /* Warm the local model while the user looks at the ready screen. */
+  useEffect(() => {
+    if (local && phase === "ready") preloadLocalEngine();
+  }, [local, phase]);
 
   /* Real elapsed time, never a guessed percentage. */
   useEffect(() => {
@@ -223,21 +237,33 @@ export default function Studio() {
     const started = performance.now();
 
     try {
-      const body = new FormData();
-      body.append("image", current.file);
+      let blob: Blob;
 
-      const response = await fetch("/api/bwslab/transform", {
-        method: "POST",
-        body,
-        signal: controller.signal,
-      });
+      if (local) {
+        const bitmap = await createImageBitmap(current.file);
+        try {
+          blob = (await renderStencil(bitmap)).blob;
+        } finally {
+          bitmap.close();
+        }
+      } else {
+        const body = new FormData();
+        body.append("image", current.file);
 
-      if (!response.ok) {
-        const detail = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(detail?.error || `Il server ha risposto ${response.status}.`);
+        const response = await fetch("/api/bwslab/transform", {
+          method: "POST",
+          body,
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          const detail = (await response.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(detail?.error || `Il server ha risposto ${response.status}.`);
+        }
+
+        blob = await response.blob();
       }
 
-      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const size = await loadSize(url);
 
@@ -259,7 +285,7 @@ export default function Studio() {
       window.clearTimeout(timeout);
       abortRef.current = null;
     }
-  }, []);
+  }, [local]);
 
   const reset = useCallback(() => {
     abortRef.current?.abort();
@@ -295,7 +321,6 @@ export default function Studio() {
     return () => window.removeEventListener("paste", onPaste);
   }, [accept, phase]);
 
-  const notConfigured = status?.configured === false;
   const working = phase === "working";
 
   return (
@@ -307,12 +332,8 @@ export default function Studio() {
             <p className={cx(styles.measure, "mt-3")}>One image. One style.</p>
           </div>
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-            <span className={styles.micro}>{status?.resolution ?? "1K"}</span>
-            <span className={styles.micro}>
-              {status?.model
-                ? status.model.replace(/^gemini-/, "").replace(/^@cf\/black-forest-labs\//, "")
-                : "nano-banana-2.1"}
-            </span>
+            <span className={styles.micro}>{local ? "1600 px" : (status?.resolution ?? "1K")}</span>
+            <span className={styles.micro}>{modelLabel}</span>
             <Link href="/" className={styles.backLink}>
               ← bleachwears
             </Link>
@@ -480,7 +501,6 @@ export default function Studio() {
                     type="button"
                     className={cx(styles.btn, styles.btnPrimary, styles.btnWide)}
                     onClick={() => void transform()}
-                    disabled={notConfigured}
                   >
                     Trasforma
                   </button>
@@ -530,7 +550,9 @@ export default function Studio() {
                   </button>
                 </div>
                 <p className={cx(styles.micro, "leading-relaxed")}>
-                  Una generazione richiede di solito 15–40 secondi. Nulla viene salvato.
+                  {local
+                    ? "Pochi secondi: la foto viene letta e stampata qui, senza uscire dal browser."
+                    : "Una generazione richiede di solito 15–40 secondi. Nulla viene salvato."}
                 </p>
               </div>
             ) : null}
@@ -554,7 +576,6 @@ export default function Studio() {
                       type="button"
                       className={styles.btn}
                       onClick={() => void transform()}
-                      disabled={notConfigured}
                     >
                       Rigenera
                     </button>
@@ -573,15 +594,13 @@ export default function Studio() {
               </div>
             ) : null}
 
-            {notConfigured ? (
+            {local && phase === "ready" ? (
               <div className={cx(styles.notice, "mt-6")}>
-                <span className={cx(styles.micro, "pt-[0.15rem]")}>Setup</span>
+                <span className={cx(styles.micro, "pt-[0.15rem]")}>Motore</span>
                 <p>
-                  <strong>Manca la chiave.</strong> Aggiungi <code className={styles.codeChip}>CLOUDFLARE_ACCOUNT_ID</code>{" "}
-                  e <code className={styles.codeChip}>CLOUDFLARE_API_TOKEN</code> (piano Free, senza carta) oppure{" "}
-                  <code className={styles.codeChip}>GEMINI_API_KEY</code> alle variabili d&apos;ambiente (in locale{" "}
-                  <code className={styles.codeChip}>.env.local</code>, su Vercel in Project Settings) e riavvia.
-                  Finché non c&apos;è, l&apos;app non finge nulla.
+                  <strong>Gratis e senza chiavi.</strong> Il soggetto viene ritagliato e stampato
+                  dentro il tuo browser: nessun caricamento su un server, nessun credito consumato.
+                  Al primo avvio scarica una volta il modello, poi resta in cache.
                 </p>
               </div>
             ) : null}
@@ -602,7 +621,7 @@ export default function Studio() {
 
         <footer className={cx("flex flex-wrap items-center justify-between gap-3 pt-5", styles.hairlineTop)}>
           <span className={styles.micro}>Elaborata in memoria · mai salvata</span>
-          <span className={styles.micro}>Nessun filtro · ridisegno AI</span>
+          <span className={styles.micro}>Nessun filtro · motore locale</span>
         </footer>
       </div>
     </div>

@@ -73,3 +73,64 @@ test("reads the real type and size from the bytes, not the file name", () => {
 
   assert.equal(sniffKind(Buffer.from("GIF89a not accepted at all")), undefined);
 });
+
+test("the local engine treats whatever owns the frame as background", async () => {
+  const { backgroundLabel, subjectMask } = await import("../lib/stencil/local-core.ts");
+  /* 4x4 frame: label 7 all around, label 15 in the middle. */
+  const labels = new Uint8Array(16).fill(7);
+  labels[5] = 15;
+  labels[6] = 15;
+  labels[9] = 15;
+  labels[10] = 15;
+
+  const background = backgroundLabel(labels, 4, 4);
+  assert.equal(background, 7);
+  const mask = subjectMask(labels, 4, 4, background);
+  assert.equal(mask.data.reduce((sum, value) => sum + value, 0), 4);
+  assert.equal(mask.data[5], 1);
+});
+
+test("holes get closed so the poster has no white specks inside the figure", async () => {
+  const { fillHoles } = await import("../lib/stencil/local-core.ts");
+  const width = 7;
+  const height = 7;
+  const data = new Uint8Array(width * height);
+  for (let y = 1; y < 6; y += 1) {
+    for (let x = 1; x < 6; x += 1) data[y * width + x] = 1;
+  }
+  data[3 * width + 3] = 0;
+
+  const filled = fillHoles({ data, width, height });
+  assert.equal(filled.data[3 * width + 3], 1);
+});
+
+test("the stylized frame keeps four flat inks on black", async () => {
+  const { STENCIL_TONES, stylize } = await import("../lib/stencil/local-core.ts");
+  const width = 24;
+  const height = 24;
+  const rgba = new Uint8ClampedArray(width * height * 4);
+  /* Four flat bands: the majority filter must not merge them into one ink. */
+  const bands = [20, 100, 160, 240];
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const shade = bands[Math.floor(x / 6)];
+      const offset = (y * width + x) * 4;
+      rgba[offset] = shade;
+      rgba[offset + 1] = shade;
+      rgba[offset + 2] = shade;
+      rgba[offset + 3] = 255;
+    }
+  }
+  const coverage = new Float32Array(width * height);
+  for (let y = 2; y < height - 2; y += 1) {
+    for (let x = 2; x < width - 2; x += 1) coverage[y * width + x] = 1;
+  }
+
+  const out = stylize(rgba, coverage, width, height, { hatch: false });
+  assert.equal(out[0], 0, "outside the mask stays pure black");
+
+  const inks = new Set();
+  for (let x = 2; x < width - 2; x += 1) inks.add(out[(10 * width + x) * 4]);
+  for (const ink of inks) assert.ok(STENCIL_TONES.includes(ink), `unexpected ink ${ink}`);
+  assert.equal(inks.size, 4, "luminance keeps four separate tones");
+});
