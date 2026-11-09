@@ -134,3 +134,24 @@ test("the stylized frame keeps four flat inks on black", async () => {
   for (const ink of inks) assert.ok(STENCIL_TONES.includes(ink), `unexpected ink ${ink}`);
   assert.equal(inks.size, 4, "luminance keeps four separate tones");
 });
+
+test("a stray chunk of background far from the body is not part of the cut", async () => {
+  const { pruneDistantIslands } = await import("../lib/stencil/local-core.ts");
+  const width = 40;
+  const height = 10;
+  const data = new Uint8Array(width * height);
+  const fill = (from, to) => {
+    for (let y = 1; y < height - 1; y += 1) {
+      for (let x = from; x <= to; x += 1) data[y * width + x] = 1;
+    }
+  };
+  fill(2, 12); /* body */
+  fill(14, 18); /* a hand, one pixel away */
+  fill(30, 34); /* a flag in the background */
+
+  const pruned = pruneDistantIslands({ data, width, height }, 0.05);
+  const kept = (x) => pruned.data[5 * width + x];
+  assert.equal(kept(6), 1, "the body stays");
+  assert.equal(kept(16), 1, "a part that nearly touches the body stays");
+  assert.equal(kept(32), 0, "an isolated object is dropped");
+});

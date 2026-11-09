@@ -598,7 +598,7 @@ export default function Studio() {
               <div className={cx(styles.notice, "mt-6")}>
                 <span className={cx(styles.micro, "pt-[0.15rem]")}>Motore</span>
                 <p>
-                  <strong>Gratis e senza chiavi.</strong> Il soggetto viene ritagliato e stampato
+                  <strong>Gratis e senza chiavi.</strong> Il soggetto viene ritagliato e inciso
                   dentro il tuo browser: nessun caricamento su un server, nessun credito consumato.
                   Al primo avvio scarica una volta il modello, poi resta in cache.
                 </p>
@@ -621,7 +621,7 @@ export default function Studio() {
 
         <footer className={cx("flex flex-wrap items-center justify-between gap-3 pt-5", styles.hairlineTop)}>
           <span className={styles.micro}>Elaborata in memoria · mai salvata</span>
-          <span className={styles.micro}>Nessun filtro · motore locale</span>
+          <span className={styles.micro}>Incisione sul dispositivo</span>
         </footer>
       </div>
     </div>

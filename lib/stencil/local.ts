@@ -5,8 +5,11 @@ import type { ImageSegmenter } from "@mediapipe/tasks-vision";
 import {
   backgroundLabel,
   despeckle,
-  dropSmallIslands,
   fillHoles,
+  hardenCoverage,
+  luminanceOf,
+  pruneDistantIslands,
+  refineCoverage,
   stylize,
   subjectMask,
   upsampleCoverage,
@@ -114,8 +117,8 @@ export async function renderStencil(source: ImageBitmap | HTMLImageElement): Pro
   const background = backgroundLabel(labels, maskWidth, maskHeight);
   let mask = subjectMask(labels, maskWidth, maskHeight, background);
   mask = despeckle(mask, 2);
-  mask = dropSmallIslands(mask, 0.12);
-  mask = fillHoles(mask);
+  mask = pruneDistantIslands(mask, 0.008);
+  mask = fillHoles(mask, 0.02);
 
   let subject = 0;
   for (let index = 0; index < mask.data.length; index += 1) subject += mask.data[index];
@@ -126,8 +129,13 @@ export async function renderStencil(source: ImageBitmap | HTMLImageElement): Pro
     );
   }
 
-  const coverage = upsampleCoverage(mask, width, height);
-  const pixels = stylize(frame.data, coverage, width, height, { hatch: true });
+  /* The model's 257 px grid is the reason a cut can look a few pixels off. */
+  const guide = luminanceOf(frame.data);
+  const radius = Math.min(10, Math.max(3, Math.round(Math.min(width, height) / 160)));
+  const coverage = hardenCoverage(
+    refineCoverage(guide, upsampleCoverage(mask, width, height), width, height, radius, 0.0025),
+  );
+  const pixels = stylize(frame.data, coverage, width, height);
   const buffer = new Uint8ClampedArray(new ArrayBuffer(pixels.length));
   buffer.set(pixels);
   context.putImageData(new ImageData(buffer, width, height), 0, 0);
