@@ -10,6 +10,7 @@ import {
   luminanceOf,
   pruneDistantIslands,
   refineCoverage,
+  stylize,
   subjectMask,
   upsampleCoverage,
 } from "./local-core";
@@ -79,6 +80,14 @@ function segmenter(): Promise<ImageSegmenter> {
 
 export type LocalStencil = { blob: Blob; width: number; height: number };
 
+/** The two looks the local engine offers. `flat` stays internal to the core. */
+export type StencilStyle = "cartoon" | "engrave";
+
+export const STENCIL_STYLES: Array<{ id: StencilStyle; label: string; note: string }> = [
+  { id: "cartoon", label: "Cartoon", note: "Tinte piatte, contorni neri" },
+  { id: "engrave", label: "Incisione", note: "Tratteggio incrociato" },
+];
+
 function sizeOf(source: ImageBitmap | HTMLImageElement) {
   if (source instanceof HTMLImageElement) {
     return { width: source.naturalWidth, height: source.naturalHeight };
@@ -86,7 +95,11 @@ function sizeOf(source: ImageBitmap | HTMLImageElement) {
   return { width: source.width, height: source.height };
 }
 
-export async function renderStencil(source: ImageBitmap | HTMLImageElement): Promise<LocalStencil> {
+export async function renderStencil(
+  source: ImageBitmap | HTMLImageElement,
+  options: { style?: StencilStyle } = {},
+): Promise<LocalStencil> {
+  const style = options.style ?? "cartoon";
   const { width: sourceWidth, height: sourceHeight } = sizeOf(source);
   if (!sourceWidth || !sourceHeight) throw new Error("Non riesco a leggere le dimensioni di questa immagine.");
 
@@ -135,7 +148,14 @@ export async function renderStencil(source: ImageBitmap | HTMLImageElement): Pro
   const coverage = hardenCoverage(
     refineCoverage(guide, upsampleCoverage(mask, width, height), width, height, radius, 0.0025),
   );
-  renderCartoon(context, frame.data, coverage, width, height);
+  if (style === "engrave") {
+    const pixels = stylize(frame.data, coverage, width, height, { mode: "engrave" });
+    const buffer = new Uint8ClampedArray(new ArrayBuffer(pixels.length));
+    buffer.set(pixels);
+    context.putImageData(new ImageData(buffer, width, height), 0, 0);
+  } else {
+    renderCartoon(context, frame.data, coverage, width, height);
+  }
 
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(

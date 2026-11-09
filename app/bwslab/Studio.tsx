@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LOCAL_ENGINE_LABEL, preloadLocalEngine, renderStencil } from "@/lib/stencil/local";
+import {
+  LOCAL_ENGINE_LABEL,
+  STENCIL_STYLES,
+  preloadLocalEngine,
+  renderStencil,
+  type StencilStyle,
+} from "@/lib/stencil/local";
 import styles from "./stencil.module.css";
 
 type Phase = "idle" | "ready" | "working" | "done";
@@ -25,6 +31,36 @@ type Generated = {
 };
 
 type Status = { configured: boolean; provider?: string; model: string; resolution: string };
+
+/** The only knob the local engine exposes: which look to print. */
+function StyleSwitch({
+  value,
+  onChange,
+}: {
+  value: StencilStyle;
+  onChange: (next: StencilStyle) => void;
+}) {
+  const active = STENCIL_STYLES.find((entry) => entry.id === value);
+  return (
+    <div className="space-y-2">
+      <p className={styles.micro}>Stile</p>
+      <div className="grid grid-cols-2 gap-2" role="group" aria-label="Stile dell'illustrazione">
+        {STENCIL_STYLES.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            aria-pressed={value === entry.id}
+            className={cx(styles.btn, value === entry.id && styles.btnPrimary)}
+            onClick={() => onChange(entry.id)}
+          >
+            {entry.label}
+          </button>
+        ))}
+      </div>
+      {active ? <p className={cx(styles.micro, "leading-relaxed")}>{active.note}</p> : null}
+    </div>
+  );
+}
 
 /** Long edge sent upstream: enough for a 2K output, small enough to upload fast. */
 const MAX_EDGE = 2400;
@@ -146,6 +182,8 @@ export default function Studio() {
   const [error, setError] = useState<string | null>(null);
   const [preparing, setPreparing] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+
+  const [style, setStyle] = useState<StencilStyle>("cartoon");
   const [split, setSplit] = useState(50);
   const [run, setRun] = useState(0);
 
@@ -216,76 +254,80 @@ export default function Studio() {
     }
   }, []);
 
-  const transform = useCallback(async () => {
-    const current = sourceRef.current;
-    if (!current) return;
+  const transform = useCallback(
+    async (styleOverride?: StencilStyle) => {
+      const current = sourceRef.current;
+      if (!current) return;
+      const activeStyle = styleOverride ?? style;
 
-    setError(null);
-    setElapsed(0);
-    setPhase("working");
-    setRun((value) => value + 1);
+      setError(null);
+      setElapsed(0);
+      setPhase("working");
+      setRun((value) => value + 1);
 
-    if (generatedRef.current) {
-      URL.revokeObjectURL(generatedRef.current.url);
-      generatedRef.current = null;
-      setGenerated(null);
-    }
-
-    const controller = new AbortController();
-    abortRef.current = controller;
-    const timeout = window.setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
-    const started = performance.now();
-
-    try {
-      let blob: Blob;
-
-      if (local) {
-        const bitmap = await createImageBitmap(current.file);
-        try {
-          blob = (await renderStencil(bitmap)).blob;
-        } finally {
-          bitmap.close();
-        }
-      } else {
-        const body = new FormData();
-        body.append("image", current.file);
-
-        const response = await fetch("/api/bwslab/transform", {
-          method: "POST",
-          body,
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          const detail = (await response.json().catch(() => null)) as { error?: string } | null;
-          throw new Error(detail?.error || `Il server ha risposto ${response.status}.`);
-        }
-
-        blob = await response.blob();
+      if (generatedRef.current) {
+        URL.revokeObjectURL(generatedRef.current.url);
+        generatedRef.current = null;
+        setGenerated(null);
       }
 
-      const url = URL.createObjectURL(blob);
-      const size = await loadSize(url);
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const timeout = window.setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+      const started = performance.now();
 
-      const next: Generated = {
-        url,
-        width: size.width,
-        height: size.height,
-        ms: Math.round(performance.now() - started),
-        fileName: `stencil-lab-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.png`,
-      };
-      generatedRef.current = next;
-      setGenerated(next);
-      setPhase("done");
-      setSplit(50);
-    } catch (transformError) {
-      setError(messageFor(transformError));
-      setPhase("ready");
-    } finally {
-      window.clearTimeout(timeout);
-      abortRef.current = null;
-    }
-  }, [local]);
+      try {
+        let blob: Blob;
+
+        if (local) {
+          const bitmap = await createImageBitmap(current.file);
+          try {
+            blob = (await renderStencil(bitmap, { style: activeStyle })).blob;
+          } finally {
+            bitmap.close();
+          }
+        } else {
+          const body = new FormData();
+          body.append("image", current.file);
+
+          const response = await fetch("/api/bwslab/transform", {
+            method: "POST",
+            body,
+            signal: controller.signal,
+          });
+
+          if (!response.ok) {
+            const detail = (await response.json().catch(() => null)) as { error?: string } | null;
+            throw new Error(detail?.error || `Il server ha risposto ${response.status}.`);
+          }
+
+          blob = await response.blob();
+        }
+
+        const url = URL.createObjectURL(blob);
+        const size = await loadSize(url);
+
+        const next: Generated = {
+          url,
+          width: size.width,
+          height: size.height,
+          ms: Math.round(performance.now() - started),
+          fileName: `stencil-lab-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.png`,
+        };
+        generatedRef.current = next;
+        setGenerated(next);
+        setPhase("done");
+        setSplit(50);
+      } catch (transformError) {
+        setError(messageFor(transformError));
+        setPhase("ready");
+      } finally {
+        window.clearTimeout(timeout);
+        abortRef.current = null;
+      }
+    },
+    [local, style],
+  );
 
   const reset = useCallback(() => {
     abortRef.current?.abort();
@@ -496,6 +538,9 @@ export default function Studio() {
                     <dd className={cx(styles.numeric, styles.ash)}>{formatBytes(source.bytes)}</dd>
                   </div>
                 </dl>
+                {local ? (
+                  <StyleSwitch value={style} onChange={setStyle} />
+                ) : null}
                 <div className={styles.dock}>
                   <button
                     type="button"
@@ -563,6 +608,15 @@ export default function Studio() {
                   <p className={styles.measure}>04 / Inchiostro fresco</p>
                   <p className={styles.headline}>Appena stampato</p>
                 </div>
+                {local ? (
+                  <StyleSwitch
+                    value={style}
+                    onChange={(next) => {
+                      setStyle(next);
+                      if (next !== style) void transform(next);
+                    }}
+                  />
+                ) : null}
                 <div className={styles.dock}>
                   <a
                     className={cx(styles.btn, styles.btnPrimary, styles.btnWide)}
