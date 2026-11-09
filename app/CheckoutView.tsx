@@ -268,7 +268,9 @@ export function CheckoutView({
                 ? "Verifico il pagamento…"
                 : paid
                   ? "È tuo. Adesso lo dipingiamo."
-                  : "Pagamento non completato."}
+                  : paymentCheck?.state === "error"
+                    ? "Non riesco a leggere il pagamento."
+                    : "Pagamento non completato."}
           </h1>
           <p className="checkout-ref">
             Riferimento <strong>{paidReturn.orderId}</strong>
