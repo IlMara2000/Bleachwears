@@ -1,0 +1,607 @@
+/* Stencil Lab lives inside the shop, so every rule is scoped to this module. */
+
+.root {
+  --sl-void: #07070a;
+  --sl-coal: #0e0e12;
+  --sl-graphite: #17171d;
+  --sl-paper: #f4f1ea;
+  --sl-ash: #8d8d96;
+  --sl-smoke: #5c5c66;
+  --sl-hairline: rgba(244, 241, 234, 0.14);
+  --sl-hairline-strong: rgba(244, 241, 234, 0.34);
+
+  position: relative;
+  min-height: 100dvh;
+  color-scheme: dark;
+  background:
+    radial-gradient(120% 70% at 50% -10%, #191920 0%, transparent 60%),
+    radial-gradient(90% 60% at 50% 120%, #101014 0%, transparent 55%),
+    var(--sl-void);
+  color: var(--sl-paper);
+  font-family: var(--font-inter-tight), system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  letter-spacing: normal;
+  font-feature-settings: "ss01", "cv01";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
+}
+
+.root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+.root ::selection {
+  background: var(--sl-paper);
+  color: var(--sl-void);
+}
+
+.shell {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 78rem;
+  margin-inline: auto;
+  padding: clamp(1.1rem, 3vw, 2.5rem);
+  padding-bottom: calc(clamp(1.1rem, 3vw, 2.5rem) + env(safe-area-inset-bottom));
+}
+
+/* ---------- Type ---------- */
+
+.wordmark,
+.headline {
+  font-family: var(--font-anton), "Arial Narrow", Impact, sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.wordmark {
+  font-size: clamp(2.6rem, 9vw, 5.6rem);
+  line-height: 0.82;
+  letter-spacing: -0.015em;
+  margin: 0;
+  color: var(--sl-paper);
+}
+
+.measure {
+  margin: 0;
+  font-size: 0.6875rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--sl-ash);
+}
+
+.micro {
+  margin: 0;
+  font-size: 0.625rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--sl-smoke);
+}
+
+.headline {
+  font-size: clamp(1.9rem, 6vw, 3.4rem);
+  line-height: 0.86;
+  letter-spacing: 0.01em;
+  color: var(--sl-paper);
+}
+
+.numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+.ash {
+  color: var(--sl-ash);
+}
+
+.smoke {
+  color: var(--sl-smoke);
+}
+
+.paper {
+  color: var(--sl-paper);
+}
+
+.lead {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--sl-ash);
+}
+
+/* ---------- Rules ---------- */
+
+.hairlineTop {
+  border-top: 1px solid var(--sl-hairline);
+}
+
+.hairlineBottom {
+  border-bottom: 1px solid var(--sl-hairline);
+}
+
+.hairlineBoth {
+  border-top: 1px solid var(--sl-hairline);
+  border-bottom: 1px solid var(--sl-hairline);
+}
+
+/* ---------- Frame ---------- */
+
+.frame {
+  position: relative;
+  border: 1px solid var(--sl-hairline);
+  background: linear-gradient(180deg, rgba(23, 23, 29, 0.9), rgba(10, 10, 13, 0.9));
+}
+
+.frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to right, var(--sl-paper), var(--sl-paper)) left top / 14px 1px no-repeat,
+    linear-gradient(to bottom, var(--sl-paper), var(--sl-paper)) left top / 1px 14px no-repeat,
+    linear-gradient(to left, var(--sl-paper), var(--sl-paper)) right top / 14px 1px no-repeat,
+    linear-gradient(to bottom, var(--sl-paper), var(--sl-paper)) right top / 1px 14px no-repeat,
+    linear-gradient(to right, var(--sl-paper), var(--sl-paper)) left bottom / 14px 1px no-repeat,
+    linear-gradient(to top, var(--sl-paper), var(--sl-paper)) left bottom / 1px 14px no-repeat,
+    linear-gradient(to left, var(--sl-paper), var(--sl-paper)) right bottom / 14px 1px no-repeat,
+    linear-gradient(to top, var(--sl-paper), var(--sl-paper)) right bottom / 1px 14px no-repeat;
+  opacity: 0.5;
+}
+
+/* ---------- Dropzone ---------- */
+
+.dropzone {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: clamp(19rem, 52vh, 30rem);
+  padding: clamp(1.5rem, 5vw, 3.5rem) 1.25rem;
+  border: 1px dashed var(--sl-hairline-strong);
+  background:
+    radial-gradient(60% 60% at 50% 40%, rgba(244, 241, 234, 0.045), transparent 70%),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(244, 241, 234, 0.028) 0px,
+      rgba(244, 241, 234, 0.028) 1px,
+      transparent 1px,
+      transparent 9px
+    );
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 220ms ease,
+    background-color 220ms ease,
+    transform 220ms ease;
+}
+
+.dropzone:hover,
+.dropzone:focus-visible {
+  border-color: var(--sl-paper);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.dropzone[data-dragging="true"] {
+  border-color: var(--sl-paper);
+  background-color: rgba(244, 241, 234, 0.06);
+}
+
+.dropzone[data-busy="true"] {
+  cursor: progress;
+}
+
+.dropzoneIndex {
+  position: absolute;
+  top: 0.9rem;
+  left: 1rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.3em;
+  color: var(--sl-smoke);
+}
+
+.dropzoneHint {
+  position: absolute;
+  bottom: 0.9rem;
+  left: 1rem;
+  right: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.5625rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--sl-smoke);
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 3.1rem;
+  padding: 0 1.5rem;
+  border: 1px solid var(--sl-hairline-strong);
+  border-radius: 0;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--sl-paper);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--sl-paper);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--sl-paper);
+  outline-offset: 3px;
+}
+
+.btnPrimary {
+  background: var(--sl-paper);
+  border-color: var(--sl-paper);
+  color: var(--sl-void);
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #ffffff;
+  color: var(--sl-void);
+}
+
+.btnGhost {
+  border-color: transparent;
+  color: var(--sl-ash);
+}
+
+.btnGhost:hover:not(:disabled) {
+  color: var(--sl-paper);
+  border-color: var(--sl-hairline);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.btnWide {
+  width: 100%;
+}
+
+/* ---------- Preview ---------- */
+
+.canvasPlate {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 18rem;
+  background: radial-gradient(70% 70% at 50% 45%, #1b1b22 0%, #08080b 72%);
+  overflow: hidden;
+}
+
+.canvasPlate img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 62vh;
+  object-fit: contain;
+}
+
+.plateTag {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  padding: 0.3rem 0.55rem;
+  background: rgba(7, 7, 10, 0.72);
+  border: 1px solid var(--sl-hairline);
+  font-size: 0.5625rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--sl-ash);
+  backdrop-filter: blur(6px);
+}
+
+.scanline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(244, 241, 234, 0.02) 46%,
+    rgba(244, 241, 234, 0.6) 50%,
+    rgba(244, 241, 234, 0.02) 54%,
+    transparent 100%
+  );
+  background-size: 100% 40%;
+  animation: scan 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes scan {
+  0% {
+    background-position: 0 -40%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.5;
+  }
+  85% {
+    opacity: 0.5;
+  }
+  100% {
+    background-position: 0 140%;
+    opacity: 0;
+  }
+}
+
+/* ---------- Progress ---------- */
+
+.progress {
+  position: relative;
+  height: 2px;
+  width: 100%;
+  overflow: hidden;
+  background: rgba(244, 241, 234, 0.12);
+}
+
+.progressBar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 34%;
+  background: var(--sl-paper);
+  animation: slide 1.5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes slide {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+/* ---------- Comparison ---------- */
+
+.compare {
+  position: relative;
+  width: 100%;
+  background: #000;
+  border: 1px solid var(--sl-hairline);
+  overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.compareLayer {
+  position: absolute;
+  inset: 0;
+}
+
+.compareLayer img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+
+.compareAfter {
+  position: absolute;
+  inset: 0;
+  will-change: clip-path;
+}
+
+.compareHandle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--sl-paper);
+  box-shadow: 0 0 18px rgba(244, 241, 234, 0.35);
+  pointer-events: none;
+}
+
+.compareGrip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  translate: -50% -50%;
+  background: var(--sl-paper);
+  color: var(--sl-void);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  border-radius: 999px;
+}
+
+.compareRange {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+}
+
+.compareRange:focus-visible + .compareFocus {
+  opacity: 1;
+}
+
+.compareFocus {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--sl-paper);
+  opacity: 0;
+  transition: opacity 160ms ease;
+  pointer-events: none;
+}
+
+.compareTag {
+  position: absolute;
+  bottom: 0.7rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--sl-hairline);
+  font-size: 0.5rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--sl-ash);
+  pointer-events: none;
+}
+
+.compareTagLeft {
+  left: 0.7rem;
+}
+
+.compareTagRight {
+  right: 0.7rem;
+}
+
+/* ---------- Notes ---------- */
+
+.notice {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--sl-hairline);
+  background: rgba(244, 241, 234, 0.03);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--sl-ash);
+}
+
+.notice p {
+  margin: 0;
+}
+
+.notice strong {
+  color: var(--sl-paper);
+  font-weight: 600;
+}
+
+.codeChip {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 0.75em;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--sl-hairline);
+  color: var(--sl-paper);
+  white-space: nowrap;
+}
+
+.stepList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+  font-size: 0.8125rem;
+  color: var(--sl-ash);
+}
+
+.stepList li {
+  display: grid;
+  grid-template-columns: 1.4rem 1fr;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.stepList li > span {
+  font-size: 0.5625rem;
+  letter-spacing: 0.22em;
+  color: var(--sl-smoke);
+  padding-top: 0.2rem;
+}
+
+.stepList p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.backLink {
+  font-size: 0.625rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--sl-smoke);
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.backLink:hover {
+  color: var(--sl-paper);
+}
+
+/* On a phone the press button must never be a scroll away. */
+.dock {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 20;
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.7rem 1rem calc(0.7rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--sl-hairline);
+  background: rgba(7, 7, 10, 0.94);
+  backdrop-filter: blur(12px);
+}
+
+@media (max-width: 767px) {
+  .shell {
+    padding-bottom: 10rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .dock {
+    position: static;
+    padding: 0;
+    border-top: 0;
+    background: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanline,
+  .progressBar {
+    animation: none;
+  }
+
+  .scanline {
+    opacity: 0.15;
+  }
+
+  .root * {
+    transition-duration: 1ms !important;
+  }
+}
