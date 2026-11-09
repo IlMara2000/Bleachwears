@@ -509,8 +509,8 @@ function percentile(sorted: number[], ratio: number): number {
   return sorted[index];
 }
 
-/** Subject percentiles, so the ink range follows the face and not the sky. */
-function stretch(values: Float32Array, coverage: Float32Array): { low: number; span: number } {
+/** Sorted subject values, thinned to a budget so sorting stays cheap. */
+function subjectSamples(values: Float32Array, coverage: Float32Array): number[] {
   let covered = 0;
   for (let index = 0; index < values.length; index += 1) {
     if (coverage[index] > 0.5) covered += 1;
@@ -521,6 +521,12 @@ function stretch(values: Float32Array, coverage: Float32Array): { low: number; s
     if (coverage[index] > 0.5 && index % stride === 0) samples.push(values[index]);
   }
   samples.sort((a, b) => a - b);
+  return samples;
+}
+
+/** Subject percentiles, so the ink range follows the face and not the sky. */
+function stretch(values: Float32Array, coverage: Float32Array): { low: number; span: number } {
+  const samples = subjectSamples(values, coverage);
   const low = percentile(samples, 0.02);
   const high = Math.max(low + 0.05, percentile(samples, 0.98));
   return { low, span: high - low };
@@ -586,38 +592,171 @@ function structureInk(
  * paper white base, shadows built from crossing line sets, solid black only in
  * the deepest cores. `hatch: false` keeps the old four flat inks.
  */
+export type StencilMode = "cartoon" | "engrave" | "flat";
+
+/** Cartoon inks: a light base, a shadow, a highlight. Black is the page. */
+const CARTOON_INKS = [176, 228, 252] as const;
+
+/**
+ * A cartoon line is a line: isolated specks of texture are not. Anything
+ * smaller than this many pixels is thrown away before inking.
+ */
+function dropLineDots(
+  binary: Uint8Array,
+  width: number,
+  height: number,
+  minArea: number,
+): Uint8Array {
+  const visited = new Uint8Array(binary.length);
+  const stack = new Int32Array(binary.length);
+  const keep = new Uint8Array(binary.length);
+
+  for (let start = 0; start < binary.length; start += 1) {
+    if (binary[start] === 0 || visited[start] === 1) continue;
+    let top = 0;
+    stack[top++] = start;
+    visited[start] = 1;
+    const pixels: number[] = [];
+
+    while (top > 0) {
+      const index = stack[--top];
+      pixels.push(index);
+      const x = index % width;
+      const y = (index - x) / width;
+      const push = (next: number) => {
+        if (binary[next] === 1 && visited[next] === 0) {
+          visited[next] = 1;
+          stack[top++] = next;
+        }
+      };
+      if (x > 0) push(index - 1);
+      if (x < width - 1) push(index + 1);
+      if (y > 0) push(index - width);
+      if (y < height - 1) push(index + width);
+    }
+
+    if (pixels.length < minArea) continue;
+    for (const index of pixels) keep[index] = 1;
+  }
+
+  return keep;
+}
+
+/**
+ * The drawn features as a binary map: eyes, mouth, nostrils, the line of a
+ * hat brim. Speckle is dropped, so only real strokes survive.
+ */
+export function structureLines(
+  rgba: Uint8ClampedArray,
+  coverage: Float32Array,
+  width: number,
+  height: number,
+): Uint8Array {
+  const luminance = luminanceOf(rgba);
+  const ink = structureInk(boxBlur(luminance, width, height, 1), coverage, width, height);
+  const binary = new Uint8Array(ink.length);
+  for (let index = 0; index < ink.length; index += 1) binary[index] = ink[index] > 0.45 ? 1 : 0;
+  return dropLineDots(binary, width, height, Math.max(24, Math.round(width * height * 0.00008)));
+}
+
+/** Tone split for the cartoon look, shared by the pixel and vector renderers. */
+function levelsFromLuminance(
+  smooth: Float32Array,
+  coverage: Float32Array,
+  width: number,
+  height: number,
+): Uint8Array {
+  /*
+   * Cartoon tones are split by population, not brightness: only the darkest
+   * 18% becomes shadow and the brightest 14% highlight, so skin sits on the
+   * light base ink. A face never turns into a grey mask just because the photo
+   * was exposed low, and a white shirt never eats a whole level.
+   */
+  const samples = subjectSamples(smooth, coverage);
+  const shadowEdge = percentile(samples, 0.18);
+  const lightEdge = percentile(samples, 0.86);
+  const raw = new Uint8Array(smooth.length);
+  for (let index = 0; index < raw.length; index += 1) {
+    raw[index] = smooth[index] < shadowEdge ? 0 : smooth[index] < lightEdge ? 1 : 2;
+  }
+  /* A majority vote keeps flat areas flat: no speckle, no dots. */
+  return settleTones(raw, coverage, width, height, 3);
+}
+
+/**
+ * The cartoon tone map on its own, for the vector renderer: 0 shadow,
+ * 1 base, 2 highlight.
+ */
+export function cartoonLevels(
+  rgba: Uint8ClampedArray,
+  coverage: Float32Array,
+  width: number,
+  height: number,
+): Uint8Array {
+  const luminance = luminanceOf(rgba);
+  const radius = Math.min(10, Math.max(3, Math.round(Math.min(width, height) / 150)));
+  return levelsFromLuminance(boxBlur(luminance, width, height, radius), coverage, width, height);
+}
+
+/**
+ * Turns the photo into a print inside the mask, pure black outside.
+ *
+ * `cartoon` (default) is flat: three clean inks and black keylines, the look of
+ * a vector portrait. `flat` keeps the old four-ink poster, `engrave` the
+ * hatched version.
+ */
 export function stylize(
   rgba: Uint8ClampedArray,
   coverage: Float32Array,
   width: number,
   height: number,
-  options: { hatch?: boolean } = {},
+  options: { mode?: StencilMode } = {},
 ): Uint8ClampedArray {
-  const engrave = options.hatch ?? true;
+  const mode = options.mode ?? "cartoon";
   const luminance = luminanceOf(rgba);
 
-  /* A touch of blur before the tone map: grain must not become dots of ink. */
-  const radius = Math.min(3, Math.max(1, Math.round(Math.min(width, height) / 500)));
+  /* Cartoon needs clean shapes, so it earns the wider blur. */
+  const radius =
+    mode === "engrave"
+      ? Math.min(3, Math.max(1, Math.round(Math.min(width, height) / 500)))
+      : Math.min(10, Math.max(3, Math.round(Math.min(width, height) / 150)));
   const smooth = boxBlur(luminance, width, height, radius);
   const { low, span } = stretch(smooth, coverage);
 
-  const tones = new Uint8Array(smooth.length);
   const shade = new Float32Array(smooth.length);
   for (let index = 0; index < smooth.length; index += 1) {
-    const value = Math.min(1, Math.max(0, (smooth[index] - low) / span));
-    shade[index] = value;
-    let tone = 3;
-    for (let step = 0; step < TONE_CUTS.length; step += 1) {
-      if (value < TONE_CUTS[step]) {
-        tone = step;
-        break;
-      }
-    }
-    tones[index] = tone;
+    shade[index] = Math.min(1, Math.max(0, (smooth[index] - low) / span));
   }
-  const flat = settleTones(tones, coverage, width, height, 2);
-  const edges = engrave ? structureInk(boxBlur(luminance, width, height, 1), coverage, width, height) : null;
 
+  let levels: Uint8Array | null = null;
+  if (mode !== "engrave") {
+    const raw = new Uint8Array(shade.length);
+    if (mode === "flat") {
+      for (let index = 0; index < shade.length; index += 1) {
+        let level: number = TONE_CUTS.length;
+        for (let step = 0; step < TONE_CUTS.length; step += 1) {
+          if (shade[index] < TONE_CUTS[step]) {
+            level = step;
+            break;
+          }
+        }
+        raw[index] = level;
+      }
+      levels = settleTones(raw, coverage, width, height, 2);
+    } else {
+      levels = levelsFromLuminance(smooth, coverage, width, height);
+    }
+  }
+
+  /* One pass of structure lines: eyes, mouth, nostrils, the brim of a hat. */
+  let lines = structureInk(boxBlur(luminance, width, height, 1), coverage, width, height);
+  if (mode === "cartoon") {
+    const binary = new Uint8Array(lines.length);
+    for (let index = 0; index < lines.length; index += 1) binary[index] = lines[index] > 0.45 ? 1 : 0;
+    const cleaned = dropLineDots(binary, width, height, Math.max(24, Math.round(width * height * 0.00008)));
+    lines = new Float32Array(cleaned.length);
+    for (let index = 0; index < cleaned.length; index += 1) lines[index] = cleaned[index];
+  }
   const diagonal = Math.SQRT1_2;
   const out = new Uint8ClampedArray(rgba.length);
 
@@ -632,20 +771,25 @@ export function stylize(
         continue;
       }
 
+      const level = levels ? levels[index] : 0;
       let value: number;
 
-      if (engrave) {
+      if (mode === "engrave") {
         const demand = 1 - shade[index];
         const ink = Math.max(
           hatchLine((x + y) * diagonal, 6, Math.min(1.8, Math.max(0, (demand - 0.28) * 4))),
           hatchLine((x - y) * diagonal, 6, Math.min(1.8, Math.max(0, (demand - 0.5) * 4))),
           hatchLine(x * 0.5 + y * 0.866, 5, Math.min(2.2, Math.max(0, (demand - 0.7) * 4))),
           Math.min(1, Math.max(0, (demand - 0.9) * 10)),
-          edges ? edges[index] : 0,
+          lines[index],
         );
         value = 248 - ink * 238;
+      } else if (mode === "flat") {
+        value = STENCIL_TONES[Math.min(STENCIL_TONES.length - 1, level)];
       } else {
-        value = STENCIL_TONES[flat[index]];
+        value = CARTOON_INKS[Math.min(CARTOON_INKS.length - 1, level)];
+        /* Ink, not a gradient: a feature is either drawn or it is flat. */
+        if (lines[index] > 0.45) value = 0;
       }
 
       /* Coverage fades the cut into the black page: antialiasing, not a halo. */

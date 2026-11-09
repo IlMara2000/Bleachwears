@@ -10,10 +10,10 @@ import {
   luminanceOf,
   pruneDistantIslands,
   refineCoverage,
-  stylize,
   subjectMask,
   upsampleCoverage,
 } from "./local-core";
+import { renderCartoon } from "./vector";
 
 /**
  * The keyless engine: a small segmentation model runs inside the browser, so a
@@ -135,10 +135,7 @@ export async function renderStencil(source: ImageBitmap | HTMLImageElement): Pro
   const coverage = hardenCoverage(
     refineCoverage(guide, upsampleCoverage(mask, width, height), width, height, radius, 0.0025),
   );
-  const pixels = stylize(frame.data, coverage, width, height);
-  const buffer = new Uint8ClampedArray(new ArrayBuffer(pixels.length));
-  buffer.set(pixels);
-  context.putImageData(new ImageData(buffer, width, height), 0, 0);
+  renderCartoon(context, frame.data, coverage, width, height);
 
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(

@@ -126,7 +126,7 @@ test("the stylized frame keeps four flat inks on black", async () => {
     for (let x = 2; x < width - 2; x += 1) coverage[y * width + x] = 1;
   }
 
-  const out = stylize(rgba, coverage, width, height, { hatch: false });
+  const out = stylize(rgba, coverage, width, height, { mode: "flat" });
   assert.equal(out[0], 0, "outside the mask stays pure black");
 
   const inks = new Set();
@@ -154,4 +154,34 @@ test("a stray chunk of background far from the body is not part of the cut", asy
   assert.equal(kept(6), 1, "the body stays");
   assert.equal(kept(16), 1, "a part that nearly touches the body stays");
   assert.equal(kept(32), 0, "an isolated object is dropped");
+});
+
+test("a square traced as vectors comes back as one closed loop", async () => {
+  const { tracePolygons } = await import("../lib/stencil/vector-core.ts");
+  const width = 5;
+  const height = 5;
+  const binary = new Uint8Array(width * height);
+  for (let y = 1; y <= 3; y += 1) {
+    for (let x = 1; x <= 3; x += 1) binary[y * width + x] = 1;
+  }
+
+  const loops = tracePolygons(binary, width, height, 0);
+  assert.equal(loops.length, 1, "one shape, one loop");
+  assert.equal(loops[0].length, 24, "twelve crack vertices make the outline");
+});
+
+test("smoothing rounds a polygon instead of moving it", async () => {
+  const { smoothPolygon } = await import("../lib/stencil/vector-core.ts");
+  const square = [0, 0, 10, 0, 10, 10, 0, 10];
+  const smoothed = smoothPolygon(square, 1);
+  assert.equal(smoothed.length, 16, "each corner becomes two points");
+
+  let sumX = 0;
+  let sumY = 0;
+  for (let index = 0; index < smoothed.length; index += 2) {
+    sumX += smoothed[index];
+    sumY += smoothed[index + 1];
+  }
+  assert.ok(Math.abs(sumX / 8 - 5) < 0.001, "stays centred on the original shape");
+  assert.ok(Math.abs(sumY / 8 - 5) < 0.001, "stays centred on the original shape");
 });
