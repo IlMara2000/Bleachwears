@@ -5,116 +5,24 @@ import type { ChangeEvent, CSSProperties, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { ProductRow } from "@/lib/supabase/database.types";
+import {
+  fallbackProducts,
+  money,
+  type ClothingSize,
+  type GarmentType,
+  type Placement,
+  type PrintScale,
+  type Product,
+  type ProductCategory,
+} from "@/lib/shop/catalog";
+import { CheckoutView, type CheckoutItem } from "./CheckoutView";
+import { ProductSheet } from "./ProductSheet";
 
-type View = "links" | "shop" | "lab";
-type ProductCategory = "tee" | "hoodie" | "oneoff";
-type GarmentType = "tee" | "hoodie";
-type Placement = "front" | "back";
-type PrintScale = "S" | "M" | "L";
+type View = "links" | "shop" | "lab" | "checkout";
 type CatalogSource = "local" | "live";
-type ProductArt = "patchwork" | "ribbon" | "index" | "seam" | "frame" | "sample";
 
-type Product = {
-  id: string;
-  name: string;
-  category: ProductCategory;
-  kind: string;
-  price: number;
-  status: string;
-  color: string;
-  reaction: string;
-  art: ProductArt;
-  image?: string;
-  technique?: string;
-};
-
-type CartItem = {
-  id: string;
-  name: string;
-  detail: string;
-  price: number;
-};
-
-const fallbackProducts: Product[] = [
-  {
-    id: "BW-T01",
-    name: "Serpenti",
-    category: "tee",
-    kind: "T-shirt 240 g",
-    price: 49,
-    status: "7–10 giorni",
-    color: "#171717",
-    reaction: "#d88954",
-    art: "patchwork",
-    image: "/feed/drago-tee.jpg",
-    technique: "Acrilico a mano",
-  },
-  {
-    id: "BW-T02",
-    name: "Ragno",
-    category: "tee",
-    kind: "T-shirt 240 g",
-    price: 55,
-    status: "7–10 giorni",
-    color: "#4d1d29",
-    reaction: "#e8aa83",
-    art: "ribbon",
-    image: "/feed/spiderman.jpg",
-    technique: "Acrilico a mano",
-  },
-  {
-    id: "BW-T03",
-    name: "Circus",
-    category: "tee",
-    kind: "T-shirt oversize",
-    price: 59,
-    status: "Serie limitata",
-    color: "#17223c",
-    reaction: "#cfa361",
-    art: "index",
-    image: "/feed/santeria.jpg",
-    technique: "Acrilico a mano",
-  },
-  {
-    id: "BW-H01",
-    name: "Drago",
-    category: "hoodie",
-    kind: "Felpa 400 g",
-    price: 89,
-    status: "10–14 giorni",
-    color: "#151515",
-    reaction: "#e2c090",
-    art: "seam",
-    image: "/feed/drago-hoodie.jpg",
-    technique: "Acrilico a mano",
-  },
-  {
-    id: "BW-H02",
-    name: "Moto Evo",
-    category: "hoodie",
-    kind: "Felpa 400 g",
-    price: 99,
-    status: "Serie limitata",
-    color: "#352018",
-    reaction: "#d78a56",
-    art: "frame",
-    image: "/feed/moto.jpg",
-    technique: "Acrilico a mano",
-  },
-  {
-    id: "BW-O01",
-    name: "Ali",
-    category: "oneoff",
-    kind: "Pezzo unico",
-    price: 119,
-    status: "1 disponibile",
-    color: "#22201f",
-    reaction: "#c5bbff",
-    art: "sample",
-    image: "/feed/reel-aquila.jpg",
-    technique: "Acrilico a mano",
-  },
-];
+type CartItem = CheckoutItem & { id: string };
+type NewCartItem = Omit<CartItem, "id">;
 
 const garmentColors = [
   { id: "black", name: "Nero carbone", hex: "#171717" },
@@ -228,13 +136,6 @@ const instagramReels = [
 
 const CART_HISTORY_KEY = "bleachwearsCart";
 
-function money(value: number) {
-  return new Intl.NumberFormat("it-IT", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 function readableName(name: string) {
   if (name !== name.toUpperCase()) return name;
@@ -262,6 +163,16 @@ export function BleachwearsApp() {
   const [shopFilter, setShopFilter] = useState<"all" | ProductCategory>("all");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [productOpen, setProductOpen] = useState<Product | null>(null);
+  const [shippingMethod, setShippingMethod] = useState("standard");
+  const [stripeReturn, setStripeReturn] = useState<{ orderId: string; cancelled: boolean } | null>(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get("ordine");
+    const state = params.get("stato");
+    if (!orderId || (state !== "pagato" && state !== "annullato")) return null;
+    return { orderId, cancelled: state === "annullato" };
+  });
   const [toast, setToast] = useState("");
   const [catalogProducts, setCatalogProducts] = useState<Product[]>(fallbackProducts);
   const [catalogSource, setCatalogSource] = useState<CatalogSource>("local");
@@ -299,7 +210,7 @@ export function BleachwearsApp() {
     const syncFromLocation = () => {
       const hash = window.location.hash.replace("#", "");
       const matchingView = navItems.find((item) => item.id === hash);
-      setView(matchingView?.id ?? "links");
+      setView(hash === "checkout" ? "checkout" : matchingView?.id ?? "links");
       setCartOpen(Boolean(window.history.state?.[CART_HISTORY_KEY]));
     };
 
@@ -430,6 +341,7 @@ export function BleachwearsApp() {
   );
 
   function navigate(next: View) {
+    if (next !== "checkout") setStripeReturn(null);
     setView(next);
     if (window.location.hash !== `#${next}`) window.history.pushState(null, "", `#${next}`);
     window.requestAnimationFrame(() => {
@@ -469,13 +381,13 @@ export function BleachwearsApp() {
     });
   }
 
-  function addToCart(name: string, detail: string, price: number) {
+  function addToCart(item: NewCartItem) {
     cartSequence.current += 1;
     setCartItems((current) => [
       ...current,
-      { id: `cart-${cartSequence.current}`, name, detail, price },
+      { ...item, id: `cart-${cartSequence.current}` },
     ]);
-    setToast(`${name} è nel carrello`);
+    setToast(`${item.name} è nel carrello`);
   }
 
   function updateSelection<T>(setter: (value: T) => void, value: T) {
@@ -665,7 +577,13 @@ export function BleachwearsApp() {
                 <div className="catalog-grid">
                   {filteredProducts.map((product, index) => (
                     <article className="catalog-card" key={product.id}>
-                      <div className="product-stage" style={{ "--product-color": product.color, "--product-reaction": product.reaction } as CSSProperties}>
+                      <button
+                        type="button"
+                        className="product-stage"
+                        style={{ "--product-color": product.color, "--product-reaction": product.reaction } as CSSProperties}
+                        onClick={() => setProductOpen(product)}
+                        aria-label={`Apri la scheda di ${product.name}, ${money(product.price)}`}
+                      >
                         {product.image ? (
                           <Image className="product-photo" src={product.image} alt={`${product.name}, ${product.kind}`} fill sizes="(max-width: 700px) 88vw, (max-width: 1080px) 44vw, 30vw" />
                         ) : (
@@ -678,11 +596,17 @@ export function BleachwearsApp() {
                         )}
                         <span className="piece-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
                         <span className="craft-pill">Fatto a mano</span>
-                      </div>
+                      </button>
                       <div className="catalog-copy">
                         <span className="price-tag">{money(product.price)}</span>
-                        <p className="piece-kind">{product.kind} · {product.id}</p>
-                        <h2>{product.name}</h2>
+                        <button type="button" className="piece-kind piece-kind-button" onClick={() => setProductOpen(product)}>
+                          {product.kind} · {product.id}
+                        </button>
+                        <h2>
+                          <button type="button" className="piece-name-button" onClick={() => setProductOpen(product)}>
+                            {product.name}
+                          </button>
+                        </h2>
                         <p className="piece-line">
                           <span>{product.technique ?? "Fatto a mano"}</span>
                           <span className={/limitata|1 disponibile/i.test(product.status) ? "is-scarce" : undefined}>{product.status}</span>
@@ -692,9 +616,9 @@ export function BleachwearsApp() {
                       <button
                         className="card-action"
                         type="button"
-                        onClick={() => addToCart(product.name, `${product.kind} · ${product.status}`, product.price)}
+                        onClick={() => setProductOpen(product)}
                       >
-                        <span>Aggiungi al carrello</span>
+                        <span>Scegli la taglia</span>
                         <span className="card-action-arrow" aria-hidden="true">→</span>
                       </button>
                     </article>
@@ -910,11 +834,14 @@ export function BleachwearsApp() {
                         type="button"
                         disabled={!confirmed}
                         onClick={() => {
-                          addToCart(
-                            "Custom Reaction",
-                            `${garment === "tee" ? "T-shirt" : "Felpa"} ${garmentSize} · ${activeColor.name} · ${design === "custom" ? customFileName || "file personale" : designs.find((item) => item.id === design)?.name} · ${activeReaction.name} · ${placement === "front" ? "fronte" : "retro"} · segno ${printScale}`,
-                            labPrice,
-                          );
+                          addToCart({
+                            sku: garment === "tee" ? "custom-tee" : "custom-hoodie",
+                            name: "Custom Reaction",
+                            detail: `${garment === "tee" ? "T-shirt" : "Felpa"} ${garmentSize} · ${activeColor.name} · ${design === "custom" ? customFileName || "file personale" : designs.find((item) => item.id === design)?.name} · ${activeReaction.name} · ${placement === "front" ? "fronte" : "retro"} · segno ${printScale}`,
+                            price: labPrice,
+                            size: garmentSize,
+                            options: { custom: design === "custom", back: placement === "back" },
+                          });
                           setConfirmed(false);
                         }}
                       >
@@ -932,15 +859,51 @@ export function BleachwearsApp() {
               </div>
             </section>
           )}
+
+          {view === "checkout" && (
+            <CheckoutView
+              items={cartItems}
+              shipping={shippingMethod}
+              returnInfo={stripeReturn}
+              onShippingChange={setShippingMethod}
+              onRemove={(id) => setCartItems((current) => current.filter((entry) => entry.id !== id))}
+              onBackToShop={() => navigate("shop")}
+              onCompleted={() => setCartItems([])}
+              onNotify={setToast}
+            />
+          )}
         </main>
 
         <footer className="footer-card">
           <div><GridMark /><strong>bleachwears</strong></div>
           <p>Coloriamo togliendo colore. Ogni capo passa dalle nostre mani e diventa irripetibile.</p>
           <div><span>Fatto a mano in Italia · © 2026</span><button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Torna su ↑</button></div>
+          <nav className="footer-legal" aria-label="Informazioni legali">
+            <a href="/legale/termini">Termini di vendita</a>
+            <a href="/legale/spedizioni-e-resi">Spedizioni e resi</a>
+            <a href="/legale/privacy">Privacy</a>
+          </nav>
         </footer>
 
       </div>
+
+      {productOpen && (
+        <ProductSheet
+          product={productOpen}
+          position={Math.max(1, catalogProducts.findIndex((product) => product.id === productOpen.id) + 1)}
+          onClose={() => setProductOpen(null)}
+          onAdd={(product, size: ClothingSize) => {
+            addToCart({
+              sku: product.id,
+              name: product.name,
+              detail: `${product.kind} · ${product.technique ?? "Fatto a mano"}`,
+              price: product.price,
+              size,
+            });
+            setProductOpen(null);
+          }}
+        />
+      )}
 
       {cartOpen && (
         <div className="cart-scrim" role="presentation" onMouseDown={closeCart}>
@@ -961,15 +924,15 @@ export function BleachwearsApp() {
                   {cartItems.map((item) => (
                     <li key={item.id}>
                       <span className="cart-item-swatch" aria-hidden="true" />
-                      <div><strong>{item.name}</strong><small>{item.detail}</small></div>
+                      <div><strong>{item.name}</strong><small>{item.size ? `Taglia ${item.size} · ` : ""}{item.detail}</small></div>
                       <b>{money(item.price)}</b>
                       <button type="button" onClick={() => setCartItems((current) => current.filter((entry) => entry.id !== item.id))} aria-label={`Rimuovi ${item.name}`}>×</button>
                     </li>
                   ))}
                 </ul>
                 <div className="cart-total"><span>Totale</span><strong>{money(cartItems.reduce((sum, item) => sum + item.price, 0))}</strong></div>
-                <button type="button" className="primary-wide-action" onClick={() => setToast("Checkout non ancora attivo: questa è una preview di design")}>Vai al checkout <span>→</span></button>
-                <p className="cart-helper">Pagamenti e spedizioni verranno collegati nella fase e-commerce.</p>
+                <button type="button" className="primary-wide-action" onClick={() => closeCartAndNavigate("checkout")}>Vai al checkout <span>→</span></button>
+                <p className="cart-helper">Pagamento con carta al prossimo passaggio · spedizione tracciata in Italia.</p>
               </>
             )}
           </aside>
@@ -999,7 +962,7 @@ type Splat = {
 
 const SPLAT_GOAL = 6;
 
-function SplashGame({ addToCart }: { addToCart: (name: string, detail: string, price: number) => void }) {
+function SplashGame({ addToCart }: { addToCart: (item: NewCartItem) => void }) {
   const [colorIndex, setColorIndex] = useState(0);
   const [splats, setSplats] = useState<Splat[]>([]);
   const sequence = useRef(0);
@@ -1073,7 +1036,13 @@ function SplashGame({ addToCart }: { addToCart: (name: string, detail: string, p
             className="poster-cta"
             disabled={!ready}
             onClick={() => {
-              addToCart("Pezzo acrilico", `Acrilico a mano · ${splats.length} gocce`, price);
+              addToCart({
+                sku: "acrylic-drops",
+                name: "Pezzo acrilico",
+                detail: `Acrilico a mano · ${splats.length} gocce`,
+                price,
+                options: { drops: splats.length },
+              });
               setSplats([]);
             }}
           >
@@ -1130,7 +1099,7 @@ function BentoHome({
 }: {
   navigate: (view: View) => void;
   notify: (message: string) => void;
-  addToCart: (name: string, detail: string, price: number) => void;
+  addToCart: (item: NewCartItem) => void;
   products: Product[];
   catalogSource: CatalogSource;
 }) {
