@@ -309,7 +309,9 @@ export default function Studio() {
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">
             <span className={styles.micro}>{status?.resolution ?? "1K"}</span>
             <span className={styles.micro}>
-              {status?.model ? status.model.replace(/^gemini-/, "") : "nano-banana-2.1"}
+              {status?.model
+                ? status.model.replace(/^gemini-/, "").replace(/^@cf\/black-forest-labs\//, "")
+                : "nano-banana-2.1"}
             </span>
             <Link href="/" className={styles.backLink}>
               ← bleachwears
@@ -575,9 +577,11 @@ export default function Studio() {
               <div className={cx(styles.notice, "mt-6")}>
                 <span className={cx(styles.micro, "pt-[0.15rem]")}>Setup</span>
                 <p>
-                  <strong>Manca la chiave.</strong> Aggiungi <code className={styles.codeChip}>GEMINI_API_KEY</code>{" "}
-                  alle variabili d&apos;ambiente (in locale <code className={styles.codeChip}>.env.local</code>, su Vercel
-                  in Project Settings) e riavvia. Finché non c&apos;è, l&apos;app non finge nulla.
+                  <strong>Manca la chiave.</strong> Aggiungi <code className={styles.codeChip}>CLOUDFLARE_ACCOUNT_ID</code>{" "}
+                  e <code className={styles.codeChip}>CLOUDFLARE_API_TOKEN</code> (piano Free, senza carta) oppure{" "}
+                  <code className={styles.codeChip}>GEMINI_API_KEY</code> alle variabili d&apos;ambiente (in locale{" "}
+                  <code className={styles.codeChip}>.env.local</code>, su Vercel in Project Settings) e riavvia.
+                  Finché non c&apos;è, l&apos;app non finge nulla.
                 </p>
               </div>
             ) : null}
