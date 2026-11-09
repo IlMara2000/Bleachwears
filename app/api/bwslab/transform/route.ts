@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { MIME_BY_KIND, readDimensions, sniffKind } from "@/lib/stencil/image-size";
 import { clientIdFrom, takeToken } from "@/lib/stencil/rate-limit";
-import { StencilError, isConfigured, transformImage } from "@/lib/stencil/provider";
+import { StencilError, activeModel, isConfigured, transformImage } from "@/lib/stencil/provider";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 export async function POST(request: Request) {
   if (!isConfigured()) {
     return NextResponse.json(
-      { error: "Il generatore non è configurato su questo deploy: aggiungi GEMINI_API_KEY e riprova." },
+      { error: "Il generatore non è configurato su questo deploy: manca la chiave del provider." },
       { status: 503 },
     );
   }
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
         "Content-Type": result.mimeType,
         "Content-Length": String(result.bytes.length),
         "Cache-Control": "no-store, max-age=0",
-        "X-Stencil-Model": process.env.GEMINI_MODEL?.trim() || "gemini-nano-banana-2.1",
+        "X-Stencil-Model": activeModel(),
       },
     });
   } catch (error) {

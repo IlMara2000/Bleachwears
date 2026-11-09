@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { findImagePayload, nearestAspectRatio, STENCIL_PROMPT } from "../lib/stencil/provider.ts";
+import { findImagePayload, nearestAspectRatio, readCloudflareImage, STENCIL_PROMPT } from "../lib/stencil/provider.ts";
 import { readDimensions, sniffKind } from "../lib/stencil/image-size.ts";
 
 test("keeps the art direction that makes every result look like the same studio", () => {
@@ -37,6 +37,16 @@ test("finds the image whatever shape the provider answers with", () => {
     { data: "Q0ND", mimeType: "image/png" },
   );
   assert.equal(findImagePayload({ output_text: "no image here" }), undefined);
+});
+
+test("reads the free provider's image whether it is bare base64 or a data URL", () => {
+  assert.deepEqual(readCloudflareImage({ result: { image: "QUJD" } }), { data: "QUJD", mimeType: "image/png" });
+  assert.deepEqual(readCloudflareImage({ result: { image: "data:image/jpeg;base64,REVG" } }), {
+    data: "REVG",
+    mimeType: "image/jpeg",
+  });
+  assert.equal(readCloudflareImage({ result: {} }), undefined);
+  assert.equal(readCloudflareImage({ errors: [{ message: "boom" }] }), undefined);
 });
 
 test("reads the real type and size from the bytes, not the file name", () => {
