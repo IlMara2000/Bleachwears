@@ -4,9 +4,12 @@ import type { ImageSegmenter } from "@mediapipe/tasks-vision";
 
 import {
   backgroundLabel,
+  centerLabel,
   despeckle,
   fillHoles,
   hardenCoverage,
+  keepCenterComponent,
+  labelMask,
   luminanceOf,
   pruneDistantIslands,
   refineCoverage,
@@ -127,8 +130,14 @@ export async function renderStencil(
   const maskHeight = categoryMask.height;
   categoryMask.close();
 
-  const background = backgroundLabel(labels, maskWidth, maskHeight);
-  let mask = subjectMask(labels, maskWidth, maskHeight, background);
+  /* What sits in the middle of the frame is the subject. Reading the outer ring
+     instead inverts the cut whenever the subject runs off an edge: a shirt that
+     fills the bottom border looks like backdrop and the person gets erased. */
+  const focus = centerLabel(labels, maskWidth, maskHeight);
+  let mask =
+    focus > 0
+      ? keepCenterComponent(labelMask(labels, maskWidth, maskHeight, focus))
+      : subjectMask(labels, maskWidth, maskHeight, backgroundLabel(labels, maskWidth, maskHeight));
   mask = despeckle(mask, 2);
   mask = pruneDistantIslands(mask, 0.008);
   mask = fillHoles(mask, 0.02);

@@ -43,6 +43,94 @@ export function backgroundLabel(labels: Uint8Array, width: number, height: numbe
   return best;
 }
 
+/**
+ * The middle of the frame is where the subject is. The ring alone gets it wrong
+ * as soon as the subject runs off an edge: a shirt across the bottom wins the
+ * vote, the person is read as backdrop and the whole cut comes out inverted.
+ */
+export function centerLabel(labels: Uint8Array, width: number, height: number): number {
+  const counts = new Uint32Array(256);
+  const left = Math.round(width * 0.3);
+  const right = Math.round(width * 0.7);
+  const top = Math.round(height * 0.3);
+  const bottom = Math.round(height * 0.7);
+
+  for (let y = top; y < bottom; y += 1) {
+    for (let x = left; x < right; x += 1) {
+      counts[labels[y * width + x]] += 1;
+    }
+  }
+
+  let best = 0;
+  let bestCount = -1;
+  for (let label = 0; label < 256; label += 1) {
+    if (counts[label] > bestCount) {
+      bestCount = counts[label];
+      best = label;
+    }
+  }
+  return best;
+}
+
+/**
+ * Keep only the blob the centre of the frame belongs to. A second person- shaped
+ * thing in the shot (a statue, a poster) shares the class but is a separate
+ * island, and cutting both ruins the poster.
+ */
+export function keepCenterComponent(mask: Mask): Mask {
+  const { data, width, height } = mask;
+  const centreX = Math.floor(width / 2);
+  const centreY = Math.floor(height / 2);
+
+  let seed = centreY * width + centreX;
+  if (data[seed] === 0) {
+    /* The exact middle can land on a dark gap: take the closest subject pixel. */
+    let bestDistance = Infinity;
+    for (let index = 0; index < data.length; index += 1) {
+      if (data[index] === 0) continue;
+      const x = index % width;
+      const y = (index - x) / width;
+      const distance = (x - centreX) ** 2 + (y - centreY) ** 2;
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        seed = index;
+      }
+    }
+    if (bestDistance === Infinity) return mask;
+  }
+
+  const kept = new Uint8Array(data.length);
+  const stack = new Int32Array(data.length);
+  let top = 0;
+  stack[top++] = seed;
+  kept[seed] = 1;
+  while (top > 0) {
+    const index = stack[--top];
+    const x = index % width;
+    const push = (next: number) => {
+      if (data[next] === 1 && kept[next] === 0) {
+        kept[next] = 1;
+        stack[top++] = next;
+      }
+    };
+    if (x > 0) push(index - 1);
+    if (x < width - 1) push(index + 1);
+    if (index >= width) push(index - width);
+    if (index + width < data.length) push(index + width);
+  }
+
+  return { data: kept, width, height };
+}
+
+/** One class only: the subject the model named, with every other class dropped. */
+export function labelMask(labels: Uint8Array, width: number, height: number, label: number): Mask {
+  const data = new Uint8Array(width * height);
+  for (let index = 0; index < data.length; index += 1) {
+    data[index] = labels[index] === label ? 1 : 0;
+  }
+  return { data, width, height };
+}
+
 export function subjectMask(labels: Uint8Array, width: number, height: number, background: number): Mask {
   const data = new Uint8Array(width * height);
   for (let index = 0; index < data.length; index += 1) {

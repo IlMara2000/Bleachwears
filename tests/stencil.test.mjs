@@ -90,6 +90,41 @@ test("the local engine treats whatever owns the frame as background", async () =
   assert.equal(mask.data[5], 1);
 });
 
+test("the class in the middle of the frame stays the subject even when it fills an edge", async () => {
+  const { backgroundLabel, centerLabel, labelMask } = await import("../lib/stencil/local-core.ts");
+  /* 6x6: the person (15) runs across the whole bottom border, so the ring vote
+     names the person as background. The middle of the frame must still win. */
+  const labels = new Uint8Array(36).fill(7);
+  for (let y = 2; y < 6; y += 1) {
+    for (let x = 0; x < 6; x += 1) labels[y * 6 + x] = 15;
+  }
+
+  assert.equal(backgroundLabel(labels, 6, 6), 15, "the ring vote is fooled");
+  const focus = centerLabel(labels, 6, 6);
+  assert.equal(focus, 15);
+  const mask = labelMask(labels, 6, 6, focus);
+  assert.equal(mask.data[0], 0, "the top backdrop is dropped");
+  assert.equal(mask.data[3 * 6 + 2], 1, "the subject survives");
+});
+
+test("a second object of the same class away from the middle is not cut with it", async () => {
+  const { keepCenterComponent } = await import("../lib/stencil/local-core.ts");
+  /* 8x4: the subject sits in the middle, a statue-shaped island on the right. */
+  const width = 8;
+  const height = 4;
+  const data = new Uint8Array(width * height);
+  for (let y = 0; y < height; y += 1) {
+    data[y * width + 3] = 1;
+    data[y * width + 4] = 1;
+    data[y * width + 7] = 1;
+  }
+
+  const kept = keepCenterComponent({ data, width, height });
+  assert.equal(kept.data[1 * width + 3], 1, "the subject stays");
+  assert.equal(kept.data[1 * width + 4], 1, "the subject stays");
+  assert.equal(kept.data[1 * width + 7], 0, "the far island goes");
+});
+
 test("holes get closed so the poster has no white specks inside the figure", async () => {
   const { fillHoles } = await import("../lib/stencil/local-core.ts");
   const width = 7;
