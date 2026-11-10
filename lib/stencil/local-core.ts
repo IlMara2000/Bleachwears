@@ -576,7 +576,7 @@ function structureInk(
   }
   samples.sort((a, b) => a - b);
   /* Relative to this face: a dark suit and a pale face need different scales. */
-  const threshold = Math.max(0.04, percentile(samples, 0.92));
+  const threshold = Math.max(0.04, percentile(samples, 0.955));
 
   const ink = new Float32Array(smoothed.length);
   for (let index = 0; index < ink.length; index += 1) {
@@ -659,25 +659,87 @@ export function structureLines(
   return dropLineDots(binary, width, height, Math.max(24, Math.round(width * height * 0.00008)));
 }
 
+/**
+ * Coarse skin map from chroma alone. Chroma and not brightness, so pale and
+ * deep skin both pass while grey cloth and most hair do not.
+ */
+function skinMask(
+  rgba: Uint8ClampedArray,
+  coverage: Float32Array,
+  width: number,
+  height: number,
+): Uint8Array {
+  const skin = new Uint8Array(coverage.length);
+  for (let index = 0; index < coverage.length; index += 1) {
+    if (coverage[index] <= 0.5) continue;
+    const offset = index * 4;
+    const r = rgba[offset];
+    const g = rgba[offset + 1];
+    const b = rgba[offset + 2];
+    const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+    const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+    if (cb >= 74 && cb <= 132 && cr >= 128 && cr <= 178) skin[index] = 1;
+  }
+  /* Stubble and knitwear tick the same boxes: keep only face-sized areas. */
+  return dropLineDots(skin, width, height, Math.max(400, Math.round(width * height * 0.002)));
+}
+
 /** Tone split for the cartoon look, shared by the pixel and vector renderers. */
 function levelsFromLuminance(
   smooth: Float32Array,
   coverage: Float32Array,
   width: number,
   height: number,
+  rgba?: Uint8ClampedArray,
 ): Uint8Array {
+  const raw = new Uint8Array(smooth.length);
+
   /*
-   * Cartoon tones are split by population, not brightness: only the darkest
-   * 18% becomes shadow and the brightest 14% highlight, so skin sits on the
-   * light base ink. A face never turns into a grey mask just because the photo
-   * was exposed low, and a white shirt never eats a whole level.
+   * Skin is split against itself, not against the whole silhouette: that is
+   * what makes every face land on the light inks with a shading plane, whether
+   * the photo is a pale face on a white shirt or a deep tone in a dark suit.
+   */
+  const skin = rgba ? skinMask(rgba, coverage, width, height) : null;
+  const skinSamples: number[] = [];
+  let skinCount = 0;
+  let coveredCount = 0;
+  if (skin) {
+    for (let index = 0; index < smooth.length; index += 1) {
+      if (coverage[index] <= 0.5) continue;
+      coveredCount += 1;
+      if (skin[index] === 1) {
+        skinCount += 1;
+        skinSamples.push(smooth[index]);
+      }
+    }
+    skinSamples.sort((a, b) => a - b);
+  }
+  const hasSkin = coveredCount > 0 && skinCount / coveredCount > 0.05;
+  /*
+   * Relative to the middle of the face, not to percentiles of it: a percentile
+   * always cuts somewhere, so an evenly lit face was split into blotches. With
+   * a margin off the median, an even face stays one clean ink and only a real
+   * shadow plane or a deep crease gets its own tone.
+   */
+  const skinMiddle = hasSkin ? percentile(skinSamples, 0.5) : 0;
+  const skinDeep = skinMiddle * 0.68;
+  const skinLit = skinMiddle * 0.88;
+
+  /*
+   * Everything else is split by population, not brightness: only the darkest
+   * 18% becomes shadow and the brightest 14% highlight, so a white shirt never
+   * eats a whole level.
    */
   const samples = subjectSamples(smooth, coverage);
   const shadowEdge = percentile(samples, 0.18);
   const lightEdge = percentile(samples, 0.86);
-  const raw = new Uint8Array(smooth.length);
   for (let index = 0; index < raw.length; index += 1) {
-    raw[index] = smooth[index] < shadowEdge ? 0 : smooth[index] < lightEdge ? 1 : 2;
+    const value = smooth[index];
+    if (skin && skin[index] === 1 && hasSkin) {
+      raw[index] = value < skinDeep ? 0 : value < skinLit ? 1 : 2;
+    } else {
+      raw[index] = value < shadowEdge ? 0 : value < lightEdge ? 1 : 2;
+    }
   }
   /* A majority vote keeps flat areas flat: no speckle, no dots. */
   return settleTones(raw, coverage, width, height, 3);
@@ -695,7 +757,7 @@ export function cartoonLevels(
 ): Uint8Array {
   const luminance = luminanceOf(rgba);
   const radius = Math.min(10, Math.max(3, Math.round(Math.min(width, height) / 150)));
-  return levelsFromLuminance(boxBlur(luminance, width, height, radius), coverage, width, height);
+  return levelsFromLuminance(boxBlur(luminance, width, height, radius), coverage, width, height, rgba);
 }
 
 /**
@@ -744,7 +806,7 @@ export function stylize(
       }
       levels = settleTones(raw, coverage, width, height, 2);
     } else {
-      levels = levelsFromLuminance(smooth, coverage, width, height);
+      levels = levelsFromLuminance(smooth, coverage, width, height, rgba);
     }
   }
 

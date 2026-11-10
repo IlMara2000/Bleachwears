@@ -28,8 +28,7 @@ export function renderCartoon(
   const traceWidth = Math.ceil(width / step);
   const traceHeight = Math.ceil(height / step);
 
-  for (let level = 0; level < CARTOON_INKS.length; level += 1) {
-    const votes = new Uint8Array(traceWidth * traceHeight);
+  for (let level = 0; level < CARTOON_INKS.length; level += 1) {    const votes = new Uint8Array(traceWidth * traceHeight);
     for (let y = 0; y < height; y += 1) {
       for (let x = 0; x < width; x += 1) {
         const index = y * width + x;
@@ -43,7 +42,13 @@ export function renderCartoon(
     for (let index = 0; index < votes.length; index += 1) binary[index] = votes[index] >= 2 ? 1 : 0;
     const clean = settleBinary(binary, traceWidth, traceHeight, 1);
 
-    const loops = tracePolygons(clean, traceWidth, traceHeight, minArea / (step * step)).map(
+    /*
+     * Shading planes are large; specks are not. The dark tone keeps the small
+     * budget because that is where eyes and nostrils live, while grey islands
+     * under a clothes fold have to be big enough to be a decision.
+     */
+    const levelMinArea = level === 0 ? minArea : Math.round(minArea * 3);
+    const loops = tracePolygons(clean, traceWidth, traceHeight, levelMinArea / (step * step)).map(
       (loop) => {
         const scaled = loop.map((value) => value * step);
         return smoothPolygon(scaled, 3);
