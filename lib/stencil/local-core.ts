@@ -775,15 +775,25 @@ export function stylize(
       let value: number;
 
       if (mode === "engrave") {
+        /*
+         * Engraving on a face: the lit half stays paper, one set of thin lines
+         * starts only in real mid-shadow, and the crossing sets are held back
+         * for hair, cloth and dark accessories. Strokes stay under a pixel and
+         * a half wide, so the comb reads as drawn lines instead of a grey wash
+         * that darkens the skin.
+         */
         const demand = 1 - shade[index];
+        const first = Math.min(0.9, Math.max(0, (demand - 0.46) * 3));
+        const second = Math.min(1, Math.max(0, (demand - 0.66) * 3.2));
+        const third = Math.min(1.5, Math.max(0, (demand - 0.8) * 4));
         const ink = Math.max(
-          hatchLine((x + y) * diagonal, 6, Math.min(1.8, Math.max(0, (demand - 0.28) * 4))),
-          hatchLine((x - y) * diagonal, 6, Math.min(1.8, Math.max(0, (demand - 0.5) * 4))),
-          hatchLine(x * 0.5 + y * 0.866, 5, Math.min(2.2, Math.max(0, (demand - 0.7) * 4))),
-          Math.min(1, Math.max(0, (demand - 0.9) * 10)),
+          hatchLine((x + y) * diagonal, 5, first),
+          hatchLine((x - y) * diagonal, 5, second),
+          hatchLine(x * 0.5 + y * 0.866, 4, third),
+          Math.min(1, Math.max(0, (demand - 0.94) * 12)),
           lines[index],
         );
-        value = 248 - ink * 238;
+        value = 250 - ink * 244;
       } else if (mode === "flat") {
         value = STENCIL_TONES[Math.min(STENCIL_TONES.length - 1, level)];
       } else {
