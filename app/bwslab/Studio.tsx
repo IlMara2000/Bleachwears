@@ -7,8 +7,10 @@ import {
   STENCIL_STYLES,
   preloadLocalEngine,
   renderStencil,
+  segmentSubject,
   type StencilStyle,
 } from "@/lib/stencil/local";
+import MaskEditorOverlay from "./MaskEditorOverlay";
 import styles from "./stencil.module.css";
 
 type Phase = "idle" | "ready" | "working" | "done";
@@ -187,6 +189,13 @@ export default function Studio() {
   const [split, setSplit] = useState(50);
   const [run, setRun] = useState(0);
 
+  const [editMode, setEditMode] = useState<"paint" | "erase">("paint");
+  const [brush, setBrush] = useState(8);
+  const [mask, setMask] = useState<Uint8Array | null>(null);
+  const [maskSize, setMaskSize] = useState<{ width: number; height: number } | null>(null);
+  const [maskReady, setMaskReady] = useState(false);
+  const [maskBusy, setMaskBusy] = useState(false);
+
   /* No key means the browser does the work: same studio, zero running costs. */
   const local = !status?.configured;
   const modelLabel = local
@@ -247,6 +256,10 @@ export default function Studio() {
       setSource(prepared);
       setPhase("ready");
       setSplit(50);
+      /* A mask belongs to one photo: a new upload starts from scratch. */
+      setMask(null);
+      setMaskSize(null);
+      setMaskReady(false);
     } catch (prepareError) {
       setError(messageFor(prepareError));
     } finally {
@@ -282,7 +295,17 @@ export default function Studio() {
         if (local) {
           const bitmap = await createImageBitmap(current.file);
           try {
-            blob = (await renderStencil(bitmap, { style: activeStyle })).blob;
+            const result = await renderStencil(bitmap, {
+              style: activeStyle,
+              mask: mask ?? undefined,
+              maskWidth: maskSize?.width,
+              maskHeight: maskSize?.height,
+            });
+            blob = result.blob;
+            if (result.mask && result.maskWidth && result.maskHeight) {
+              setMask(result.mask);
+              setMaskSize({ width: result.maskWidth, height: result.maskHeight });
+            }
           } finally {
             bitmap.close();
           }
@@ -326,8 +349,37 @@ export default function Studio() {
         abortRef.current = null;
       }
     },
-    [local, style],
+    [local, style, mask, maskSize],
   );
+
+  /**
+   * The editor needs a mask, and before the first print there is none: cut the
+   * subject once so the brush starts from the same read the print would use.
+   */
+  const openEditor = useCallback(async () => {
+    const current = sourceRef.current;
+    if (!current) return;
+    if (!mask) {
+      setMaskBusy(true);
+      setError(null);
+      try {
+        const bitmap = await createImageBitmap(current.file);
+        try {
+          const cut = await segmentSubject(bitmap);
+          setMask(cut.mask);
+          setMaskSize({ width: cut.width, height: cut.height });
+        } finally {
+          bitmap.close();
+        }
+      } catch (segmentError) {
+        setError(messageFor(segmentError));
+        return;
+      } finally {
+        setMaskBusy(false);
+      }
+    }
+    setMaskReady(true);
+  }, [mask]);
 
   const reset = useCallback(() => {
     abortRef.current?.abort();
@@ -364,9 +416,23 @@ export default function Studio() {
   }, [accept, phase]);
 
   const working = phase === "working";
+  const editing = maskReady && !working && mask !== null && maskSize !== null;
 
   return (
     <div className={styles.root}>
+      {editing && source && mask && maskSize ? (
+        <MaskEditorOverlay
+          source={source}
+          mask={mask}
+          maskSize={maskSize}
+          brush={brush}
+          editMode={editMode}
+          onBrush={setBrush}
+          onMode={setEditMode}
+          onMask={setMask}
+          onClose={() => setMaskReady(false)}
+        />
+      ) : null}
       <div className={styles.shell}>
         <header className={cx("flex flex-wrap items-end justify-between gap-6 pb-6", styles.hairlineBottom)}>
           <div>
@@ -541,6 +607,16 @@ export default function Studio() {
                 {local ? (
                   <StyleSwitch value={style} onChange={setStyle} />
                 ) : null}
+                <div className={cx(styles.dockRow, "mt-4")}>
+                  <button
+                    type="button"
+                    className={cx(styles.btn, styles.btnGhost)}
+                    onClick={() => void openEditor()}
+                    disabled={maskBusy}
+                  >
+                    {maskBusy ? "Preparo la maschera…" : "Correggi maschera"}
+                  </button>
+                </div>
                 <div className={styles.dock}>
                   <button
                     type="button"
@@ -617,6 +693,16 @@ export default function Studio() {
                     }}
                   />
                 ) : null}
+                <div className={cx(styles.dockRow, "mt-4")}>
+                  <button
+                    type="button"
+                    className={cx(styles.btn, styles.btnGhost)}
+                    onClick={() => void openEditor()}
+                    disabled={maskBusy}
+                  >
+                    {maskBusy ? "Preparo la maschera…" : "Correggi maschera"}
+                  </button>
+                </div>
                 <div className={styles.dock}>
                   <a
                     className={cx(styles.btn, styles.btnPrimary, styles.btnWide)}

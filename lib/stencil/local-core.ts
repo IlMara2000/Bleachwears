@@ -515,6 +515,47 @@ export function hardenCoverage(coverage: Float32Array, low = 0.42, high = 0.62):
  * Bilinear coverage at the output size. Sampling the coarse mask smoothly
  * instead of on its own grid is what removes the stair-step silhouette.
  */
+export function upsampleMask(mask: Mask, width: number, height: number): Uint8Array {
+  const coverage = upsampleCoverage(mask, width, height);
+  const out = new Uint8Array(coverage.length);
+  for (let index = 0; index < coverage.length; index += 1) out[index] = coverage[index] > 0.5 ? 1 : 0;
+  return out;
+}
+
+/**
+ * Average a full-size mask back onto the model's grid. A hand-drawn line is
+ * kept wherever it covers the cell, so thin strokes survive the shrink.
+ */
+export function downsampleMask(mask: Mask, width: number, height: number): Mask {
+  const scaleX = mask.width / width;
+  const scaleY = mask.height / height;
+  const data = new Uint8Array(width * height);
+
+  for (let y = 0; y < height; y += 1) {
+    const y0 = Math.floor(y * scaleY);
+    const y1 = Math.min(mask.height - 1, Math.ceil((y + 1) * scaleY) - 1);
+    for (let x = 0; x < width; x += 1) {
+      const x0 = Math.floor(x * scaleX);
+      const x1 = Math.min(mask.width - 1, Math.ceil((x + 1) * scaleX) - 1);
+      let sum = 0;
+      let count = 0;
+      for (let yy = y0; yy <= y1; yy += 1) {
+        for (let xx = x0; xx <= x1; xx += 1) {
+          sum += mask.data[yy * mask.width + xx];
+          count += 1;
+        }
+      }
+      data[y * width + x] = count > 0 && sum / count > 0.5 ? 1 : 0;
+    }
+  }
+
+  return { data, width, height };
+}
+
+/**
+ * Bilinear coverage at the output size. Sampling the coarse mask smoothly
+ * instead of on its own grid is what removes the stair-step silhouette.
+ */
 export function upsampleCoverage(mask: Mask, width: number, height: number): Float32Array {
   const coverage = new Float32Array(width * height);
   const scaleX = mask.width / width;

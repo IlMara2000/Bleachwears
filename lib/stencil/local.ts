@@ -15,8 +15,16 @@ import {
   refineCoverage,
   stylize,
   subjectMask,
+  type Mask,
+  downsampleMask,
   upsampleCoverage,
+  upsampleMask,
 } from "./local-core";
+
+/**
+ * The two looks the local engine offers. `flat` stays internal to the core.
+ */
+export type StencilStyle = "cartoon" | "engrave";
 import { renderCartoon } from "./vector";
 
 /**
@@ -81,10 +89,17 @@ function segmenter(): Promise<ImageSegmenter> {
   return segmenterPromise;
 }
 
-export type LocalStencil = { blob: Blob; width: number; height: number };
+export type LocalStencil = {
+  blob: Blob;
+  width: number;
+  height: number;
+  mask?: Uint8Array;
+  maskWidth?: number;
+  maskHeight?: number;
+};
 
-/** The two looks the local engine offers. `flat` stays internal to the core. */
-export type StencilStyle = "cartoon" | "engrave";
+/** A mask the user drew by hand, at whatever resolution the editor worked in. */
+export type MaskOptions = { mask?: Uint8Array; maskWidth?: number; maskHeight?: number };
 
 export const STENCIL_STYLES: Array<{ id: StencilStyle; label: string; note: string }> = [
   { id: "cartoon", label: "Cartoon", note: "Tinte piatte, contorni neri" },
@@ -98,11 +113,8 @@ function sizeOf(source: ImageBitmap | HTMLImageElement) {
   return { width: source.width, height: source.height };
 }
 
-export async function renderStencil(
-  source: ImageBitmap | HTMLImageElement,
-  options: { style?: StencilStyle } = {},
-): Promise<LocalStencil> {
-  const style = options.style ?? "cartoon";
+/** The photo drawn at output resolution, ready for the model or the renderer. */
+function frameOf(source: ImageBitmap | HTMLImageElement) {
   const { width: sourceWidth, height: sourceHeight } = sizeOf(source);
   if (!sourceWidth || !sourceHeight) throw new Error("Non riesco a leggere le dimensioni di questa immagine.");
 
@@ -118,7 +130,29 @@ export async function renderStencil(
 
   context.imageSmoothingQuality = "high";
   context.drawImage(source, 0, 0, width, height);
-  const frame = context.getImageData(0, 0, width, height);
+  return { canvas, context, width, height };
+}
+
+/**
+ * The subject cut at output resolution: either the strokes the user drew by
+ * hand or the model's own read. Both paths live here so the editor preview and
+ * the print can never disagree about what is inside the subject.
+ */
+async function resolveMask(
+  canvas: HTMLCanvasElement,
+  width: number,
+  height: number,
+  options: MaskOptions,
+): Promise<Mask> {
+  if (options.mask && options.maskWidth && options.maskHeight) {
+    /* A hand-edited mask may come in at any size: bring it to the output
+       resolution so the guided filter and the renderer agree on every pixel.
+       Nothing is despeckled or pruned here, or a one-pixel stroke would go. */
+    const supplied: Mask = { data: options.mask, width: options.maskWidth, height: options.maskHeight };
+    if (supplied.width === width && supplied.height === height) return supplied;
+    if (supplied.width >= width && supplied.height >= height) return downsampleMask(supplied, width, height);
+    return { data: upsampleMask(supplied, width, height), width, height };
+  }
 
   const model = await segmenter();
   const result = model.segment(canvas);
@@ -134,18 +168,47 @@ export async function renderStencil(
      instead inverts the cut whenever the subject runs off an edge: a shirt that
      fills the bottom border looks like backdrop and the person gets erased. */
   const focus = centerLabel(labels, maskWidth, maskHeight);
-  let mask =
+  const raw =
     focus > 0
       ? keepCenterComponent(labelMask(labels, maskWidth, maskHeight, focus))
       : subjectMask(labels, maskWidth, maskHeight, backgroundLabel(labels, maskWidth, maskHeight));
-  mask = despeckle(mask, 2);
-  mask = pruneDistantIslands(mask, 0.008);
-  mask = fillHoles(mask, 0.02);
+
+  return fillHoles(pruneDistantIslands(despeckle(raw, 2), 0.008), 0.02);
+}
+
+/**
+ * The subject cut on its own, no ink: the editor needs a mask before the first
+ * print, and this is the same read that print would have used.
+ */
+export async function segmentSubject(
+  source: ImageBitmap | HTMLImageElement,
+  options: MaskOptions = {},
+): Promise<{ mask: Uint8Array; width: number; height: number }> {
+  const { canvas, width, height } = frameOf(source);
+  const mask = await resolveMask(canvas, width, height, options);
+  return { mask: mask.data, width: mask.width, height: mask.height };
+}
+
+export async function renderStencil(
+  source: ImageBitmap | HTMLImageElement,
+  options: { style?: StencilStyle } & MaskOptions = {},
+): Promise<LocalStencil> {
+  const style = options.style ?? "cartoon";
+  const { canvas, context, width, height } = frameOf(source);
+  const frame = context.getImageData(0, 0, width, height);
+  const mask = await resolveMask(canvas, width, height, options);
 
   let subject = 0;
   for (let index = 0; index < mask.data.length; index += 1) subject += mask.data[index];
   const share = subject / mask.data.length;
-  if (share < 0.005 || share > 0.95) {
+  if (share < 0.005) {
+    throw new Error(
+      options.mask
+        ? "La maschera è vuota: dipingi il soggetto prima di stampare."
+        : "Non distinguo il soggetto dallo sfondo in questa foto. Prova un'immagine con il soggetto più staccato e centrato.",
+    );
+  }
+  if (!options.mask && share > 0.95) {
     throw new Error(
       "Non distinguo il soggetto dallo sfondo in questa foto. Prova un'immagine con il soggetto più staccato e centrato.",
     );
@@ -173,5 +236,7 @@ export async function renderStencil(
     );
   });
 
-  return { blob, width, height };
+  const outMask = new Uint8Array(coverage.length);
+  for (let index = 0; index < coverage.length; index += 1) outMask[index] = coverage[index] > 0.5 ? 1 : 0;
+  return { blob, width, height, mask: outMask, maskWidth: width, maskHeight: height };
 }
