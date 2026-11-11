@@ -92,13 +92,31 @@ export default function MaskEditorOverlay({
     return () => observer.disconnect();
   }, []);
 
+  /* Brackets are the familiar brush keys; Shift makes a coarse jump for the
+     silhouette and leaves the fine steps for the edge. */
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+
+      const step = event.shiftKey ? 8 : 2;
+      if (event.key === "[" || event.key === "-" || event.key === "_") {
+        event.preventDefault();
+        onBrush(Math.max(2, brush - step));
+      } else if (event.key === "]" || event.key === "+" || event.key === "=") {
+        event.preventDefault();
+        onBrush(Math.min(80, brush + step));
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [brush, onBrush, onClose]);
 
   /* Contain the photo in the viewport: a stretched canvas would send every
      stroke somewhere other than where the pointer is. */
@@ -243,6 +261,7 @@ export default function MaskEditorOverlay({
             type="button"
             className={cx(styles.btn, "min-h-0 px-3")}
             aria-label="Pennello più piccolo"
+            aria-keyshortcuts="["
             onClick={() => onBrush(Math.max(2, brush - 2))}
           >
             −
@@ -251,6 +270,7 @@ export default function MaskEditorOverlay({
             type="button"
             className={cx(styles.btn, "min-h-0 px-3")}
             aria-label="Pennello più grande"
+            aria-keyshortcuts="]"
             onClick={() => onBrush(Math.min(80, brush + 2))}
           >
             +
@@ -300,7 +320,9 @@ export default function MaskEditorOverlay({
 
       <div className="border-t border-[var(--sl-hairline)] px-5 py-3">
         <p className={cx(styles.micro, "leading-relaxed")}>
-          Trascina sulla foto. Chiaro: soggetto che entra nello stencil. Scuro: sfondo che resta fuori.
+          Trascina sulla foto. Chiaro: soggetto che entra nello stencil. Scuro: sfondo che resta
+          fuori. Pennello: <span className={styles.codeChip}>[</span> e{" "}
+          <span className={styles.codeChip}>]</span> di 2 px, con Shift di 8 px · Esc chiude.
         </p>
       </div>
     </div>
