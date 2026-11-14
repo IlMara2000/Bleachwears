@@ -1,3 +1,5 @@
+import { compileEditPrompt, type PromptProvider } from "./prompt";
+
 /**
  * The single art direction of Stencil Lab.
  *
@@ -213,10 +215,16 @@ export type TransformInput = {
   prompt?: string;
 };
 
-/** An empty or missing prompt falls back to the house style, never to nothing. */
-function promptFor(input: TransformInput): string {
+/**
+ * A user instruction is compiled into a brief for the receiving model; an
+ * empty or missing one falls back to the house style, never to nothing.
+ */
+function promptFor(input: TransformInput, provider: PromptProvider): string {
   const custom = input.prompt?.trim();
-  return custom ? custom : STENCIL_PROMPT;
+  if (!custom) return STENCIL_PROMPT;
+
+  const compiled = compileEditPrompt(custom, provider);
+  return compiled.text || STENCIL_PROMPT;
 }
 
 export async function transformImage(input: TransformInput): Promise<TransformResult> {
@@ -285,7 +293,7 @@ async function transformWithCloudflare(input: TransformInput): Promise<Transform
   const form = new FormData();
   form.append(
     "prompt",
-    `${promptFor(input)}\n\nRedraw input_image_0 as described above and keep its framing and aspect ratio.`,
+    `${promptFor(input, "cloudflare")}\n\nRedraw input_image_0 as described above and keep its framing and aspect ratio.`,
   );
   form.append("input_image_0", new Blob([new Uint8Array(reference)], { type: "image/jpeg" }), "input.jpg");
 
@@ -365,7 +373,7 @@ async function transformWithGemini(input: TransformInput): Promise<TransformResu
       body: JSON.stringify({
         model: MODEL,
         input: [
-          { type: "text", text: promptFor(input) },
+          { type: "text", text: promptFor(input, "gemini") },
           {
             type: "image",
             mime_type: input.mimeType,
@@ -556,7 +564,7 @@ async function transformWithComfyUI(input: TransformInput): Promise<TransformRes
       cache: "no-store",
       signal: AbortSignal.timeout(30_000),
       body: JSON.stringify({
-        prompt: comfyuiGraph(promptFor(input), imageName),
+        prompt: comfyuiGraph(promptFor(input, "local"), imageName),
         client_id: `bwslab-${Date.now()}`,
       }),
     });

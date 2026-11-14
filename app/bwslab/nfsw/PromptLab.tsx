@@ -460,7 +460,8 @@ export default function PromptLab() {
 
               <div className={styles.notice}>
                 <p>
-                  Il prompt va al modello così com&apos;è: qui non c&apos;è uno stile imposto.{" "}
+                  Il prompt non arriva grezzo al modello: viene prima riscritto in un brief che chiede
+                  solo la modifica indicata e lascia intatto il resto dell&apos;immagine.{" "}
                   <strong>{timingLine(status)}</strong> {quotaLine(status)}
                 </p>
               </div>
