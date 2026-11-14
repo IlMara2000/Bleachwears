@@ -20,6 +20,36 @@ const CLIENT_TIMEOUT_MS = 660_000;
 
 type Prepared = { file: File; url: string; width: number; height: number; name: string };
 
+type Status = {
+  configured: boolean;
+  provider?: string;
+  model: string;
+  resolution: string;
+  budget?: { cap: number; used: number; remaining: number };
+};
+
+/**
+ * The notice has to match what the server actually does. A local model has no
+ * daily cap, so promising one would be a lie printed in the UI.
+ */
+function timingLine(status: Status | null): string {
+  if (!status) return "Ogni immagine richiede da uno a cinque minuti, secondo il modello in uso.";
+  return status.provider === "local"
+    ? "Su questa macchina una modifica richiede circa 5 minuti."
+    : "Una modifica richiede circa un minuto.";
+}
+
+function quotaLine(status: Status | null): string {
+  if (!status) return "";
+
+  const cap = status.budget?.cap ?? 0;
+  const remaining = status.budget?.remaining ?? -1;
+
+  if (cap === 0) return "Nessun tetto giornaliero: il modello gira su questa macchina.";
+  if (remaining >= 0) return `Consuma una delle ${cap} generazioni di oggi: ne restano ${remaining}.`;
+  return `Consuma una delle ${cap} generazioni di oggi.`;
+}
+
 type Generated = { url: string; width: number; height: number; ms: number; fileName: string };
 
 const cx = (...values: Array<string | false | undefined>) => values.filter(Boolean).join(" ");
@@ -114,11 +144,20 @@ export default function PromptLab() {
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  const [status, setStatus] = useState<Status | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const sourceRef = useRef<Prepared | null>(null);
   const generatedRef = useRef<Generated | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  /* The footer states facts about this deploy: read them, never assume them. */
+  useEffect(() => {
+    fetch("/api/bwslab/status", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((value: Status | null) => setStatus(value))
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -421,8 +460,8 @@ export default function PromptLab() {
 
               <div className={styles.notice}>
                 <p>
-                  Il prompt va al modello così com&apos;è: qui non c&apos;è uno stile imposto. Su questa macchina una
-                  modifica richiede <strong>1–5 minuti</strong> e consuma una generazione del tetto giornaliero.
+                  Il prompt va al modello così com&apos;è: qui non c&apos;è uno stile imposto.{" "}
+                  <strong>{timingLine(status)}</strong> {quotaLine(status)}
                 </p>
               </div>
             </div>
