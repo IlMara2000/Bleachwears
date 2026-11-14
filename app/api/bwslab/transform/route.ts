@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { budgetMessage, reserveGeneration } from "@/lib/stencil/budget";
 import { MIME_BY_KIND, readDimensions, sniffKind } from "@/lib/stencil/image-size";
 import { clientIdFrom, takeToken } from "@/lib/stencil/rate-limit";
 import { StencilError, activeModel, isConfigured, transformImage } from "@/lib/stencil/provider";
@@ -53,6 +54,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Questa immagine sembra vuota o illeggibile." }, { status: 422 });
   }
 
+  /*
+   * The ceiling is checked here, before the provider is touched: a refused
+   * generation must cost nothing. It counts the attempt, not the success.
+   */
+  const reservation = await reserveGeneration();
+  if (!reservation.allowed) {
+    const { cap, used, resetAt } = reservation.budget;
+    console.warn(JSON.stringify({ event: "bwslab.budget", ok: false, cap, used }));
+
+    return NextResponse.json(
+      { error: budgetMessage(reservation.budget), budget: reservation.budget },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.max(1, Math.ceil((Date.parse(resetAt) - Date.now()) / 1000))),
+          "Cache-Control": "no-store",
+        },
+      },
+    );
+  }
+
   const started = Date.now();
 
   try {
@@ -71,6 +93,7 @@ export async function POST(request: Request) {
         input: { width: size.width, height: size.height, bytes: bytes.length },
         outputBytes: result.bytes.length,
         ms: Date.now() - started,
+        spend: { used: reservation.budget.used, cap: reservation.budget.cap },
       }),
     );
 
