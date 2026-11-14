@@ -141,3 +141,11 @@ test("renders the legal pages with shipping data from the shared catalog", async
   assert.match(privacy, /art\. 6\.1\.b GDPR/);
   assert.match(privacy, /Cookie/);
 });
+
+test("the checkout hint follows the catalogue threshold instead of a literal", async () => {
+  const checkoutView = await readFile(new URL("app/CheckoutView.tsx", root), "utf8");
+
+  assert.match(checkoutView, /freeShippingGap/);
+  assert.doesNotMatch(checkoutView, /subtotal\s*<\s*120/);
+  assert.doesNotMatch(checkoutView, /120\s*-\s*subtotal/);
+});
