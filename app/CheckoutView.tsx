@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { SHIPPING_METHODS, computeTotals, money, shippingCost } from "@/lib/shop/catalog";
+import { FREE_SHIPPING_FROM, SHIPPING_METHODS, computeTotals, freeShippingGap, money, shippingCost } from "@/lib/shop/catalog";
 import { SELLER } from "@/lib/shop/business";
 
 export type CheckoutItem = {
@@ -124,6 +124,7 @@ export function CheckoutView({
   const subtotal = items.reduce((sum, item) => sum + item.price * (item.quantity ?? 1), 0);
   const shippingPrice = shippingCost(shipping, subtotal);
   const total = subtotal + shippingPrice;
+  const gap = freeShippingGap(subtotal);
   const method = SHIPPING_METHODS.find((entry) => entry.id === shipping) ?? SHIPPING_METHODS[0];
 
   const summary = useMemo(() => {
@@ -419,8 +420,8 @@ export function CheckoutView({
                     );
                   })}
                 </div>
-                {subtotal < 120 && (
-                  <p className="checkout-hint">Spedizione inclusa da {money(120)}: mancano {money(120 - subtotal)}.</p>
+                {gap > 0 && shipping !== "pickup" && (
+                  <p className="checkout-hint">Spedizione inclusa da {money(FREE_SHIPPING_FROM)}: mancano {money(gap)}.</p>
                 )}
               </fieldset>
 
