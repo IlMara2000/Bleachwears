@@ -206,7 +206,18 @@ export type TransformInput = {
   width: number;
   height: number;
   timeoutMs?: number;
+  /**
+   * The one place a client may steer the model. Stencil Lab never sets it and
+   * gets STENCIL_PROMPT; /bwslab/nfsw sets it and gets what the user typed.
+   */
+  prompt?: string;
 };
+
+/** An empty or missing prompt falls back to the house style, never to nothing. */
+function promptFor(input: TransformInput): string {
+  const custom = input.prompt?.trim();
+  return custom ? custom : STENCIL_PROMPT;
+}
 
 export async function transformImage(input: TransformInput): Promise<TransformResult> {
   const provider = activeProvider();
@@ -274,7 +285,7 @@ async function transformWithCloudflare(input: TransformInput): Promise<Transform
   const form = new FormData();
   form.append(
     "prompt",
-    `${STENCIL_PROMPT}\n\nRedraw input_image_0 as described above and keep its framing and aspect ratio.`,
+    `${promptFor(input)}\n\nRedraw input_image_0 as described above and keep its framing and aspect ratio.`,
   );
   form.append("input_image_0", new Blob([new Uint8Array(reference)], { type: "image/jpeg" }), "input.jpg");
 
@@ -354,7 +365,7 @@ async function transformWithGemini(input: TransformInput): Promise<TransformResu
       body: JSON.stringify({
         model: MODEL,
         input: [
-          { type: "text", text: STENCIL_PROMPT },
+          { type: "text", text: promptFor(input) },
           {
             type: "image",
             mime_type: input.mimeType,
@@ -545,7 +556,7 @@ async function transformWithComfyUI(input: TransformInput): Promise<TransformRes
       cache: "no-store",
       signal: AbortSignal.timeout(30_000),
       body: JSON.stringify({
-        prompt: comfyuiGraph(STENCIL_PROMPT, imageName),
+        prompt: comfyuiGraph(promptFor(input), imageName),
         client_id: `bwslab-${Date.now()}`,
       }),
     });

@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 import { budgetMessage, reserveGeneration } from "@/lib/stencil/budget";
-import { MIME_BY_KIND, readDimensions, sniffKind } from "@/lib/stencil/image-size";
 import { clientIdFrom, takeToken } from "@/lib/stencil/rate-limit";
 import { StencilError, activeModel, isConfigured, transformImage } from "@/lib/stencil/provider";
+import { readImageUpload } from "@/lib/stencil/upload";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
-
-/** Vercel caps a request body at 4.5 MB: stay below it and refuse early. */
-const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 export async function POST(request: Request) {
   if (!isConfigured()) {
@@ -27,32 +24,17 @@ export async function POST(request: Request) {
     );
   }
 
-  let upload: FormDataEntryValue | null;
+  let form: FormData;
   try {
-    const form = await request.formData();
-    upload = form.get("image");
+    form = await request.formData();
   } catch {
     return NextResponse.json({ error: "Manda l'immagine come form data multipart." }, { status: 400 });
   }
 
-  if (!(upload instanceof File) || upload.size === 0) {
-    return NextResponse.json({ error: "Nessuna immagine allegata." }, { status: 400 });
-  }
+  const uploaded = await readImageUpload(form);
+  if (!uploaded.ok) return uploaded.response;
 
-  if (upload.size > MAX_UPLOAD_BYTES) {
-    return NextResponse.json({ error: "Immagine troppo grande: resta sotto i 4 MB." }, { status: 413 });
-  }
-
-  const bytes = Buffer.from(await upload.arrayBuffer());
-  const kind = sniffKind(bytes);
-  if (!kind) {
-    return NextResponse.json({ error: "Solo immagini JPG, PNG e WEBP." }, { status: 415 });
-  }
-
-  const size = readDimensions(bytes, kind);
-  if (!size || size.width < 32 || size.height < 32) {
-    return NextResponse.json({ error: "Questa immagine sembra vuota o illeggibile." }, { status: 422 });
-  }
+  const { bytes, width, height, mimeType } = uploaded.upload;
 
   /*
    * The ceiling is checked here, before the provider is touched: a refused
@@ -78,19 +60,14 @@ export async function POST(request: Request) {
   const started = Date.now();
 
   try {
-    const result = await transformImage({
-      bytes,
-      mimeType: MIME_BY_KIND[kind],
-      width: size.width,
-      height: size.height,
-    });
+    const result = await transformImage({ bytes, mimeType, width, height });
 
     /* Real numbers only: this log line is the cost ledger. */
     console.info(
       JSON.stringify({
         event: "bwslab.transform",
         ok: true,
-        input: { width: size.width, height: size.height, bytes: bytes.length },
+        input: { width, height, bytes: bytes.length },
         outputBytes: result.bytes.length,
         ms: Date.now() - started,
         spend: { used: reservation.budget.used, cap: reservation.budget.cap },
