@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Anton, Inter_Tight } from "next/font/google";
+import { socialMetadata } from "@/lib/seo";
 
 const display = Anton({
   subsets: ["latin"],
@@ -14,10 +15,14 @@ const sans = Inter_Tight({
   display: "swap",
 });
 
+const title = "STENCIL LAB — One image. One style. | Bleachwears";
+const description =
+  "Carica una fotografia e scarica un'illustrazione stencil monocromatica ad alto contrasto: nero piatto, ombre nette, soggetto intatto.";
+
 export const metadata: Metadata = {
-  title: "STENCIL LAB — One image. One style. | Bleachwears",
-  description:
-    "Carica una fotografia e scarica un'illustrazione stencil monocromatica ad alto contrasto: nero piatto, ombre nette, soggetto intatto.",
+  title,
+  description,
+  ...socialMetadata({ title, description, path: "/bwslab" }),
 };
 
 export default function BwslabLayout({ children }: { children: React.ReactNode }) {

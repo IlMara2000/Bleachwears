@@ -2,12 +2,17 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { FREE_SHIPPING_FROM, money } from "@/lib/shop/catalog";
 import { SELLER } from "@/lib/shop/business";
+import { socialMetadata } from "@/lib/seo";
 import { LegalShell } from "../LegalShell";
 
+const title = "Termini di vendita — Bleachwears";
+const description =
+  "Come funzionano ordini, prezzi, lavorazione a mano, recesso e garanzia sui capi Bleachwears.";
+
 export const metadata: Metadata = {
-  title: "Termini di vendita — Bleachwears",
-  description:
-    "Come funzionano ordini, prezzi, lavorazione a mano, recesso e garanzia sui capi Bleachwears.",
+  title,
+  description,
+  ...socialMetadata({ title, description, path: "/legale/termini" }),
 };
 
 const sellerContact = SELLER.email ? (

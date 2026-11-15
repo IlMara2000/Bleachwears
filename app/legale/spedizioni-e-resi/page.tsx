@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import { FREE_SHIPPING_FROM, SHIPPING_METHODS, money } from "@/lib/shop/catalog";
 import { SELLER } from "@/lib/shop/business";
+import { socialMetadata } from "@/lib/seo";
 import { LegalShell } from "../LegalShell";
 
+const title = "Spedizioni e resi — Bleachwears";
+const description =
+  "Tempi di lavorazione, tariffe di spedizione in Italia, tracciamento, ritiro a mano e come funziona il reso.";
+
 export const metadata: Metadata = {
-  title: "Spedizioni e resi — Bleachwears",
-  description:
-    "Tempi di lavorazione, tariffe di spedizione in Italia, tracciamento, ritiro a mano e come funziona il reso.",
+  title,
+  description,
+  ...socialMetadata({ title, description, path: "/legale/spedizioni-e-resi" }),
 };
 
 export default function SpedizioniPage() {

@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import { SELLER } from "@/lib/shop/business";
+import { socialMetadata } from "@/lib/seo";
 import { LegalShell } from "../LegalShell";
 
+const title = "Privacy — Bleachwears";
+const description =
+  "Quali dati raccogliamo quando ordini o ci scrivi, perché, per quanto tempo e come esercitare i tuoi diritti.";
+
 export const metadata: Metadata = {
-  title: "Privacy — Bleachwears",
-  description:
-    "Quali dati raccogliamo quando ordini o ci scrivi, perché, per quanto tempo e come esercitare i tuoi diritti.",
+  title,
+  description,
+  ...socialMetadata({ title, description, path: "/legale/privacy" }),
 };
 
 const contact = SELLER.email ? (
