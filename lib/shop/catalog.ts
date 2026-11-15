@@ -238,6 +238,14 @@ export function shippingCost(id: string, subtotal: number) {
   return method.price;
 }
 
+/**
+ * Euro mancanti alla spedizione gratuita; 0 quando la soglia è già raggiunta.
+ * Mai negativo: un carrello con totale non numerico non può scollare la soglia.
+ */
+export function freeShippingGap(subtotal: number) {
+  return Math.max(0, FREE_SHIPPING_FROM - Math.max(0, subtotal));
+}
+
 export function computeTotals(lines: PricedLine[], shippingId: string) {
   const subtotal = lines.reduce((sum, line) => sum + line.total, 0);
   const shipping = shippingCost(shippingId, subtotal);
