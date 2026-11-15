@@ -474,8 +474,9 @@ export function BleachwearsApp() {
             ))}
           </nav>
 
-          <button className="bag-button" type="button" onClick={openCart} aria-label={`Apri carrello, ${cartItems.length} articoli`}>
-            <span>Carrello</span>
+          {/* Il nome accessibile parte dal testo visibile, o il pulsante risulta senza etichetta coerente. */}
+          <button className="bag-button" type="button" onClick={openCart} aria-label={`Carrello ${cartItems.length}, apri il carrello`}>
+            <span>Carrello</span>{" "}
             <b>{cartItems.length}</b>
           </button>
         </header>
@@ -501,7 +502,7 @@ export function BleachwearsApp() {
               <span aria-hidden="true">{item.id === "links" ? "⌂" : item.id === "shop" ? "◫" : "＋"}</span>{item.short}
             </button>
           ))}
-          <button type="button" onClick={openCart} aria-label={`Apri carrello, ${cartItems.length} articoli`}><span aria-hidden="true">{cartItems.length}</span>Bag</button>
+          <button type="button" onClick={openCart} aria-label={`${cartItems.length} Bag, apri il carrello`}><span aria-hidden="true">{cartItems.length}</span>{" "}Bag</button>
         </nav>
 
         <main id="main-content" className="site-main" ref={mainRef} tabIndex={-1}>
@@ -997,6 +998,9 @@ function SplashGame({ addToCart }: { addToCart: (item: NewCartItem) => void }) {
     );
   }
 
+  /* Il nome accessibile deve contenere il testo che si legge sullo stage. */
+  const hintLabel = ready ? "pezzo pronto" : splats.length ? "continua a toccare" : "tocca il capo";
+
   return (
     <article className="splash-card" id="splash">
       <div className="splash-copy">
@@ -1066,7 +1070,7 @@ function SplashGame({ addToCart }: { addToCart: (item: NewCartItem) => void }) {
         className={ready ? "splash-stage is-ready" : "splash-stage"}
         role="button"
         tabIndex={0}
-        aria-label={`Anteprima del capo da colorare, ${splats.length} gocce. Tocca o premi invio per aggiungere una goccia di ${color.name}.`}
+        aria-label={`${hintLabel}, ${splats.length} gocce di ${color.name}. Tocca o premi invio per aggiungere una goccia.`}
         onPointerDown={(event) => paint(event.clientX, event.clientY, event.currentTarget.getBoundingClientRect())}
         onKeyDown={(event) => {
           if (event.key !== "Enter" && event.key !== " ") return;
@@ -1091,7 +1095,7 @@ function SplashGame({ addToCart }: { addToCart: (item: NewCartItem) => void }) {
           />
         ))}
         <span className="splash-hint" aria-hidden="true">
-          {ready ? "pezzo pronto" : splats.length ? "continua a toccare" : "tocca il capo"}
+          {hintLabel}
         </span>
       </div>
     </article>
