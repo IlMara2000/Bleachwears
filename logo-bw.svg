@@ -1,48 +1,63 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <defs>
-    <linearGradient id="ink" x1="0.2" y1="0" x2="0.8" y2="1">
-      <stop offset="0" stop-color="#f7ab68" />
-      <stop offset="0.5" stop-color="#f08a45" />
-      <stop offset="1" stop-color="#e2732b" />
+    <linearGradient id="ink" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#f8b678" />
+      <stop offset="0.45" stop-color="#f08a45" />
+      <stop offset="1" stop-color="#dd6c26" />
     </linearGradient>
     <linearGradient id="ink2" x1="0.2" y1="0" x2="0.8" y2="1">
-      <stop offset="0" stop-color="#f6a35e" />
-      <stop offset="1" stop-color="#e87c33" />
+      <stop offset="0" stop-color="#f7ab66" />
+      <stop offset="0.5" stop-color="#ef8a44" />
+      <stop offset="1" stop-color="#e0732b" />
     </linearGradient>
   </defs>
 
-  <ellipse cx="450" cy="470" rx="235" ry="215" transform="rotate(-8 450 470)"
-           fill="none" stroke="#d8d2c6" stroke-width="7" opacity="0.85" />
+  <!-- arco sottile di fondo -->
+  <ellipse cx="520" cy="500" rx="280" ry="262" transform="rotate(-8 520 500)"
+           fill="none" stroke="#d9d3c6" stroke-width="7" opacity="0.9" />
 
-  <!-- W dietro, sovrapposta in basso a destra -->
-  <g transform="translate(630 610) rotate(-3) translate(-630 -610)">
-    <text x="630" y="760" font-family="Arial Black, Impact, Helvetica, sans-serif" font-size="470"
-          font-weight="900" text-anchor="middle" fill="url(#ink2)" stroke="#4a2a1e" stroke-width="24"
-          paint-order="stroke" stroke-linejoin="round">W</text>
+  <!-- B: ink 338x468 ancorata in (182,234) -->
+  <g transform="rotate(-4 351 468)">
+    <g transform="translate(146.7 702) scale(5.045 6.5)">
+      <text x="0" y="0" font-family="Arial Black, Impact, Helvetica, sans-serif" font-size="100"
+            font-weight="900" fill="url(#ink)" stroke="#3f2418" stroke-width="4.8"
+            paint-order="stroke" stroke-linejoin="round">B</text>
+    </g>
+    <!-- colatura crema: cappuccio sul bordo alto-sinistro e colata lungo il fianco -->
+    <g transform="rotate(-6 260 300)">
+      <g fill="none" stroke="#3f2418" stroke-width="18" stroke-linejoin="round">
+        <ellipse cx="262" cy="262" rx="94" ry="44" />
+        <ellipse cx="332" cy="280" rx="44" ry="34" />
+        <ellipse cx="246" cy="300" rx="30" ry="42" />
+        <ellipse cx="198" cy="360" rx="26" ry="64" />
+        <ellipse cx="192" cy="440" rx="18" ry="30" />
+      </g>
+      <g fill="#f4e5c5">
+        <ellipse cx="262" cy="262" rx="94" ry="44" />
+        <ellipse cx="332" cy="280" rx="44" ry="34" />
+        <ellipse cx="246" cy="300" rx="30" ry="42" />
+        <ellipse cx="198" cy="360" rx="26" ry="64" />
+        <ellipse cx="192" cy="440" rx="18" ry="30" />
+      </g>
+    </g>
+    <!-- goccia interna sulla pancia della B -->
+    <path d="M300 392 C312 392 320 404 320 418 C320 436 310 448 300 448 C290 448 282 436 282 418 C282 404 290 392 300 392 Z"
+          fill="#f4e5c5" stroke="#3f2418" stroke-width="16" stroke-linejoin="round" />
   </g>
 
-  <!-- B davanti -->
-  <g transform="translate(300 450) rotate(-4) translate(-300 -450)">
-    <text x="300" y="640" font-family="Arial Black, Impact, Helvetica, sans-serif" font-size="500"
-          font-weight="900" text-anchor="middle" fill="url(#ink)" stroke="#4a2a1e" stroke-width="24"
-          paint-order="stroke" stroke-linejoin="round">B</text>
+  <!-- W davanti alla B: ink 450x385 ancorata in (430,450) -->
+  <g transform="rotate(-2 655 642)">
+    <g transform="translate(430 835) scale(4.5 5.347)">
+      <text x="0" y="0" font-family="Arial Black, Impact, Helvetica, sans-serif" font-size="100"
+            font-weight="900" fill="url(#ink2)" stroke="#3f2418" stroke-width="5"
+            paint-order="stroke" stroke-linejoin="round">W</text>
+    </g>
   </g>
 
-  <!-- colatura crema sul bordo alto-sinistro della B -->
-  <g fill="#f4e4c2" stroke="#4a2a1e" stroke-width="16" stroke-linejoin="round">
-    <path d="M150 262 C150 224 186 200 228 200 C270 200 306 214 322 238
-             C332 254 324 272 306 274 C290 276 276 264 264 270
-             C252 278 254 300 246 308 C236 318 220 312 216 296
-             C212 280 202 276 190 284 C180 292 182 314 180 344
-             C178 382 172 410 164 418 C152 430 134 424 132 406
-             C130 384 146 366 150 336 C154 306 148 286 150 262 Z" />
-    <ellipse cx="248" cy="352" rx="17" ry="26" />
-  </g>
-
-  <!-- schizzi crema a destra della W -->
-  <g fill="#f4e4c2" stroke="#4a2a1e" stroke-width="14" stroke-linejoin="round">
-    <circle cx="806" cy="352" r="27" />
-    <circle cx="862" cy="398" r="18" />
-    <circle cx="796" cy="418" r="13" />
+  <!-- schizzi crema a virgola, in alto a destra della W -->
+  <g fill="#f4e5c5" stroke="#3f2418" stroke-width="15" stroke-linejoin="round">
+    <path d="M866 366 C862 334 884 300 916 284 C922 316 906 350 882 370 C874 376 866 374 866 366 Z" />
+    <path d="M926 432 C928 402 946 380 974 372 C974 400 960 424 938 436 C930 440 926 438 926 432 Z" />
+    <path d="M800 388 C808 370 826 360 844 362 C840 382 826 398 808 400 C800 400 798 394 800 388 Z" />
   </g>
 </svg>
