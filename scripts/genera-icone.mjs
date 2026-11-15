@@ -126,6 +126,28 @@ async function onSolidBackground(square, size, scale, rgb) {
     .toBuffer();
 }
 
+// Layout della card social: marchio a sinistra, testo a destra.
+function cardSvg() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#171a1c" />
+  <circle cx="1010" cy="150" r="330" fill="none" stroke="#f4e5c5" stroke-opacity="0.08" stroke-width="3" />
+  <circle cx="1010" cy="150" r="240" fill="none" stroke="#f4e5c5" stroke-opacity="0.05" stroke-width="3" />
+  <text x="468" y="252" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="bold"
+        letter-spacing="7" fill="#f08a45">DROP 01 / 2026</text>
+  <text x="462" y="356" font-family="Arial Black, Helvetica, sans-serif" font-size="76" font-weight="900"
+        letter-spacing="1" fill="#f5edde">BLEACHWEARS</text>
+  <rect x="468" y="392" width="86" height="6" fill="#efb53c" />
+  <text x="468" y="452" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#cfc7ba">
+    Candeggina su cotone, un pezzo alla volta.
+  </text>
+  <text x="468" y="492" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#cfc7ba">
+    Fatti a mano in Italia, nessun reprint.
+  </text>
+  <text x="468" y="560" font-family="Helvetica, Arial, sans-serif" font-size="22" letter-spacing="3"
+        fill="#8d867a">BLEACHWEARS.VERCEL.APP</text>
+</svg>`;
+}
+
 const opts = parseArgs(process.argv.slice(2));
 const bg = hexToRgb(opts.bg);
 const outDir = path.resolve(opts.out);
@@ -151,14 +173,13 @@ await write("apple-touch-icon.png", await onSolidBackground(square, 180, 0.78, b
 await write("icon-512-maskable.png", await onSolidBackground(square, 512, 0.8, bg));
 
 if (opts.withOg) {
-  const logo = await sharp(square512).resize(360, 360, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } }).toBuffer();
-  await write(
-    "og.png",
-    await sharp({ create: { width: 1200, height: 630, channels: 4, background: bg } })
-      .composite([{ input: logo, gravity: "center" }])
-      .png()
-      .toBuffer()
-  );
+  // Il marchio resta nella sua inquadratura originale, come sulla card in repo.
+  const mark = await sharp(path.resolve(opts.src)).resize(300, 300, { fit: "fill" }).png().toBuffer();
+  await sharp(Buffer.from(cardSvg()))
+    .composite([{ input: mark, left: 120, top: 170 }])
+    .png({ palette: true, quality: 92, compressionLevel: 9 })
+    .toFile(path.join(outDir, "og.png"));
+  written.push("og.png");
 }
 
 console.log(`Icone generate in ${outDir}:`);
