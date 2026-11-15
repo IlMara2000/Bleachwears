@@ -84,18 +84,6 @@ button:disabled {
   padding: 0.35rem 0.5rem;
 }
 
-.grid-mark {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  flex: 0 0 auto;
-}
-
-.grid-mark i {
-  display: block;
-}
-
 .primary-nav {
   display: flex;
   align-items: center;
@@ -1658,28 +1646,6 @@ body {
   object-fit: contain;
 }
 
-.grid-mark {
-  border: 2px solid var(--ink);
-  border-radius: 2px;
-  padding: 3px;
-  gap: 2px;
-  background: var(--acid);
-}
-
-.grid-mark i {
-  border-radius: 0;
-  background: var(--ink);
-}
-
-.grid-mark i:nth-child(1) {
-  background: var(--hot);
-}
-
-.grid-mark i:nth-child(4) {
-  border: 2px solid var(--ink);
-  background: transparent;
-}
-
 .primary-nav {
   gap: 0.15rem;
   border-radius: 0;
@@ -2709,7 +2675,7 @@ strong {
     font-size: 0.94rem;
   }
 
-  .grid-mark {
+  .brand-mark {
     width: 31px;
     height: 31px;
   }
@@ -3200,10 +3166,6 @@ strong {
     border-width: 3px;
     border-radius: 4px;
     box-shadow: 4px 4px 0 var(--ink);
-  }
-
-  .grid-mark {
-    border-radius: 2px;
   }
 
   .home-screen::before {
