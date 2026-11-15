@@ -312,7 +312,6 @@ export default function PromptLab() {
                 className={styles.dropzone}
                 role="button"
                 tabIndex={0}
-                aria-label="Carica immagine"
                 data-dragging={dragging}
                 data-busy={preparing}
                 onClick={() => inputRef.current?.click()}
@@ -473,6 +472,8 @@ export default function PromptLab() {
           type="file"
           accept="image/jpeg,image/png,image/webp"
           className="sr-only"
+          aria-label="Carica immagine"
+          tabIndex={-1}
           onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) void accept(file);

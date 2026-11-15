@@ -455,7 +455,6 @@ export default function Studio() {
                 className={styles.dropzone}
                 role="button"
                 tabIndex={0}
-                aria-label="Carica immagine"
                 data-dragging={dragging}
                 data-busy={preparing}
                 onClick={() => inputRef.current?.click()}
@@ -751,6 +750,8 @@ export default function Studio() {
           ref={inputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp"
+          aria-label="Carica immagine"
+          tabIndex={-1}
           style={{ position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none" }}
           onChange={(event) => {
             const file = event.target.files?.[0];

@@ -6801,6 +6801,7 @@ p {
 
 .legal-body a {
   color: var(--ink);
+  text-decoration: underline;
   text-decoration-color: var(--hot);
   text-decoration-thickness: 2px;
   text-underline-offset: 2px;
