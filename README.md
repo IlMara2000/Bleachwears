@@ -90,6 +90,8 @@ Con entrambi i provider a chiave configurati vince Cloudflare; `STENCIL_PROVIDER
 
 Per sapere cosa sta usando il deploy senza indovinare: `curl -s localhost:3000/api/bwslab/status` restituisce provider, modello, risoluzione, budget residuo e commit in esecuzione.
 
+Per provare che la pressa generi davvero c'è `node scripts/verifica-pressa.mjs [--base http://127.0.0.1:3000]`: manda un'immagine sintetica, controlla che torni un'immagine col frame di partenza e che il budget scenda di uno. Consuma una generazione vera (due con `--seconda`), quindi si lancia a mano e non fa parte di `npm test`.
+
 ## Controlli
 
 ```bash
