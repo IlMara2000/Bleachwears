@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
+import sharp from "sharp";
 
 const root = new URL("../", import.meta.url);
 
@@ -162,6 +163,71 @@ test("ships icons and a social card at the sizes and opacity the platforms requi
   for (const icon of manifest.icons) {
     const info = pngInfo(await readFile(new URL(`public/${icon.src.replace(/^\//, "")}`, root)));
     assert.equal(`${info.width}x${info.height}`, icon.sizes, `${icon.src}: sizes del manifest`);
+  }
+});
+
+const INK_BACKGROUND = [0x17, 0x1a, 0x1c];
+
+// Quanto spazio occupa davvero il marchio: su fondo trasparente conta l'alpha,
+// sulle icone opache conta la distanza dal colore di fondo.
+async function markShape(buffer, transparent) {
+  const { data, info } = await sharp(buffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let minX = info.width;
+  let minY = info.height;
+  let maxX = -1;
+  let maxY = -1;
+  let ink = 0;
+
+  for (let y = 0; y < info.height; y += 1) {
+    for (let x = 0; x < info.width; x += 1) {
+      const offset = (y * info.width + x) * 4;
+      const isInk = transparent
+        ? data[offset + 3] > 200
+        : Math.abs(data[offset] - INK_BACKGROUND[0]) +
+            Math.abs(data[offset + 1] - INK_BACKGROUND[1]) +
+            Math.abs(data[offset + 2] - INK_BACKGROUND[2]) > 48;
+      if (!isInk) continue;
+      ink += 1;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+
+  assert.ok(maxX >= 0, "icona vuota: nessun pixel di marchio");
+  return {
+    widthFill: (maxX - minX + 1) / info.width,
+    coverage: ink / (info.width * info.height),
+  };
+}
+
+test("keeps the mark big enough to read inside the small icons", async () => {
+  /*
+   * Soglie volutamente larghe: servono a intercettare un marchio rimpicciolito
+   * per sbaglio (margini sbagliati, sorgente diverso), non a fissare il disegno.
+   * Le icone opache stanno più basse perché il contenuto è dentro la zona sicura.
+   */
+  const cases = [
+    ["favicon.png", true, 0.92, 0.42],
+    ["logo.png", true, 0.9, 0.42],
+    ["icon-192.png", true, 0.92, 0.42],
+    ["icon-512.png", true, 0.92, 0.42],
+    ["apple-touch-icon.png", false, 0.7, 0.24],
+    ["icon-512-maskable.png", false, 0.72, 0.26],
+    ["og.png", false, 0.7, 0.05],
+  ];
+
+  for (const [name, transparent, minWidthFill, minCoverage] of cases) {
+    const shape = await markShape(await readFile(new URL(`public/${name}`, root)), transparent);
+    assert.ok(
+      shape.widthFill >= minWidthFill,
+      `${name}: il marchio copre solo ${(shape.widthFill * 100).toFixed(1)}% della larghezza`
+    );
+    assert.ok(
+      shape.coverage >= minCoverage,
+      `${name}: inchiostro al ${(shape.coverage * 100).toFixed(1)}% dell'area`
+    );
   }
 });
 
