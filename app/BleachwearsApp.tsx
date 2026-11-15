@@ -456,7 +456,7 @@ export function BleachwearsApp() {
         </a>
         <header className="topbar">
           <button className="brand-button" type="button" onClick={() => navigate("links")} aria-label="Bleachwears, vai alla home">
-            <GridMark />
+            <Image className="brand-mark" src="/logo.png" alt="" width={34} height={34} priority />
             <span>bleachwears</span>
           </button>
 

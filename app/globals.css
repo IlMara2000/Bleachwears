@@ -1654,6 +1654,13 @@ body {
   transform: rotate(-1.4deg);
 }
 
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
 .grid-mark {
   border: 2px solid var(--ink);
   border-radius: 2px;
