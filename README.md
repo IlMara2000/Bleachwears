@@ -88,6 +88,17 @@ COMFYUI_URL=http://127.0.0.1:8188
 
 Con entrambi i provider a chiave configurati vince Cloudflare; `STENCIL_PROVIDER` (`cloudflare` | `gemini` | `local`) forza una scelta. `STENCIL_DAILY_CAP` (default 6) mette un tetto alle generazioni giornaliere. Next legge `.env.local` solo all'avvio, quindi riavvia `npm run dev` dopo aver modificato il file.
 
+### Creare il token Cloudflare
+
+Serve un account Cloudflare gratuito: il piano free copre 10.000 neurons al giorno, e una generazione ne consuma circa 1.500, da cui il tetto di sei immagini.
+
+1. Nella dashboard vai su **AI › Workers AI** e seleziona **Use REST API**.
+2. Seleziona **Create a Workers AI API Token**, controlla i permessi precompilati e conferma con **Create API Token**. Il valore viene mostrato una volta sola: copialo subito (resta comunque visibile in **My Profile › API Tokens**, dove puoi revocarlo).
+3. Nella stessa pagina, sotto **Get Account ID**, copia l'**Account ID**: è una stringa di 32 caratteri, non è segreta ma senza di essa l'API non sa su quale account operare.
+4. Incolla i due valori in `.env.local` come `CLOUDFLARE_ACCOUNT_ID` e `CLOUDFLARE_API_TOKEN`, riavvia `npm run dev` e controlla che `/api/bwslab/status` riporti `"configured": true` con `"provider": "cloudflare"`.
+
+Se invece di usare il template crei un token personalizzato, deve avere **Workers AI - Read** e **Workers AI - Edit** limitati al tuo account: con il solo Read le generazioni vengono rifiutate. Il token è un segreto: va in `.env.local` (già ignorato da git) e nelle Environment Variables di Vercel, mai nel codice né in una variabile `NEXT_PUBLIC_*`, che finirebbe nel browser.
+
 Per sapere cosa sta usando il deploy senza indovinare: `curl -s localhost:3000/api/bwslab/status` restituisce provider, modello, risoluzione, budget residuo e commit in esecuzione.
 
 Per provare che la pressa generi davvero c'è `node scripts/verifica-pressa.mjs [--base http://127.0.0.1:3000]`: manda un'immagine sintetica, controlla che torni un'immagine col frame di partenza e che il budget scenda di uno. Consuma una generazione vera (due con `--seconda`), quindi si lancia a mano e non fa parte di `npm test`.
