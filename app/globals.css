@@ -3523,6 +3523,11 @@ p {
   color: var(--surface);
 }
 
+/* Sulle tessere colorate il testo chiaro non regge anche l'opacità del 92%. */
+.social-grid :is(a, button):not(:first-child) small {
+  opacity: 1;
+}
+
 .social-grid :is(a, button):hover {
   transform: translate(-2px, -2px);
   box-shadow: 4px 4px 0 var(--ink);
@@ -3940,8 +3945,13 @@ p {
   color: var(--paper);
 }
 
+.home-board .process-card .section-kicker {
+  color: var(--acid);
+}
+
 .home-board .process-card ol li {
   border-color: rgb(245 237 222 / 26%);
+  background: rgb(245 237 222 / 10%);
 }
 
 .home-board .process-card ol li span {
@@ -3961,6 +3971,10 @@ p {
   color: var(--paper);
 }
 
+.home-board .craft-card .section-kicker {
+  color: var(--paper);
+}
+
 .home-board .craft-card blockquote {
   margin: 0.6rem 0 1rem;
   font-family: var(--font-display);
@@ -3973,6 +3987,7 @@ p {
 
 .home-board .craft-card > div span {
   border: 2px solid var(--paper);
+  background: transparent;
   color: var(--paper);
 }
 
@@ -3985,6 +4000,8 @@ p {
   color: var(--ink);
 }
 
+.home-board .newsletter-card .section-kicker,
+.home-board .newsletter-card p,
 .home-board .newsletter-card form label,
 .home-board .newsletter-card small {
   color: rgb(20 23 31 / 78%);
