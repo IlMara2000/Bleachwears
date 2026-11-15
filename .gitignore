@@ -22,6 +22,7 @@
 # misc
 .DS_Store
 *.pem
+.freebuff/
 
 # debug
 npm-debug.log*
