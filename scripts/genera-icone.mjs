@@ -1,18 +1,19 @@
 #!/usr/bin/env node
-// Genera il set di icone del sito da un singolo PNG del logo.
-// Uso: node scripts/genera-icone.mjs logo-bw.png [--out public] [--bg "#171a1c"] [--with-og]
+// Genera il set di icone del sito dal marchio quadrato.
+// Uso: node scripts/genera-icone.mjs [sorgente] [--out public] [--bg "#171a1c"] [--with-og]
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
 function parseArgs(argv) {
   const opts = {
-    src: null,
+    src: "logo-bw-square.svg",
     out: "public",
     bg: "#171a1c",
     lum: 125,
     spread: 26,
-    margin: 0.06,
+    margin: 0.005,
+    logoMargin: 0.02,
     withOg: false,
   };
 
@@ -23,13 +24,14 @@ function parseArgs(argv) {
     else if (arg === "--lum") opts.lum = Number(argv[++i]);
     else if (arg === "--spread") opts.spread = Number(argv[++i]);
     else if (arg === "--margin") opts.margin = Number(argv[++i]);
+    else if (arg === "--logo-margin") opts.logoMargin = Number(argv[++i]);
     else if (arg === "--with-og") opts.withOg = true;
     else if (arg.startsWith("--")) throw new Error(`Opzione sconosciuta: ${arg}`);
     else opts.src = arg;
   }
 
   if (!opts.src) {
-    throw new Error("Serve il PNG sorgente: node scripts/genera-icone.mjs logo-bw.png");
+    throw new Error("Serve il file sorgente: node scripts/genera-icone.mjs logo-bw-square.svg");
   }
   return opts;
 }
@@ -131,7 +133,9 @@ await mkdir(outDir, { recursive: true });
 
 const trimmed = await cutBackground(path.resolve(opts.src), opts);
 const square = await toSquare(trimmed, opts.margin);
+const squareLogo = opts.logoMargin === opts.margin ? square : await toSquare(trimmed, opts.logoMargin);
 const square512 = await sharp(square).resize(512, 512, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
+const logo512 = await sharp(squareLogo).resize(512, 512, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
 
 const written = [];
 async function write(name, buffer) {
@@ -139,7 +143,7 @@ async function write(name, buffer) {
   written.push(name);
 }
 
-await write("logo.png", square512);
+await write("logo.png", logo512);
 await write("icon-512.png", square512);
 await write("icon-192.png", await sharp(square512).resize(192, 192).png().toBuffer());
 await write("favicon.png", await sharp(square512).resize(64, 64).png().toBuffer());
