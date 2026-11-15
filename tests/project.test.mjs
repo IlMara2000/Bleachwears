@@ -231,6 +231,27 @@ test("keeps the mark big enough to read inside the small icons", async () => {
   }
 });
 
+test("answers 503 from both press endpoints before spending a generation", async () => {
+  /* I due endpoint non condividono il modulo, quindi il patto si controlla qui. */
+  for (const path of ["app/api/bwslab/edit/route.ts", "app/api/bwslab/transform/route.ts"]) {
+    const source = await readFile(new URL(path, root), "utf8");
+    const guard = source.indexOf("if (!isConfigured())");
+
+    assert.ok(guard > 0, `${path}: manca il controllo della configurazione`);
+    assert.match(source, /status: 503/, `${path}: la configurazione mancante non è un 503`);
+    assert.match(
+      source,
+      /Il generatore non è configurato su questo deploy: manca la chiave del provider\./,
+      `${path}: il messaggio non dice all'utente cosa manca`,
+    );
+    /* Il controllo deve precedere rate limit e generazione: nessun lavoro sprecato. */
+    assert.ok(
+      guard < source.indexOf("takeToken("),
+      `${path}: il controllo arriva dopo il rate limit`,
+    );
+  }
+});
+
 test("renders the legal pages with shipping data from the shared catalog", async () => {
   const [terms, shipping, privacy] = await Promise.all([
     readFile(new URL("app/legale/termini/page.tsx", root), "utf8"),

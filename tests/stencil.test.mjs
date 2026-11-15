@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { findImagePayload, nearestAspectRatio, readCloudflareImage, STENCIL_PROMPT } from "../lib/stencil/provider.ts";
+import {
+  StencilError,
+  STENCIL_PROMPT,
+  activeProvider,
+  findImagePayload,
+  isConfigured,
+  nearestAspectRatio,
+  readCloudflareImage,
+  transformImage,
+} from "../lib/stencil/provider.ts";
 import { readDimensions, sniffKind } from "../lib/stencil/image-size.ts";
 
 test("keeps the art direction that makes every result look like the same studio", () => {
@@ -37,6 +46,38 @@ test("finds the image whatever shape the provider answers with", () => {
     { data: "Q0ND", mimeType: "image/png" },
   );
   assert.equal(findImagePayload({ output_text: "no image here" }), undefined);
+});
+
+test("reports a missing provider as a 503 instead of a broken generation", async () => {
+  /* Le chiavi si leggono a ogni chiamata, ma l'ambiente del test resta intatto. */
+  const saved = {
+    STENCIL_PROVIDER: process.env.STENCIL_PROVIDER,
+    CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID,
+    CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  };
+  for (const key of Object.keys(saved)) delete process.env[key];
+
+  try {
+    assert.equal(activeProvider(), undefined, "senza chiavi non esiste un provider attivo");
+    assert.equal(isConfigured(), false);
+
+    await assert.rejects(
+      () =>
+        transformImage({ bytes: Buffer.from("finta"), mimeType: "image/png", width: 64, height: 64 }),
+      (error) => {
+        assert.ok(error instanceof StencilError, "deve essere un errore del generatore, non un crash");
+        assert.equal(error.status, 503, "il chiamante deve poter distinguere la configurazione mancante");
+        assert.match(error.message, /non è configurato/i);
+        return true;
+      },
+    );
+  } finally {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
 });
 
 test("reads the free provider's image whether it is bare base64 or a data URL", () => {
