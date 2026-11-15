@@ -126,6 +126,45 @@ test("creates and verifies card payments on the server only", async () => {
   assert.doesNotMatch(app, /STRIPE_SECRET_KEY|api\.stripe\.com/);
 });
 
+// Legge dimensioni e presenza del canale alpha dall'header IHDR, senza dipendenze.
+function pngInfo(buffer) {
+  assert.equal(buffer.subarray(0, 8).toString("hex"), "89504e470d0a1a0a", "non è un PNG");
+  assert.equal(buffer.subarray(12, 16).toString("ascii"), "IHDR");
+  const colorType = buffer[25];
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20),
+    hasAlpha: colorType === 4 || colorType === 6,
+  };
+}
+
+test("ships icons and a social card at the sizes and opacity the platforms require", async () => {
+  const expected = [
+    // iOS e le icone maskable non gestiscono la trasparenza: devono essere opache.
+    ["favicon.png", 64, 64, true],
+    ["logo.png", 512, 512, true],
+    ["icon-192.png", 192, 192, true],
+    ["icon-512.png", 512, 512, true],
+    ["apple-touch-icon.png", 180, 180, false],
+    ["icon-512-maskable.png", 512, 512, false],
+    ["og.png", 1200, 630, false],
+  ];
+
+  for (const [name, width, height, hasAlpha] of expected) {
+    const info = pngInfo(await readFile(new URL(`public/${name}`, root)));
+    assert.equal(info.width, width, `${name}: larghezza`);
+    assert.equal(info.height, height, `${name}: altezza`);
+    assert.equal(info.hasAlpha, hasAlpha, `${name}: canale alpha`);
+  }
+
+  /* Le misure dichiarate nel manifest devono combaciare con i file, o il browser scarta l'icona. */
+  const manifest = JSON.parse(await readFile(new URL("public/manifest.webmanifest", root), "utf8"));
+  for (const icon of manifest.icons) {
+    const info = pngInfo(await readFile(new URL(`public/${icon.src.replace(/^\//, "")}`, root)));
+    assert.equal(`${info.width}x${info.height}`, icon.sizes, `${icon.src}: sizes del manifest`);
+  }
+});
+
 test("renders the legal pages with shipping data from the shared catalog", async () => {
   const [terms, shipping, privacy] = await Promise.all([
     readFile(new URL("app/legale/termini/page.tsx", root), "utf8"),
