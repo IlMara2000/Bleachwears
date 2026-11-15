@@ -883,7 +883,7 @@ export function BleachwearsApp() {
         </main>
 
         <footer className="footer-card">
-          <div><GridMark /><strong>bleachwears</strong></div>
+          <div><Image className="brand-mark" src="/logo.png" alt="" width={34} height={34} /><strong>bleachwears</strong></div>
           <p>Coloriamo togliendo colore. Ogni capo passa dalle nostre mani e diventa irripetibile.</p>
           <div><span>Fatto a mano in Italia · © 2026</span><button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Torna su ↑</button></div>
           <nav className="footer-legal" aria-label="Informazioni legali">
@@ -922,7 +922,7 @@ export function BleachwearsApp() {
             </div>
             {cartItems.length === 0 ? (
               <div className="cart-empty">
-                <GridMark />
+                <Image className="brand-mark" src="/logo.png" alt="" width={66} height={66} />
                 <p>Inizia da un drop oppure crea qualcosa nel Custom Lab.</p>
                 <button type="button" className="solid-action" onClick={() => closeCartAndNavigate("shop")}>Scopri il drop</button>
               </div>
@@ -1350,10 +1350,6 @@ function BentoHome({
       </div>
     </section>
   );
-}
-
-function GridMark() {
-  return <span className="grid-mark" aria-hidden="true"><i /><i /><i /><i /></span>;
 }
 
 function GarmentVisual({

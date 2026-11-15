@@ -1446,12 +1446,9 @@ button:disabled {
   text-align: center;
 }
 
-.cart-empty .grid-mark {
+.cart-empty .brand-mark {
   width: 66px;
   height: 66px;
-  gap: 5px;
-  border-radius: 20px;
-  padding: 7px;
 }
 
 .cart-empty p {
@@ -3108,10 +3105,9 @@ strong {
     min-height: max(185px, calc(100dvh - 140px));
   }
 
-  .cart-empty .grid-mark {
+  .cart-empty .brand-mark {
     width: 56px;
     height: 56px;
-    border-radius: 17px;
   }
 
   .cart-empty p {
