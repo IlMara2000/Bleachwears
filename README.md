@@ -65,6 +65,31 @@ La card social (`public/og.png`, 1200×630) nasce dallo stesso script con `--wit
 
 Dopo una rigenerazione conviene ricontrollare `git status`: con i valori predefiniti i file devono uscire identici a quelli committati.
 
+## Pressa (Stencil Lab)
+
+`/bwslab` non ha bisogno di chiavi: incide l'immagine nel browser con il motore locale. `/bwslab/nfsw` (Prompt Press) invece manda l'immagine a un modello e richiede un provider configurato sul server: senza chiave ogni richiesta risponde **503** con il messaggio "manca la chiave del provider" e la pagina del lab mostra come rimediare.
+
+Scegli una delle tre strade, tutta la configurazione sta in `.env.local` in locale e nelle Environment Variables del progetto su Vercel (dopo averle aggiunte serve un nuovo deploy):
+
+```bash
+# 1. Gratis — Cloudflare Workers AI, ~6 generazioni al giorno
+CLOUDFLARE_ACCOUNT_ID=your-account-id
+CLOUDFLARE_API_TOKEN=your-token
+CLOUDFLARE_MODEL=@cf/black-forest-labs/flux-2-klein-9b
+
+# 2. A pagamento — Gemini Nano Banana 2.1 (~0,034 $ per immagine a 1K)
+GEMINI_API_KEY=your-key
+GEMINI_IMAGE_SIZE=1K
+
+# 3. Nessuna chiave — ComfyUI sulla macchina che esegue il server
+STENCIL_PROVIDER=local
+COMFYUI_URL=http://127.0.0.1:8188
+```
+
+Con entrambi i provider a chiave configurati vince Cloudflare; `STENCIL_PROVIDER` (`cloudflare` | `gemini` | `local`) forza una scelta. `STENCIL_DAILY_CAP` (default 6) mette un tetto alle generazioni giornaliere. Next legge `.env.local` solo all'avvio, quindi riavvia `npm run dev` dopo aver modificato il file.
+
+Per sapere cosa sta usando il deploy senza indovinare: `curl -s localhost:3000/api/bwslab/status` restituisce provider, modello, risoluzione, budget residuo e commit in esecuzione.
+
 ## Controlli
 
 ```bash

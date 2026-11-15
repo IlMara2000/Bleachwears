@@ -463,6 +463,24 @@ export default function PromptLab() {
                   <strong>{timingLine(status)}</strong> {quotaLine(status)}
                 </p>
               </div>
+
+              {status && !status.configured ? (
+                <div className={styles.notice}>
+                  <p>
+                    <strong>Questa pressa non ha un modello collegato.</strong> Senza una chiave
+                    ogni richiesta risponde 503. Aggiungi una di queste configurazioni a{" "}
+                    <code className={styles.codeChip}>.env.local</code> e riavvia{" "}
+                    <code className={styles.codeChip}>npm run dev</code>:
+                    <br />· gratis, Cloudflare Workers AI:{" "}
+                    <code className={styles.codeChip}>CLOUDFLARE_ACCOUNT_ID</code> +{" "}
+                    <code className={styles.codeChip}>CLOUDFLARE_API_TOKEN</code>
+                    <br />· a pagamento, Gemini: <code className={styles.codeChip}>GEMINI_API_KEY</code>
+                    <br />· senza chiavi, sul tuo computer:{" "}
+                    <code className={styles.codeChip}>STENCIL_PROVIDER=local</code> con ComfyUI su{" "}
+                    <code className={styles.codeChip}>COMFYUI_URL</code>
+                  </p>
+                </div>
+              ) : null}
             </div>
           </aside>
         </section>
