@@ -304,10 +304,32 @@ test("reuses a repeated request before spending a generation", async () => {
     assert.ok(claim > 0, `${path}: non legge l'identificativo della richiesta`);
     assert.ok(claim < source.indexOf("takeToken("), `${path}: il riuso arriva dopo il rate limit`);
     assert.ok(
-      claim < source.indexOf("reserveGeneration()"),
+      claim < source.indexOf("reserveGeneration("),
       `${path}: il riuso arriva dopo la prenotazione, quindi costa un gettone`,
     );
     assert.ok(source.indexOf("completeRequest(") > claim, `${path}: non conserva il risultato per il retry`);
     assert.ok(source.indexOf("failRequest(requestId)") > claim, `${path}: un errore non libera l'identificativo`);
   }
+});
+
+test("charges each press page to its own counter and prints both versions", async () => {
+  const [transform, edit, status, studio] = await Promise.all([
+    readFile(new URL("app/api/bwslab/transform/route.ts", root), "utf8"),
+    readFile(new URL("app/api/bwslab/edit/route.ts", root), "utf8"),
+    readFile(new URL("app/api/bwslab/status/route.ts", root), "utf8"),
+    readFile(new URL("app/bwslab/Studio.tsx", root), "utf8"),
+  ]);
+
+  assert.match(transform, /reserveGeneration\("lab"\)/, "il laboratorio attinge al contatore della pressa");
+  assert.match(edit, /reserveGeneration\("prompt"\)/, "la pressa attinge al contatore del laboratorio");
+  assert.match(status, /searchParams\.get\("scope"\)/, "lo stato non distingue le due pagine");
+
+  /* Una sola chiamata al modello, la versione cartoon la stampa il motore locale. */
+  assert.match(studio, /style: "cartoon"/, "il laboratorio non produce la seconda versione");
+  assert.match(studio, /Scarica cartoon/, "la seconda versione non è scaricabile");
+  assert.equal(
+    (studio.match(/fetch\("\/api\/bwslab\/transform"/g) ?? []).length,
+    1,
+    "il laboratorio fa più di una chiamata al modello",
+  );
 });

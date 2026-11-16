@@ -328,7 +328,7 @@ test("refunds a shared counter on the day the slot was taken, even across midnig
 
     /* Il rimborso deve toccare il contatore del 10: nessun DECR sull'11. */
     const decremented = redis.commands.filter(([command]) => command === "DECR").map(([, key]) => key);
-    assert.deepEqual(decremented, ["bwslab:spend:2026-04-10"]);
+    assert.deepEqual(decremented, ["bwslab:spend:prompt:2026-04-10"]);
 
     assert.equal((await currentBudget()).used, 1, "il rimborso ha regalato una generazione al giorno nuovo");
 
@@ -533,5 +533,27 @@ test("admits simultaneous shared requests atomically instead of overshooting", a
 
     if (savedEnv.token === undefined) delete process.env.KV_REST_API_TOKEN;
     else process.env.KV_REST_API_TOKEN = savedEnv.token;
+  }
+});
+
+test("gives the lab and the press their own daily counter", async () => {
+  const realNow = Date.now;
+  Date.now = () => Date.parse("2026-08-12T10:00:00.000Z");
+
+  try {
+    const lab = await reserveGeneration("lab");
+    assert.equal(lab.allowed, true);
+
+    /* La pressa ha diritto al suo gettone anche se il laboratorio ha già stampato. */
+    const press = await reserveGeneration("prompt");
+    assert.equal(press.allowed, true, "il laboratorio ha consumato la generazione della pressa");
+
+    assert.equal((await currentBudget("lab")).used, 1);
+    assert.equal((await currentBudget("prompt")).used, 1);
+
+    const labAgain = await reserveGeneration("lab");
+    assert.equal(labAgain.allowed, false, "il tetto del laboratorio non si ferma a una generazione");
+  } finally {
+    Date.now = realNow;
   }
 });

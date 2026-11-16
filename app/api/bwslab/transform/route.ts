@@ -71,7 +71,7 @@ export async function POST(request: Request) {
    * The ceiling is checked here, before the provider is touched: a refused
    * generation must cost nothing. It counts the attempt, not the success.
    */
-  const reservation = await reserveGeneration();
+  const reservation = await reserveGeneration("lab");
   if (!reservation.allowed) {
     const { cap, used, resetAt } = reservation.budget;
     console.warn(JSON.stringify({ event: "bwslab.budget", ok: false, cap, used }));

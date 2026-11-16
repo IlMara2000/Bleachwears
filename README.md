@@ -86,7 +86,7 @@ STENCIL_PROVIDER=local
 COMFYUI_URL=http://127.0.0.1:8188
 ```
 
-Con entrambi i provider a chiave configurati vince Cloudflare; `STENCIL_PROVIDER` (`cloudflare` | `gemini` | `local`) forza una scelta. `STENCIL_DAILY_CAP` (default **1** per i provider a pagamento, nessun tetto per quello locale) mette un tetto alle generazioni giornaliere: il gettone viene preso prima di chiamare il modello, così una richiesta oltre il tetto viene rifiutata con 429 senza costare nulla. Se invece la generazione parte e fallisce, il gettone **torna indietro**: un errore del provider non consuma la generazione di oggi. Next legge `.env.local` solo all'avvio, quindi riavvia `npm run dev` dopo aver modificato il file.
+Ogni pagina ha il suo contatore: `/bwslab` stampa con il modello (stencil) e ricava la versione cartoon in locale dall'originale, `/bwslab/nfsw` esegue il prompt dell'utente. Il tetto è quindi uno per pagina, non uno in comune. Con entrambi i provider a chiave configurati vince Cloudflare; `STENCIL_PROVIDER` (`cloudflare` | `gemini` | `local`) forza una scelta. `STENCIL_DAILY_CAP` (default **1** per i provider a pagamento, nessun tetto per quello locale) mette un tetto alle generazioni giornaliere: il gettone viene preso prima di chiamare il modello, così una richiesta oltre il tetto viene rifiutata con 429 senza costare nulla. Se invece la generazione parte e fallisce, il gettone **torna indietro**: un errore del provider non consuma la generazione di oggi. Next legge `.env.local` solo all'avvio, quindi riavvia `npm run dev` dopo aver modificato il file.
 
 ### Creare il token Cloudflare
 

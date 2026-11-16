@@ -184,7 +184,7 @@ export default function PromptLab() {
    * Called again after a generation, otherwise the remaining count stays stale.
    */
   const refreshStatus = useCallback(() => {
-    fetch("/api/bwslab/status", { cache: "no-store" })
+    fetch("/api/bwslab/status?scope=prompt", { cache: "no-store" })
       .then((response) => (response.ok ? (response.json() as Promise<Status>) : null))
       .then((value: Status | null) => {
         if (value) setStatus(value);

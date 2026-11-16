@@ -91,7 +91,7 @@ export async function POST(request: Request) {
   const uploaded = await readImageUpload(form);
   if (!uploaded.ok) return uploaded.response;
 
-  const reservation = await reserveGeneration();
+  const reservation = await reserveGeneration("prompt");
   if (!reservation.allowed) {
     const { cap, used, resetAt } = reservation.budget;
     console.warn(JSON.stringify({ event: "bwslab.edit", ok: false, reason: "budget", cap, used }));

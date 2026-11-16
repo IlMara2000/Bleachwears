@@ -16,6 +16,13 @@ import { activeProvider } from "./provider.ts";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const KEY_PREFIX = "bwslab:spend";
 
+/**
+ * Each page has its own ceiling: the lab prints with the model, the prompt press
+ * takes instructions. Sharing one counter meant one page could eat the other's
+ * generation, which is not what either page promises.
+ */
+export type SpendScope = "lab" | "prompt";
+
 export type Budget = {
   /** Generations per day. 0 means this provider spends nothing. */
   cap: number;
@@ -157,8 +164,8 @@ function configuredCap(): number {
   return activeProvider() === "local" ? 0 : 1;
 }
 
-function dayKey(now: number): string {
-  return `${KEY_PREFIX}:${new Date(now).toISOString().slice(0, 10)}`;
+function dayKey(now: number, scope: SpendScope): string {
+  return `${KEY_PREFIX}:${scope}:${new Date(now).toISOString().slice(0, 10)}`;
 }
 
 function resetAtFor(now: number): string {
@@ -182,7 +189,7 @@ function withUsage(cap: number, used: number, store: Store, now: number): Budget
 }
 
 /** Read-only view for the status endpoint: costs nothing, spends nothing. */
-export async function currentBudget(): Promise<Budget> {
+export async function currentBudget(scope: SpendScope = "prompt"): Promise<Budget> {
   const now = Date.now();
   const store = configuredStore();
   const cap = configuredCap();
@@ -191,7 +198,7 @@ export async function currentBudget(): Promise<Budget> {
 
   let used = 0;
   try {
-    used = await store.read(dayKey(now));
+    used = await store.read(dayKey(now, scope));
   } catch (error) {
     console.error(JSON.stringify({ event: "bwslab.budget", ok: false, reason: "store", error: String(error) }));
   }
@@ -218,7 +225,7 @@ const nothingToRefund = async (): Promise<void> => undefined;
  * Called right before a generation. `allowed: false` means the provider is
  * never contacted, so nothing is billed.
  */
-export async function reserveGeneration(): Promise<Reservation> {
+export async function reserveGeneration(scope: SpendScope = "prompt"): Promise<Reservation> {
   const now = Date.now();
   const store = configuredStore();
   const cap = configuredCap();
@@ -226,7 +233,7 @@ export async function reserveGeneration(): Promise<Reservation> {
   if (cap === 0) return { allowed: true, budget: unlimited(store, now), refund: nothingToRefund };
 
   /* Captured here, once: the day is a property of the reservation. */
-  const key = dayKey(now);
+  const key = dayKey(now, scope);
 
   let admission: { allowed: boolean; used: number };
   try {

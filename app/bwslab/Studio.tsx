@@ -32,7 +32,14 @@ type Generated = {
   fileName: string;
 };
 
-type Status = { configured: boolean; provider?: string; model: string; resolution: string };
+type Status = {
+  configured: boolean;
+  provider?: string;
+  model: string;
+  resolution: string;
+  scope?: string;
+  budget?: { cap: number; used: number; remaining: number; resetAt?: string };
+};
 
 /** The only knob the local engine exposes: which look to print. */
 function StyleSwitch({
@@ -179,6 +186,8 @@ export default function Studio() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [source, setSource] = useState<Prepared | null>(null);
   const [generated, setGenerated] = useState<Generated | null>(null);
+  /** La seconda stampa della stessa generazione, ricavata qui dall'originale. */
+  const [cartoon, setCartoon] = useState<Generated | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -207,11 +216,12 @@ export default function Studio() {
   const inputRef = useRef<HTMLInputElement>(null);
   const sourceRef = useRef<Prepared | null>(null);
   const generatedRef = useRef<Generated | null>(null);
+  const cartoonRef = useRef<Generated | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     let alive = true;
-    fetch("/api/bwslab/status")
+    fetch("/api/bwslab/status?scope=lab")
       .then((response) => (response.ok ? response.json() : null))
       .then((value: Status | null) => {
         if (alive && value) setStatus(value);
@@ -240,6 +250,7 @@ export default function Studio() {
       abortRef.current?.abort();
       if (sourceRef.current) URL.revokeObjectURL(sourceRef.current.url);
       if (generatedRef.current) URL.revokeObjectURL(generatedRef.current.url);
+      if (cartoonRef.current) URL.revokeObjectURL(cartoonRef.current.url);
     };
   }, []);
 
@@ -250,9 +261,12 @@ export default function Studio() {
       const prepared = await prepare(file);
       if (sourceRef.current) URL.revokeObjectURL(sourceRef.current.url);
       if (generatedRef.current) URL.revokeObjectURL(generatedRef.current.url);
+      if (cartoonRef.current) URL.revokeObjectURL(cartoonRef.current.url);
       generatedRef.current = null;
+      cartoonRef.current = null;
       sourceRef.current = prepared;
       setGenerated(null);
+      setCartoon(null);
       setSource(prepared);
       setPhase("ready");
       setSplit(50);
@@ -282,6 +296,11 @@ export default function Studio() {
         URL.revokeObjectURL(generatedRef.current.url);
         generatedRef.current = null;
         setGenerated(null);
+      }
+      if (cartoonRef.current) {
+        URL.revokeObjectURL(cartoonRef.current.url);
+        cartoonRef.current = null;
+        setCartoon(null);
       }
 
       const controller = new AbortController();
@@ -325,6 +344,34 @@ export default function Studio() {
           }
 
           blob = await response.blob();
+
+          /*
+           * One paid generation, two prints: the stencil comes from the model,
+           * the cartoon is rendered here from the original. No second call, so
+           * the other version cannot cost a slot.
+           */
+          try {
+            const bitmap = await createImageBitmap(current.file);
+            try {
+              const plain = await renderStencil(bitmap, { style: "cartoon" });
+              const cartoonUrl = URL.createObjectURL(plain.blob);
+              const cartoonSize = await loadSize(cartoonUrl);
+              const plate: Generated = {
+                url: cartoonUrl,
+                width: cartoonSize.width,
+                height: cartoonSize.height,
+                ms: Math.round(performance.now() - started),
+                fileName: `stencil-lab-cartoon-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.png`,
+              };
+              cartoonRef.current = plate;
+              setCartoon(plate);
+            } finally {
+              bitmap.close();
+            }
+          } catch {
+            /* The stencil is the product: a failed second print must not sink it. */
+            setCartoon(null);
+          }
         }
 
         const url = URL.createObjectURL(blob);
@@ -385,6 +432,7 @@ export default function Studio() {
     abortRef.current?.abort();
     if (sourceRef.current) URL.revokeObjectURL(sourceRef.current.url);
     if (generatedRef.current) URL.revokeObjectURL(generatedRef.current.url);
+    if (cartoonRef.current) URL.revokeObjectURL(cartoonRef.current.url);
     sourceRef.current = null;
     generatedRef.current = null;
     setSource(null);
@@ -437,9 +485,14 @@ export default function Studio() {
         <header className={cx("flex flex-wrap items-end justify-between gap-6 pb-6", styles.hairlineBottom)}>
           <div>
             <h1 className={styles.wordmark}>Stencil Lab</h1>
-            <p className={cx(styles.measure, "mt-3")}>One image. One style.</p>
+            <p className={cx(styles.measure, "mt-3")}>One image. Two prints.</p>
           </div>
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+            {status?.budget && status.budget.cap > 0 ? (
+              <span className={styles.micro}>
+                {status.budget.remaining} di {status.budget.cap} generazioni oggi
+              </span>
+            ) : null}
             <span className={styles.micro}>{local ? "1600 px" : (status?.resolution ?? "1K")}</span>
             <span className={styles.micro}>{modelLabel}</span>
             <Link href="/" className={styles.backLink}>
@@ -552,6 +605,28 @@ export default function Studio() {
                   <span className={cx(styles.micro, styles.numeric)}>
                     {(generated.ms / 1000).toFixed(1)} s · run {run}
                   </span>
+                </figcaption>
+              </figure>
+            ) : null}
+
+            {!local && cartoon ? (
+              <figure className="mt-6">
+                <div className={cx(styles.canvasPlate, "relative")}>
+                  <img src={cartoon.url} alt="Versione cartoon ricavata dall'originale" />
+                  <span className={styles.plateTag}>Cartoon · dall&apos;originale</span>
+                </div>
+                <figcaption className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                  <span className={cx(styles.micro, "max-w-[42ch] leading-relaxed")}>
+                    Seconda stampa della stessa generazione: la ricava il motore locale, quindi non
+                    consuma un altro gettone.
+                  </span>
+                  <a
+                    className={cx(styles.btn, styles.btnGhost)}
+                    href={cartoon.url}
+                    download={cartoon.fileName}
+                  >
+                    Scarica cartoon
+                  </a>
                 </figcaption>
               </figure>
             ) : null}
