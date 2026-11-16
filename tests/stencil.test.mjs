@@ -326,9 +326,8 @@ test("refunds a shared counter on the day the slot was taken, even across midnig
 
     await taken.refund();
 
-    /* Il rimborso deve toccare il contatore del 10: nessun DECR sull'11. */
-    const decremented = redis.commands.filter(([command]) => command === "DECR").map(([, key]) => key);
-    assert.deepEqual(decremented, ["bwslab:spend:prompt:2026-04-10"]);
+    /* Il rimborso deve toccare il contatore del 10: nessun decremento sull'11. */
+    assert.deepEqual(redis.decrements, ["bwslab:spend:prompt:2026-04-10"]);
 
     assert.equal((await currentBudget()).used, 1, "il rimborso ha regalato una generazione al giorno nuovo");
 
@@ -436,15 +435,30 @@ test("ignores a request id the client had no business sending", () => {
 });
 
 /**
- * Un Redis finto per i test: tiene i contatori in una Map ed esegue le stesse
- * istruzioni che manda il client. EVAL applica controllo e incremento in un
- * colpo solo, come fa lo script Lua sul server vero; la scadenza dei tasti non
- * serve qui perché i test spostano l'orologio e cambiano giorno.
+ * Un Redis finto per i test: contatori in una Map, lease in un altra, e gli
+ * stessi script che il client manda (li riconosce dal tag nella prima riga).
+ * Come sul server vero, EVAL controlla e scrive in un colpo solo; la scadenza
+ * dei tasti non serve, perché i test spostano l'orologio.
  */
 function fakeRedis() {
-  const counts = new Map();
+  const counters = new Map();
+  const zsets = new Map();
   const commands = [];
+  /** Ogni decremento che gli script fanno, con la chiave che hanno toccato. */
+  const decrements = [];
   const realFetch = globalThis.fetch;
+
+  function sweepExpired(counterKey, leaseKey, now) {
+    const held = zsets.get(leaseKey);
+    if (!held) return;
+
+    for (const [member, expiresAt] of [...held]) {
+      if (expiresAt > now) continue;
+      held.delete(member);
+      counters.set(counterKey, (counters.get(counterKey) ?? 0) - 1);
+      decrements.push(counterKey);
+    }
+  }
 
   globalThis.fetch = async (_url, init) => {
     const command = JSON.parse(init.body);
@@ -455,35 +469,58 @@ function fakeRedis() {
     let result = null;
 
     if (name === "EVAL") {
-      const cap = Number(command[4]);
-      const used = counts.get(key) ?? 0;
+      const script = String(command[1]);
+      const counterKey = command[3];
+      const leaseKey = command[4];
+      const args = command.slice(5);
 
-      if (used >= cap) {
-        result = [0, used];
-      } else {
-        const taken = used + 1;
-        counts.set(key, taken);
-        result = [1, taken];
+      if (script.includes("bwslab:claim")) {
+        const cap = Number(args[0]);
+        const leaseMs = Number(args[1]);
+        const now = Number(args[2]);
+        const id = args[3];
+
+        sweepExpired(counterKey, leaseKey, now);
+
+        const used = counters.get(counterKey) ?? 0;
+        if (used >= cap) {
+          result = [0, used];
+        } else {
+          counters.set(counterKey, used + 1);
+          const held = zsets.get(leaseKey) ?? new Map();
+          held.set(id, now + leaseMs);
+          zsets.set(leaseKey, held);
+          result = [1, used + 1];
+        }
+      } else if (script.includes("bwslab:release")) {
+        const held = zsets.get(leaseKey);
+
+        if (held?.delete(args[0])) {
+          const left = (counters.get(counterKey) ?? 0) - 1;
+          counters.set(counterKey, left);
+          decrements.push(counterKey);
+          result = left < 0 ? 0 : left;
+        } else {
+          result = counters.get(counterKey) ?? 0;
+        }
+      } else if (script.includes("bwslab:confirm")) {
+        /* Conferma: la lease sparisce, il contatore resta com'è. */
+        zsets.get(leaseKey)?.delete(args[0]);
+        result = counters.get(counterKey) ?? 0;
+      } else if (script.includes("bwslab:read")) {
+        sweepExpired(counterKey, leaseKey, Number(args[0]));
+        result = counters.get(counterKey) ?? 0;
       }
-    } else if (name === "GET") {
-      result = counts.get(key) ?? null;
-    } else if (name === "DECR") {
-      const next = (counts.get(key) ?? 0) - 1;
-      counts.set(key, next);
-      result = next;
-    } else if (name === "SET") {
-      counts.set(key, Number(command[2]));
-      result = "OK";
-    } else if (name === "PEXPIRE") {
-      result = 1;
     }
 
     return new Response(JSON.stringify({ result }), { status: 200 });
   };
 
   return {
-    counts,
+    counters,
+    zsets,
     commands,
+    decrements,
     restore() {
       globalThis.fetch = realFetch;
     },
@@ -520,7 +557,7 @@ test("admits simultaneous shared requests atomically instead of overshooting", a
       "l'ammissione non passa dallo script Lua",
     );
     assert.equal(
-      redis.commands.filter(([name]) => name === "DECR").length,
+      redis.decrements.length,
       0,
       "il rifiuto ha rimediato con un rollback invece di un controllo atomico",
     );

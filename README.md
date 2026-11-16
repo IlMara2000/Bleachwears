@@ -103,6 +103,12 @@ Per sapere cosa sta usando il deploy senza indovinare: `curl -s localhost:3000/a
 
 Per provare che la pressa generi davvero c'è `node scripts/verifica-pressa.mjs [--base http://127.0.0.1:3000]`: manda un'immagine sintetica, controlla che torni un'immagine col frame di partenza e che il budget scenda di uno. Consuma una generazione vera (due con `--seconda`), quindi si lancia a mano e non fa parte di `npm test`.
 
+## Prenotazioni che scadono da sole
+
+Il contatore giornaliero non si fida del fatto che la richiesta torni. Ogni generazione prenota il suo gettone **con una lease di sei minuti** (`LEASE_MS` in `lib/stencil/budget.ts`): se l'immagine arriva, la rotta chiama `confirm()` e il gettone diventa un addebito per la giornata; se la funzione viene uccisa a metà — il caso che nessun `catch` può intercettare — nessuno conferma, la lease scade e il gettone torna da solo alla prima lettura successiva. Niente cron e niente callback da mantenere in vita.
+
+La lease vive più a lungo della funzione apposta: le rotte dichiarano `maxDuration = 300`, quindi sei minuti lasciano margine oltre il momento in cui la piattaforma uccide il processo, senza liberare un gettone che una generazione ancora in corso sta usando. Il browser aspetta meno della funzione (`CLIENT_TIMEOUT_MS` = 290 s nella pressa del prompt, 240 s nel laboratorio): oltre quel tempo non ci sarebbe più nessuna risposta da attendere, e l'identificativo del tentativo resta salvato per ritirare l'immagine al retry.
+
 ## Archivio delle stampe
 
 Una generazione al giorno rende caro un refresh: l'immagine viveva solo come blob in memoria e chiudere la scheda buttava via quello che il gettone aveva comprato. Ora ogni pressa tiene **l'ultima stampa** in IndexedDB (`lib/stencil/archive.ts`): risultato, immagine di partenza e parametri che l'hanno prodotta. Al caricamento la pagina li rilegge e mostra di nuovo il disegno, con la nota "Ripresa da questo browser", senza chiamare il modello.

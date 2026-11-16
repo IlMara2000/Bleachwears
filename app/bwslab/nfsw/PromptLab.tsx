@@ -18,7 +18,12 @@ const MAX_PROMPT = 600;
  * The local model takes ~5 minutes per image and the server keeps a 600 s
  * budget: aborting earlier would kill a generation that was about to finish.
  */
-const CLIENT_TIMEOUT_MS = 660_000;
+/**
+ * Below the route's maxDuration (300 s): a function is killed at that point, so
+ * waiting longer only holds a spinner in front of a response that cannot come.
+ * The attempt id stays, so the retry collects the image if it was finished.
+ */
+const CLIENT_TIMEOUT_MS = 290_000;
 
 type Prepared = { file: File; url: string; width: number; height: number; name: string };
 

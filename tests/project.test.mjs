@@ -275,9 +275,13 @@ test("counts one generation a day and gives the slot back when it fails", async 
   assert.match(budget, /activeProvider\(\) === "local" \? 0 : 1/, "il tetto di default non è una generazione al giorno");
   assert.match(budget, /refund\(\): Promise<void>/, "la prenotazione non sa restituire il gettone");
   /* L'ammissione condivisa deve essere atomica: controllo e incremento insieme. */
-  assert.match(budget, /ADMIT_SCRIPT/, "manca lo script Lua che ammette a colpo sicuro");
+  assert.match(budget, /CLAIM_SCRIPT/, "manca lo script Lua che ammette a colpo sicuro");
   assert.match(budget, /if used >= cap then/, "lo script non confronta con il tetto");
-  assert.match(budget, /\["EVAL", ADMIT_SCRIPT/, "lo script non viene eseguito sul contatore condiviso");
+  assert.match(budget, /\[\s*"EVAL",\s*CLAIM_SCRIPT/, "lo script non viene eseguito sul contatore condiviso");
+  /* La prenotazione deve poter scadere da sola: è la rete per la funzione uccisa. */
+  assert.match(budget, /export const LEASE_MS/, "una prenotazione senza scadenza resta addebitata per sempre");
+  assert.match(budget, /ZRANGEBYSCORE/, "nessuno script recupera le prenotazioni scadute");
+  assert.match(budget, /confirm\(\): Promise<void>/, "una generazione riuscita non può confermare il gettone");
   assert.doesNotMatch(budget, /await refund\(\);\n\s*return \{ allowed: false/, "il rifiuto torna a rimediare con un rollback");
   /* Il rimborso deve colpire il giorno della prenotazione, non quello del guasto. */
   assert.doesNotMatch(budget, /dayKey\(Date\.now\(\)\)/, "il rimborso usa la data del momento: a cavallo della mezzanotte regala un gettone");

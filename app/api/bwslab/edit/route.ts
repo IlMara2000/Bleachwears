@@ -138,6 +138,9 @@ export async function POST(request: Request) {
 
     completeRequest(requestId, { bytes: result.bytes, mimeType: result.mimeType });
 
+    /* The image exists: the slot is spent, not provisional. */
+    await reservation.confirm();
+
     return new NextResponse(new Uint8Array(result.bytes), {
       status: 200,
       headers: {
