@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { budgetMessage, reserveGeneration } from "@/lib/stencil/budget";
+import { claimRequest, completeRequest, failRequest, requestIdFrom } from "@/lib/stencil/idempotency";
 import { clientIdFrom, takeToken } from "@/lib/stencil/rate-limit";
 import { StencilError, activeModel, isConfigured, transformImage } from "@/lib/stencil/provider";
 import { readImageUpload } from "@/lib/stencil/upload";
@@ -14,6 +15,36 @@ export async function POST(request: Request) {
       { error: "Il generatore non è configurato su questo deploy: manca la chiave del provider." },
       { status: 503 },
     );
+  }
+
+  const requestId = requestIdFrom(request);
+  const claimed = claimRequest(requestId);
+
+  if (claimed.mode === "busy") {
+    return NextResponse.json(
+      { error: "Questa generazione è già in corso: aspetta che finisca invece di rilanciarla." },
+      {
+        status: 409,
+        headers: { "Retry-After": String(claimed.retryAfterSeconds), "Cache-Control": "no-store" },
+      },
+    );
+  }
+
+  /*
+   * A retry after a timeout gets the image the first attempt produced: it costs
+   * nothing, so it comes before the rate limit and the daily guard.
+   */
+  if (claimed.mode === "reuse") {
+    return new NextResponse(new Uint8Array(claimed.image.bytes), {
+      status: 200,
+      headers: {
+        "Content-Type": claimed.image.mimeType,
+        "Content-Length": String(claimed.image.bytes.length),
+        "Cache-Control": "no-store, max-age=0",
+        "X-Stencil-Model": activeModel(),
+        "X-Stencil-Reused": "1",
+      },
+    });
   }
 
   const limit = takeToken(clientIdFrom(request));
@@ -71,8 +102,11 @@ export async function POST(request: Request) {
         outputBytes: result.bytes.length,
         ms: Date.now() - started,
         spend: { used: reservation.budget.used, cap: reservation.budget.cap },
+        requestId: requestId ? "present" : "missing",
       }),
     );
+
+    completeRequest(requestId, { bytes: result.bytes, mimeType: result.mimeType });
 
     return new NextResponse(new Uint8Array(result.bytes), {
       status: 200,
@@ -89,6 +123,7 @@ export async function POST(request: Request) {
 
     /* No image came back, so the slot goes back on the day it was taken. */
     await reservation.refund();
+    failRequest(requestId);
 
     console.error(JSON.stringify({ event: "bwslab.transform", ok: false, status, ms: Date.now() - started, refund: true }));
 

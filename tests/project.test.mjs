@@ -290,3 +290,19 @@ test("counts one generation a day and gives the slot back when it fails", async 
     );
   }
 });
+
+test("reuses a repeated request before spending a generation", async () => {
+  for (const path of ["app/api/bwslab/edit/route.ts", "app/api/bwslab/transform/route.ts"]) {
+    const source = await readFile(new URL(path, root), "utf8");
+    const claim = source.indexOf("claimRequest(requestId)");
+
+    assert.ok(claim > 0, `${path}: non legge l'identificativo della richiesta`);
+    assert.ok(claim < source.indexOf("takeToken("), `${path}: il riuso arriva dopo il rate limit`);
+    assert.ok(
+      claim < source.indexOf("reserveGeneration()"),
+      `${path}: il riuso arriva dopo la prenotazione, quindi costa un gettone`,
+    );
+    assert.ok(source.indexOf("completeRequest(") > claim, `${path}: non conserva il risultato per il retry`);
+    assert.ok(source.indexOf("failRequest(requestId)") > claim, `${path}: un errore non libera l'identificativo`);
+  }
+});

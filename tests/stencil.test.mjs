@@ -11,6 +11,13 @@ import {
   transformImage,
 } from "../lib/stencil/provider.ts";
 import { currentBudget, reserveGeneration } from "../lib/stencil/budget.ts";
+import {
+  claimRequest,
+  completeRequest,
+  failRequest,
+  forgetAllRequests,
+  requestIdFrom,
+} from "../lib/stencil/idempotency.ts";
 import { readDimensions, sniffKind } from "../lib/stencil/image-size.ts";
 
 test("keeps the art direction that makes every result look like the same studio", () => {
@@ -392,4 +399,65 @@ test("a refused reservation costs nothing and leaves the counter at the ceiling"
   } finally {
     Date.now = realNow;
   }
+});
+
+test("a retried request reuses the image the first attempt produced", () => {
+  forgetAllRequests();
+
+  assert.deepEqual(claimRequest("req-abcdefgh"), { mode: "run" });
+
+  const image = { bytes: new Uint8Array([1, 2, 3]), mimeType: "image/png" };
+  completeRequest("req-abcdefgh", image);
+
+  const retry = claimRequest("req-abcdefgh");
+  assert.equal(retry.mode, "reuse");
+  assert.deepEqual([...retry.image.bytes], [1, 2, 3], "il retry deve ricevere l'immagine già prodotta");
+  assert.equal(retry.image.mimeType, "image/png");
+});
+
+test("an attempt still running answers busy instead of starting a second one", () => {
+  forgetAllRequests();
+
+  claimRequest("req-running-1");
+  const again = claimRequest("req-running-1");
+
+  assert.equal(again.mode, "busy", "il retry ha avviato una seconda generazione");
+  assert.ok(again.retryAfterSeconds > 0);
+});
+
+test("a failed attempt frees its id so the retry can run", () => {
+  forgetAllRequests();
+
+  claimRequest("req-failed-01");
+  failRequest("req-failed-01");
+
+  assert.deepEqual(claimRequest("req-failed-01"), { mode: "run" });
+});
+
+test("an attempt that never reported back stops blocking after the lease", () => {
+  forgetAllRequests();
+
+  const realNow = Date.now;
+  try {
+    Date.now = () => Date.parse("2026-06-01T10:00:00.000Z");
+    claimRequest("req-orphan-01");
+    assert.equal(claimRequest("req-orphan-01").mode, "busy");
+
+    /* Funzione uccisa a metà: il gettone non torna, ma l'id non deve restare occupato per sempre. */
+    Date.now = () => Date.parse("2026-06-01T10:11:00.000Z");
+    assert.deepEqual(claimRequest("req-orphan-01"), { mode: "run" });
+  } finally {
+    Date.now = realNow;
+  }
+});
+
+test("ignores a request id the client had no business sending", () => {
+  const withId = (value) =>
+    requestIdFrom(new Request("https://press.test/api/bwslab/edit", { headers: { "X-Stencil-Request-Id": value } }));
+
+  assert.equal(withId("req-abcdefgh"), "req-abcdefgh");
+  assert.equal(withId("short"), null);
+  assert.equal(withId("con spazi e a capo"), null);
+  assert.equal(withId("x".repeat(129)), null);
+  assert.equal(requestIdFrom(new Request("https://press.test/api/bwslab/edit")), null);
 });
