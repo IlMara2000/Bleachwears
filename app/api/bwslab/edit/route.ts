@@ -58,6 +58,8 @@ export async function POST(request: Request) {
 
   const limit = takeToken(clientIdFrom(request));
   if (!limit.allowed) {
+    /* Nessuna generazione: l'id va liberato, o il retry con lo stesso id troverebbe "in corso". */
+    failRequest(requestId);
     return NextResponse.json(
       { error: "Troppe trasformazioni da questa connessione. Riprova tra qualche minuto." },
       { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
@@ -69,6 +71,7 @@ export async function POST(request: Request) {
   try {
     form = await request.formData();
   } catch {
+    failRequest(requestId);
     return NextResponse.json({ error: "Manda immagine e prompt come form data multipart." }, { status: 400 });
   }
 
@@ -78,10 +81,12 @@ export async function POST(request: Request) {
   const prompt = typeof rawPrompt === "string" ? rawPrompt.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").trim() : "";
 
   if (prompt.length < MIN_PROMPT_CHARS) {
+    failRequest(requestId);
     return NextResponse.json({ error: "Scrivi cosa vuoi cambiare nell'immagine." }, { status: 400 });
   }
 
   if (prompt.length > MAX_PROMPT_CHARS) {
+    failRequest(requestId);
     return NextResponse.json(
       { error: `Il prompt è troppo lungo: massimo ${MAX_PROMPT_CHARS} caratteri.` },
       { status: 400 },
@@ -89,12 +94,17 @@ export async function POST(request: Request) {
   }
 
   const uploaded = await readImageUpload(form);
-  if (!uploaded.ok) return uploaded.response;
+  if (!uploaded.ok) {
+    failRequest(requestId);
+    return uploaded.response;
+  }
 
   const reservation = await reserveGeneration("prompt");
   if (!reservation.allowed) {
     const { cap, used, resetAt } = reservation.budget;
     console.warn(JSON.stringify({ event: "bwslab.edit", ok: false, reason: "budget", cap, used }));
+    /* Il tetto ha rifiutato prima di generare: niente immagine, niente id occupato. */
+    failRequest(requestId);
 
     return NextResponse.json(
       { error: budgetMessage(reservation.budget), budget: reservation.budget },

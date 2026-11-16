@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { finishAttempt, startAttempt } from "@/lib/stencil/attempt";
 import {
   LOCAL_ENGINE_LABEL,
   STENCIL_STYLES,
@@ -332,10 +333,20 @@ export default function Studio() {
           const body = new FormData();
           body.append("image", current.file);
 
+          /*
+           * The id stays with the attempt until an image comes back: a retry
+           * after a timeout sends the same one, so the server hands over the
+           * print it already made instead of charging a second slot. While the
+           * first generation is still running the API answers 409, not a second
+           * print.
+           */
+          const requestId = startAttempt("lab");
+
           const response = await fetch("/api/bwslab/transform", {
             method: "POST",
             body,
             signal: controller.signal,
+            headers: { "X-Stencil-Request-Id": requestId },
           });
 
           if (!response.ok) {
@@ -344,6 +355,7 @@ export default function Studio() {
           }
 
           blob = await response.blob();
+          finishAttempt("lab");
 
           /*
            * One paid generation, two prints: the stencil comes from the model,

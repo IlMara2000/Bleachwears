@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { finishAttempt, startAttempt } from "@/lib/stencil/attempt";
 import styles from "../stencil.module.css";
 
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
@@ -73,12 +74,6 @@ function quotaLine(status: Status | null): string {
 type Generated = { url: string; width: number; height: number; ms: number; fileName: string };
 
 const cx = (...values: Array<string | false | undefined>) => values.filter(Boolean).join(" ");
-
-/** `randomUUID` needs a secure context; a localhost preview has one, a plain http host may not. */
-function createRequestId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
-  return `req-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
 
 function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
@@ -174,8 +169,6 @@ export default function PromptLab() {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const sourceRef = useRef<Prepared | null>(null);
-  /** Kept across retries: the server reuses the image produced under this id. */
-  const requestIdRef = useRef<string | null>(null);
   const generatedRef = useRef<Generated | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -215,7 +208,7 @@ export default function PromptLab() {
   const accept = useCallback(async (file: File) => {
     setError(null);
     /* A new image is a new request: never reuse the previous id. */
-    requestIdRef.current = null;
+    finishAttempt("prompt");
     setPreparing(true);
     try {
       const prepared = await prepare(file);
@@ -262,8 +255,7 @@ export default function PromptLab() {
        * server finished, retrying returns that image instead of spending the
        * day's single generation a second time.
        */
-      const requestId = requestIdRef.current ?? createRequestId();
-      requestIdRef.current = requestId;
+      const requestId = startAttempt("prompt");
 
       const response = await fetch("/api/bwslab/edit", {
         method: "POST",
@@ -290,7 +282,7 @@ export default function PromptLab() {
       generatedRef.current = next;
       setGenerated(next);
       /* Done: the next attempt is a new request with its own id. */
-      requestIdRef.current = null;
+      finishAttempt("prompt");
     } catch (runError) {
       setError(messageFor(runError));
     } finally {
@@ -303,7 +295,7 @@ export default function PromptLab() {
   }, [prompt, refreshStatus]);
 
   const reset = useCallback(() => {
-    requestIdRef.current = null;
+    finishAttempt("prompt");
     abortRef.current?.abort();
     if (sourceRef.current) URL.revokeObjectURL(sourceRef.current.url);
     if (generatedRef.current) URL.revokeObjectURL(generatedRef.current.url);

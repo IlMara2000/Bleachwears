@@ -49,6 +49,8 @@ export async function POST(request: Request) {
 
   const limit = takeToken(clientIdFrom(request));
   if (!limit.allowed) {
+    /* Nessuna generazione: l'id va liberato, o il retry con lo stesso id troverebbe "in corso". */
+    failRequest(requestId);
     return NextResponse.json(
       { error: "Troppe trasformazioni da questa connessione. Riprova tra qualche minuto." },
       { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
@@ -59,11 +61,15 @@ export async function POST(request: Request) {
   try {
     form = await request.formData();
   } catch {
+    failRequest(requestId);
     return NextResponse.json({ error: "Manda l'immagine come form data multipart." }, { status: 400 });
   }
 
   const uploaded = await readImageUpload(form);
-  if (!uploaded.ok) return uploaded.response;
+  if (!uploaded.ok) {
+    failRequest(requestId);
+    return uploaded.response;
+  }
 
   const { bytes, width, height, mimeType } = uploaded.upload;
 
@@ -75,6 +81,8 @@ export async function POST(request: Request) {
   if (!reservation.allowed) {
     const { cap, used, resetAt } = reservation.budget;
     console.warn(JSON.stringify({ event: "bwslab.budget", ok: false, cap, used }));
+    /* Il tetto ha rifiutato prima di generare: niente immagine, niente id occupato. */
+    failRequest(requestId);
 
     return NextResponse.json(
       { error: budgetMessage(reservation.budget), budget: reservation.budget },
