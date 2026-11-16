@@ -103,6 +103,14 @@ Per sapere cosa sta usando il deploy senza indovinare: `curl -s localhost:3000/a
 
 Per provare che la pressa generi davvero c'è `node scripts/verifica-pressa.mjs [--base http://127.0.0.1:3000]`: manda un'immagine sintetica, controlla che torni un'immagine col frame di partenza e che il budget scenda di uno. Consuma una generazione vera (due con `--seconda`), quindi si lancia a mano e non fa parte di `npm test`.
 
+## Archivio delle stampe
+
+Una generazione al giorno rende caro un refresh: l'immagine viveva solo come blob in memoria e chiudere la scheda buttava via quello che il gettone aveva comprato. Ora ogni pressa tiene **l'ultima stampa** in IndexedDB (`lib/stencil/archive.ts`): risultato, immagine di partenza e parametri che l'hanno prodotta. Al caricamento la pagina li rilegge e mostra di nuovo il disegno, con la nota "Ripresa da questo browser", senza chiamare il modello.
+
+Nessun account e nessun invio: i dati restano nello storage del browser. Un record per pressa (`lab`, `prompt`), quindi l'archivio non cresce; dopo sette giorni scade e viene rimosso. Se il browser è pieno si tiene l'immagine e si scarta l'input (l'input è più grande e serve solo a ristampare), e senza IndexedDB — modalità privata, dati bloccati — la pressa funziona lo stesso, semplicemente senza memoria. "Nuova immagine" cancella l'archivio.
+
+L'identificativo della richiesta vive in `localStorage` per la stessa ragione: se la scheda viene chiusa mentre la pressa lavora, riaprendo la pagina il tentativo è ancora lo stesso e l'API restituisce l'immagine già prodotta invece di generarne una seconda.
+
 ## Conferma d'ordine via email
 
 Quando Stripe conferma il pagamento, il webhook legge l'ordine e manda al cliente la conferma: prodotti, spedizione scelta, tempi di lavorazione e totale. Il testo dell'email è costruito in `lib/shop/email.ts` dai dati dell'ordine, con i nomi escapati, quindi quello che leggi nel codice è quello che riceve il cliente.

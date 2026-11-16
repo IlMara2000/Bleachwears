@@ -5,8 +5,9 @@
  * with the image — and answers a repeat with that image instead of generating
  * again. For that to work the id must outlive the click: a retry after a timeout
  * is a new render, often a new component, sometimes a reloaded page. So it is
- * stored (sessionStorage, per page and per tab) with the attempt instead of
- * living in a ref that disappears with the component.
+ * stored (localStorage, one slot per press) with the attempt instead of living
+ * in a ref that disappears with the component: a reload, and even a tab closed
+ * while the press was still working, come back to the same id.
  *
  * It is cleared only when the attempt produced its image. A failed attempt keeps
  * its id on purpose: the generation may have finished on the server after the
@@ -29,7 +30,7 @@ const ID_PATTERN = /^[A-Za-z0-9_-]{8,128}$/;
 /** Storage can be absent (server render) or throw (private mode): never fatal. */
 function storage(): Storage | null {
   try {
-    return typeof sessionStorage === "undefined" ? null : sessionStorage;
+    return typeof localStorage === "undefined" ? null : localStorage;
   } catch {
     return null;
   }

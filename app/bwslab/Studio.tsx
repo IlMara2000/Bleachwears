@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { clearPrint, loadPrint, savePrint } from "@/lib/stencil/archive";
 import { finishAttempt, startAttempt } from "@/lib/stencil/attempt";
 import {
   LOCAL_ENGINE_LABEL,
@@ -205,6 +206,8 @@ export default function Studio() {
   const [maskSize, setMaskSize] = useState<{ width: number; height: number } | null>(null);
   const [maskReady, setMaskReady] = useState(false);
   const [maskBusy, setMaskBusy] = useState(false);
+  /** true when what is on screen came back from the archive, not from a new print. */
+  const [restored, setRestored] = useState(false);
 
   /* No key means the browser does the work: same studio, zero running costs. */
   const local = !status?.configured;
@@ -228,6 +231,63 @@ export default function Studio() {
         if (alive && value) setStatus(value);
       })
       .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  /*
+   * The last print of this press, read back from IndexedDB. One generation a day
+   * means a reload must not cost the day: the image, the input it came from and
+   * the style that produced it come back without asking the model anything.
+   */
+  useEffect(() => {
+    let alive = true;
+
+    void loadPrint("lab").then(async (stored) => {
+      if (!alive || !stored) return;
+
+      const result: Generated = {
+        url: URL.createObjectURL(stored.result),
+        width: stored.resultWidth,
+        height: stored.resultHeight,
+        ms: stored.ms,
+        fileName: stored.fileName,
+      };
+
+      if (stored.source && !sourceRef.current) {
+        const file = new File([stored.source], "stencil-input.jpg", { type: stored.source.type || "image/jpeg" });
+        const url = URL.createObjectURL(file);
+        const size = await loadSize(url).catch(() => ({ width: 0, height: 0 }));
+        const prepared: Prepared = {
+          file,
+          url,
+          width: size.width,
+          height: size.height,
+          name: "Ultimo caricamento",
+          bytes: file.size,
+        };
+        if (!alive) {
+          URL.revokeObjectURL(url);
+          URL.revokeObjectURL(result.url);
+          return;
+        }
+        sourceRef.current = prepared;
+        setSource(prepared);
+      }
+
+      generatedRef.current = result;
+      setGenerated(result);
+
+      const savedStyle = stored.params.style;
+      if (typeof savedStyle === "string" && STENCIL_STYLES.some((entry) => entry.id === savedStyle)) {
+        setStyle(savedStyle as StencilStyle);
+      }
+
+      setRestored(true);
+      setPhase("done");
+    });
+
     return () => {
       alive = false;
     };
@@ -257,6 +317,7 @@ export default function Studio() {
 
   const accept = useCallback(async (file: File) => {
     setError(null);
+    setRestored(false);
     setPreparing(true);
     try {
       const prepared = await prepare(file);
@@ -304,10 +365,16 @@ export default function Studio() {
         setCartoon(null);
       }
 
+      setRestored(false);
+
       const controller = new AbortController();
       abortRef.current = controller;
       const timeout = window.setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
       const started = performance.now();
+
+      /* What produced the print, kept next to it so the reload can show both. */
+      let cartoonBlob: Blob | undefined;
+      let attemptIdUsed: string | null = null;
 
       try {
         let blob: Blob;
@@ -341,6 +408,7 @@ export default function Studio() {
            * print.
            */
           const requestId = startAttempt("lab");
+          attemptIdUsed = requestId;
 
           const response = await fetch("/api/bwslab/transform", {
             method: "POST",
@@ -376,6 +444,7 @@ export default function Studio() {
                 fileName: `stencil-lab-cartoon-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.png`,
               };
               cartoonRef.current = plate;
+              cartoonBlob = plain.blob;
               setCartoon(plate);
             } finally {
               bitmap.close();
@@ -400,6 +469,24 @@ export default function Studio() {
         setGenerated(next);
         setPhase("done");
         setSplit(50);
+
+        /*
+         * Written as soon as the image exists: a reload after this point finds
+         * it instead of asking the model for a second one.
+         */
+        void savePrint({
+          scope: "lab",
+          at: Date.now(),
+          requestId: attemptIdUsed,
+          params: { style: activeStyle, engine: local ? "local" : "remote" },
+          result: blob,
+          resultWidth: size.width,
+          resultHeight: size.height,
+          fileName: next.fileName,
+          ms: next.ms,
+          source: current.file,
+          ...(cartoonBlob ? { cartoon: cartoonBlob } : {}),
+        });
       } catch (transformError) {
         setError(messageFor(transformError));
         setPhase("ready");
@@ -441,6 +528,9 @@ export default function Studio() {
   }, [mask]);
 
   const reset = useCallback(() => {
+    /* A new start is also a decision to forget the old print. */
+    void clearPrint("lab");
+    setRestored(false);
     abortRef.current?.abort();
     if (sourceRef.current) URL.revokeObjectURL(sourceRef.current.url);
     if (generatedRef.current) URL.revokeObjectURL(generatedRef.current.url);
@@ -580,6 +670,11 @@ export default function Studio() {
 
             {phase === "done" && generated ? (
               <figure className="mt-6">
+                {restored ? (
+                  <p className={cx(styles.micro, "mb-3 leading-relaxed")}>
+                    Ripresa da questo browser: è l&apos;ultima stampa della pressa, nessuna nuova generazione.
+                  </p>
+                ) : null}
                 <div
                   className={cx(styles.compare, "mx-auto")}
                   style={{
@@ -848,7 +943,7 @@ export default function Studio() {
         />
 
         <footer className={cx("flex flex-wrap items-center justify-between gap-3 pt-5", styles.hairlineTop)}>
-          <span className={styles.micro}>Elaborata in memoria · mai salvata</span>
+          <span className={styles.micro}>Ultima stampa salvata in questo browser</span>
           <span className={styles.micro}>Incisione sul dispositivo</span>
         </footer>
       </div>

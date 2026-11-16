@@ -6,7 +6,7 @@ import { requestIdFrom } from "../lib/stencil/idempotency.ts";
 
 const root = new URL("../", import.meta.url);
 
-/** Uno sessionStorage finto: la Map è tutto ciò che il modulo usa. */
+/** Un localStorage finto: la Map è tutto ciò che il modulo usa. */
 function fakeStorage() {
   const items = new Map();
   return {
@@ -20,11 +20,11 @@ function fakeStorage() {
 }
 
 function withStorage(storage) {
-  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "sessionStorage");
-  Object.defineProperty(globalThis, "sessionStorage", { value: storage, configurable: true });
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  Object.defineProperty(globalThis, "localStorage", { value: storage, configurable: true });
   return () => {
-    if (descriptor) Object.defineProperty(globalThis, "sessionStorage", descriptor);
-    else delete globalThis.sessionStorage;
+    if (descriptor) Object.defineProperty(globalThis, "localStorage", descriptor);
+    else delete globalThis.localStorage;
   };
 }
 
@@ -52,7 +52,7 @@ test("a retry sends the same id, so the server can hand back the image it alread
   }
 });
 
-test("the id survives a reload, because it is saved and not kept in a component", () => {
+test("the id survives a reload and a closed tab, because it is saved and not kept in a component", () => {
   const { storage, items } = fakeStorage();
   const restore = withStorage(storage);
 

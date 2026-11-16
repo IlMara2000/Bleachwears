@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { clearPrint, loadPrint, savePrint } from "@/lib/stencil/archive";
 import { finishAttempt, startAttempt } from "@/lib/stencil/attempt";
 import styles from "../stencil.module.css";
 
@@ -159,6 +160,8 @@ async function prepare(file: File): Promise<Prepared> {
 export default function PromptLab() {
   const [source, setSource] = useState<Prepared | null>(null);
   const [prompt, setPrompt] = useState("");
+  /** true when the image on screen was read back from the archive. */
+  const [restored, setRestored] = useState(false);
   const [generated, setGenerated] = useState<Generated | null>(null);
   const [busy, setBusy] = useState(false);
   const [preparing, setPreparing] = useState(false);
@@ -205,8 +208,56 @@ export default function PromptLab() {
     return () => window.clearInterval(timer);
   }, [busy]);
 
+  /*
+   * Reloading with one generation a day must not cost it: the last print comes
+   * back with the instruction and the image it was made from, without calling
+   * the model.
+   */
+  useEffect(() => {
+    let alive = true;
+
+    void loadPrint("prompt").then(async (stored) => {
+      if (!alive || !stored) return;
+
+      const result: Generated = {
+        url: URL.createObjectURL(stored.result),
+        width: stored.resultWidth,
+        height: stored.resultHeight,
+        ms: stored.ms,
+        fileName: stored.fileName,
+      };
+
+      if (stored.source && !sourceRef.current) {
+        const file = new File([stored.source], "prompt-input.jpg", { type: stored.source.type || "image/jpeg" });
+        const url = URL.createObjectURL(file);
+        const size = await loadSize(url).catch(() => ({ width: 0, height: 0 }));
+        const prepared: Prepared = { file, url, width: size.width, height: size.height, name: "Ultimo caricamento" };
+        if (!alive) {
+          URL.revokeObjectURL(url);
+          URL.revokeObjectURL(result.url);
+          return;
+        }
+        sourceRef.current = prepared;
+        setSource(prepared);
+      }
+
+      generatedRef.current = result;
+      setGenerated(result);
+
+      const savedPrompt = stored.params.prompt;
+      if (typeof savedPrompt === "string") setPrompt(savedPrompt);
+
+      setRestored(true);
+    });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const accept = useCallback(async (file: File) => {
     setError(null);
+    setRestored(false);
     /* A new image is a new request: never reuse the previous id. */
     finishAttempt("prompt");
     setPreparing(true);
@@ -269,7 +320,8 @@ export default function PromptLab() {
         throw new Error(detail?.error || `Il server ha risposto ${response.status}.`);
       }
 
-      const url = URL.createObjectURL(await response.blob());
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
       const size = await loadSize(url);
 
       const next: Generated = {
@@ -281,6 +333,24 @@ export default function PromptLab() {
       };
       generatedRef.current = next;
       setGenerated(next);
+      setRestored(false);
+
+      /*
+       * Result, instruction and input together: the next load shows the print
+       * that was paid for instead of an empty press.
+       */
+      void savePrint({
+        scope: "prompt",
+        at: Date.now(),
+        requestId,
+        params: { prompt: instruction },
+        result: blob,
+        resultWidth: size.width,
+        resultHeight: size.height,
+        fileName: next.fileName,
+        ms: next.ms,
+        source: current.file,
+      });
       /* Done: the next attempt is a new request with its own id. */
       finishAttempt("prompt");
     } catch (runError) {
@@ -295,6 +365,9 @@ export default function PromptLab() {
   }, [prompt, refreshStatus]);
 
   const reset = useCallback(() => {
+    /* A new start is also a decision to forget the old print. */
+    void clearPrint("prompt");
+    setRestored(false);
     finishAttempt("prompt");
     abortRef.current?.abort();
     if (sourceRef.current) URL.revokeObjectURL(sourceRef.current.url);
@@ -433,6 +506,9 @@ export default function PromptLab() {
                     {generated.width} × {generated.height} px · PNG
                   </span>
                   <span className={cx(styles.micro, styles.numeric)}>{(generated.ms / 1000).toFixed(1)} s</span>
+                  {restored ? (
+                    <span className={styles.micro}>Ripresa da questo browser, nessuna nuova generazione</span>
+                  ) : null}
                   <a className={cx(styles.btn, styles.btnPrimary)} href={generated.url} download={generated.fileName}>
                     Scarica PNG
                   </a>
@@ -544,7 +620,7 @@ export default function PromptLab() {
         />
 
         <footer className={cx("flex flex-wrap items-center justify-between gap-3 pt-5", styles.hairlineTop)}>
-          <span className={styles.micro}>Elaborata in memoria · mai salvata</span>
+          <span className={styles.micro}>Ultima stampa salvata in questo browser</span>
           <span className={styles.micro}>Prompt Press · Bleachwears</span>
         </footer>
       </div>
