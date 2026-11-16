@@ -292,3 +292,76 @@ test("refunds the day the slot was taken, not the day the failure lands", async 
     Date.now = realNow;
   }
 });
+
+test("refunds a shared counter on the day the slot was taken, even across midnight", async () => {
+  const counts = new Map();
+  const commands = [];
+  const realFetch = globalThis.fetch;
+  const realNow = Date.now;
+  const savedEnv = {
+    url: process.env.KV_REST_API_URL,
+    token: process.env.KV_REST_API_TOKEN,
+  };
+
+  /* Un Redis finto: risponde alle quattro istruzioni che il contatore usa. */
+  globalThis.fetch = async (_url, init) => {
+    const [command, key, value] = JSON.parse(init.body);
+    commands.push([command, key]);
+
+    let result = null;
+
+    if (command === "INCR") {
+      result = (counts.get(key) ?? 0) + 1;
+      counts.set(key, result);
+    } else if (command === "DECR") {
+      result = (counts.get(key) ?? 0) - 1;
+      counts.set(key, result);
+    } else if (command === "SET") {
+      counts.set(key, Number(value));
+      result = "OK";
+    } else if (command === "GET") {
+      result = counts.get(key) ?? null;
+    } else if (command === "PEXPIRE") {
+      result = 1;
+    }
+
+    return new Response(JSON.stringify({ result }), { status: 200 });
+  };
+
+  process.env.KV_REST_API_URL = "https://kv.stub.local";
+  process.env.KV_REST_API_TOKEN = "token-di-prova";
+  const at = (iso) => {
+    Date.now = () => Date.parse(iso);
+  };
+
+  try {
+    at("2026-04-10T23:59:00.000Z");
+    const taken = await reserveGeneration();
+    assert.equal(taken.allowed, true);
+    assert.equal(taken.budget.shared, true, "il test deve passare dallo store condiviso, non dalla memoria");
+
+    at("2026-04-11T00:01:00.000Z");
+    const next = await reserveGeneration();
+    assert.equal(next.budget.used, 1, "il giorno nuovo deve partire da zero");
+
+    await taken.refund();
+
+    /* Il rimborso deve toccare il contatore del 10: nessun DECR sull'11. */
+    const decremented = commands.filter(([command]) => command === "DECR").map(([, key]) => key);
+    assert.deepEqual(decremented, ["bwslab:spend:2026-04-10"]);
+
+    assert.equal((await currentBudget()).used, 1, "il rimborso ha regalato una generazione al giorno nuovo");
+
+    at("2026-04-10T23:59:30.000Z");
+    assert.equal((await currentBudget()).used, 0, "il giorno della generazione fallita resta addebitato");
+  } finally {
+    globalThis.fetch = realFetch;
+    Date.now = realNow;
+
+    if (savedEnv.url === undefined) delete process.env.KV_REST_API_URL;
+    else process.env.KV_REST_API_URL = savedEnv.url;
+
+    if (savedEnv.token === undefined) delete process.env.KV_REST_API_TOKEN;
+    else process.env.KV_REST_API_TOKEN = savedEnv.token;
+  }
+});
