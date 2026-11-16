@@ -10,6 +10,7 @@ import {
   readCloudflareImage,
   transformImage,
 } from "../lib/stencil/provider.ts";
+import { currentBudget, reserveGeneration } from "../lib/stencil/budget.ts";
 import { readDimensions, sniffKind } from "../lib/stencil/image-size.ts";
 
 test("keeps the art direction that makes every result look like the same studio", () => {
@@ -260,4 +261,34 @@ test("smoothing rounds a polygon instead of moving it", async () => {
   }
   assert.ok(Math.abs(sumX / 8 - 5) < 0.001, "stays centred on the original shape");
   assert.ok(Math.abs(sumY / 8 - 5) < 0.001, "stays centred on the original shape");
+});
+
+test("refunds the day the slot was taken, not the day the failure lands", async () => {
+  const realNow = Date.now;
+  const at = (iso) => {
+    Date.now = () => Date.parse(iso);
+  };
+
+  try {
+    /* Il gettone viene preso sul contatore del giorno in corso. */
+    at("2026-03-10T23:59:00.000Z");
+    const taken = await reserveGeneration();
+    assert.equal(taken.allowed, true);
+    assert.equal(taken.budget.used, 1);
+
+    /* La generazione attraversa la mezzanotte; il giorno nuovo ha il suo contatore. */
+    at("2026-03-11T00:01:00.000Z");
+    const next = await reserveGeneration();
+    assert.equal(next.budget.used, 1, "il giorno nuovo deve partire da zero");
+
+    /* Il guasto arriva dopo la mezzanotte: si rimborsa il 10 marzo, non l'11. */
+    await taken.refund();
+
+    assert.equal((await currentBudget()).used, 1, "il rimborso ha regalato una generazione al giorno nuovo");
+
+    at("2026-03-10T23:59:30.000Z");
+    assert.equal((await currentBudget()).used, 0, "il giorno della generazione fallita resta addebitato");
+  } finally {
+    Date.now = realNow;
+  }
 });

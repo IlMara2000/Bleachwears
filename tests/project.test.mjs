@@ -273,7 +273,9 @@ test("counts one generation a day and gives the slot back when it fails", async 
 
   /* Un provider locale non costa: solo quelli a pagamento hanno un default. */
   assert.match(budget, /activeProvider\(\) === "local" \? 0 : 1/, "il tetto di default non è una generazione al giorno");
-  assert.match(budget, /export async function releaseGeneration/, "manca il modo di restituire un gettone");
+  assert.match(budget, /refund\(\): Promise<void>/, "la prenotazione non sa restituire il gettone");
+  /* Il rimborso deve colpire il giorno della prenotazione, non quello del guasto. */
+  assert.doesNotMatch(budget, /dayKey\(Date\.now\(\)\)/, "il rimborso usa la data del momento: a cavallo della mezzanotte regala un gettone");
   assert.match(budget, /DECR/, "il contatore condiviso non sa scendere");
   assert.match(budget, /Math\.max\(0, entry\.count - 1\)/, "il contatore in memoria può andare sotto zero");
 
@@ -283,7 +285,7 @@ test("counts one generation a day and gives the slot back when it fails", async 
 
     assert.ok(failure > 0, `${path}: manca il ramo di errore`);
     assert.ok(
-      source.indexOf("releaseGeneration(reservation.budget)", failure) > failure,
+      source.indexOf("reservation.refund()", failure) > failure,
       `${path}: una generazione fallita resta conteggiata e costa`,
     );
   }

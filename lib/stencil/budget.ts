@@ -1,4 +1,4 @@
-import { activeProvider } from "./provider";
+import { activeProvider } from "./provider.ts";
 
 /**
  * The spend guard. Stencil Lab calls a paid model, so the server keeps its own
@@ -178,44 +178,56 @@ export async function currentBudget(): Promise<Budget> {
   return withUsage(cap, used, store, now);
 }
 
+export type Reservation = {
+  allowed: boolean;
+  budget: Budget;
+  /**
+   * Gives the slot back when the provider produced no image. It hits the day
+   * the slot was taken on, not the day the failure landed: a generation that
+   * starts at 23:59 and fails at 00:01 must not refund tomorrow's counter,
+   * which would hand out a free generation on top of a spent one.
+   */
+  refund(): Promise<void>;
+};
+
+/** Nothing was taken, so there is nothing to give back. */
+const nothingToRefund = async (): Promise<void> => undefined;
+
 /**
  * Called right before a generation. `allowed: false` means the provider is
  * never contacted, so nothing is billed.
  */
-export async function reserveGeneration(): Promise<{ allowed: boolean; budget: Budget }> {
+export async function reserveGeneration(): Promise<Reservation> {
   const now = Date.now();
   const store = configuredStore();
   const cap = configuredCap();
 
-  if (cap === 0) return { allowed: true, budget: unlimited(store, now) };
+  if (cap === 0) return { allowed: true, budget: unlimited(store, now), refund: nothingToRefund };
+
+  /* Captured here, once: the day is a property of the reservation. */
+  const key = dayKey(now);
 
   let used: number;
   try {
-    used = await store.increment(dayKey(now), DAY_MS);
+    used = await store.increment(key, DAY_MS);
   } catch (error) {
     /*
      * A dead counter must not take the page down: the provider's own quota is
      * still the hard stop. Say it out loud in the log instead of hiding it.
      */
     console.error(JSON.stringify({ event: "bwslab.budget", ok: false, reason: "store", error: String(error) }));
-    return { allowed: true, budget: unlimited(store, now) };
+    return { allowed: true, budget: unlimited(store, now), refund: nothingToRefund };
   }
 
-  return { allowed: used <= cap, budget: withUsage(cap, used, store, now) };
-}
+  const refund = async (): Promise<void> => {
+    try {
+      await store.decrement(key);
+    } catch (error) {
+      console.error(JSON.stringify({ event: "bwslab.budget", ok: false, reason: "refund", error: String(error) }));
+    }
+  };
 
-/**
- * Gives a slot back after a failed generation. Called only when the provider
- * never produced an image, so the count tracks images, not attempts.
- */
-export async function releaseGeneration(budget: Budget): Promise<void> {
-  if (budget.cap === 0) return;
-
-  try {
-    await configuredStore().decrement(dayKey(Date.now()));
-  } catch (error) {
-    console.error(JSON.stringify({ event: "bwslab.budget", ok: false, reason: "release", error: String(error) }));
-  }
+  return { allowed: used <= cap, budget: withUsage(cap, used, store, now), refund };
 }
 
 export function budgetMessage(budget: Budget): string {
