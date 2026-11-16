@@ -25,7 +25,7 @@ type Status = {
   provider?: string;
   model: string;
   resolution: string;
-  budget?: { cap: number; used: number; remaining: number };
+  budget?: { cap: number; used: number; remaining: number; resetAt?: string };
 };
 
 /**
@@ -39,6 +39,20 @@ function timingLine(status: Status | null): string {
     : "Una modifica richiede circa un minuto.";
 }
 
+/** The counter resets at midnight UTC: show it in the reader's own clock. */
+function resetLabel(resetAt?: string): string {
+  if (!resetAt) return "";
+
+  const when = new Date(resetAt);
+  if (Number.isNaN(when.getTime())) return "";
+
+  return when.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZoneName: "short" });
+}
+
+/**
+ * A ceiling is only honest if it is readable before an upload: say how many
+ * generations are left today and when the count starts again.
+ */
 function quotaLine(status: Status | null): string {
   if (!status) return "";
 
@@ -47,15 +61,13 @@ function quotaLine(status: Status | null): string {
 
   if (cap === 0) return "Nessun tetto giornaliero: il modello gira su questa macchina.";
 
-  /* The default is one a day, and "una delle 1 generazioni" is not Italian. */
-  if (cap === 1) {
-    return remaining === 0
-      ? "La generazione di oggi è già stata usata: il contatore si azzera alle 00:00 UTC."
-      : "Hai una sola generazione al giorno: questa è quella di oggi. Se fallisce non viene conteggiata.";
-  }
+  const reset = resetLabel(status.budget?.resetAt);
+  const left = `Generazioni rimaste oggi: ${Math.max(0, remaining)} di ${cap}`;
+  const when = reset ? `, si azzera alle ${reset}` : "";
 
-  if (remaining >= 0) return `Consuma una delle ${cap} generazioni di oggi: ne restano ${remaining}.`;
-  return `Consuma una delle ${cap} generazioni di oggi.`;
+  if (remaining <= 0) return `${left}${when}.`;
+
+  return `${left}${when}. Una generazione fallita non viene conteggiata.`;
 }
 
 type Generated = { url: string; width: number; height: number; ms: number; fileName: string };
@@ -159,13 +171,22 @@ export default function PromptLab() {
   const generatedRef = useRef<Generated | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  /* The footer states facts about this deploy: read them, never assume them. */
-  useEffect(() => {
+  /*
+   * The footer states facts about this deploy: read them, never assume them.
+   * Called again after a generation, otherwise the remaining count stays stale.
+   */
+  const refreshStatus = useCallback(() => {
     fetch("/api/bwslab/status", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((value: Status | null) => setStatus(value))
+      .then((response) => (response.ok ? (response.json() as Promise<Status>) : null))
+      .then((value: Status | null) => {
+        if (value) setStatus(value);
+      })
       .catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    refreshStatus();
+  }, [refreshStatus]);
 
   useEffect(() => {
     return () => {
@@ -255,8 +276,10 @@ export default function PromptLab() {
       window.clearTimeout(timeout);
       abortRef.current = null;
       setBusy(false);
+      /* A success spends today's slot and an error gives it back: re-read. */
+      refreshStatus();
     }
-  }, [prompt]);
+  }, [prompt, refreshStatus]);
 
   const reset = useCallback(() => {
     abortRef.current?.abort();
@@ -466,8 +489,8 @@ export default function PromptLab() {
               </div>
 
               <div className={styles.notice}>
+                <p>Il prompt va al modello così com&apos;è: qui non c&apos;è uno stile imposto.</p>
                 <p>
-                  Il prompt va al modello così com&apos;è: qui non c&apos;è uno stile imposto.{" "}
                   <strong>{timingLine(status)}</strong> {quotaLine(status)}
                 </p>
               </div>
