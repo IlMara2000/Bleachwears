@@ -301,38 +301,11 @@ test("refunds the day the slot was taken, not the day the failure lands", async 
 });
 
 test("refunds a shared counter on the day the slot was taken, even across midnight", async () => {
-  const counts = new Map();
-  const commands = [];
-  const realFetch = globalThis.fetch;
+  const redis = fakeRedis();
   const realNow = Date.now;
   const savedEnv = {
     url: process.env.KV_REST_API_URL,
     token: process.env.KV_REST_API_TOKEN,
-  };
-
-  /* Un Redis finto: risponde alle quattro istruzioni che il contatore usa. */
-  globalThis.fetch = async (_url, init) => {
-    const [command, key, value] = JSON.parse(init.body);
-    commands.push([command, key]);
-
-    let result = null;
-
-    if (command === "INCR") {
-      result = (counts.get(key) ?? 0) + 1;
-      counts.set(key, result);
-    } else if (command === "DECR") {
-      result = (counts.get(key) ?? 0) - 1;
-      counts.set(key, result);
-    } else if (command === "SET") {
-      counts.set(key, Number(value));
-      result = "OK";
-    } else if (command === "GET") {
-      result = counts.get(key) ?? null;
-    } else if (command === "PEXPIRE") {
-      result = 1;
-    }
-
-    return new Response(JSON.stringify({ result }), { status: 200 });
   };
 
   process.env.KV_REST_API_URL = "https://kv.stub.local";
@@ -354,7 +327,7 @@ test("refunds a shared counter on the day the slot was taken, even across midnig
     await taken.refund();
 
     /* Il rimborso deve toccare il contatore del 10: nessun DECR sull'11. */
-    const decremented = commands.filter(([command]) => command === "DECR").map(([, key]) => key);
+    const decremented = redis.commands.filter(([command]) => command === "DECR").map(([, key]) => key);
     assert.deepEqual(decremented, ["bwslab:spend:2026-04-10"]);
 
     assert.equal((await currentBudget()).used, 1, "il rimborso ha regalato una generazione al giorno nuovo");
@@ -369,7 +342,7 @@ test("refunds a shared counter on the day the slot was taken, even across midnig
     assert.equal(blocked.budget.used, 1, "il rifiuto ha lasciato il contatore sopra il tetto");
     assert.equal((await currentBudget()).used, 1, "il rifiuto ha consumato un gettone sul contatore condiviso");
   } finally {
-    globalThis.fetch = realFetch;
+    redis.restore();
     Date.now = realNow;
 
     if (savedEnv.url === undefined) delete process.env.KV_REST_API_URL;
@@ -460,4 +433,105 @@ test("ignores a request id the client had no business sending", () => {
   assert.equal(withId("con spazi e a capo"), null);
   assert.equal(withId("x".repeat(129)), null);
   assert.equal(requestIdFrom(new Request("https://press.test/api/bwslab/edit")), null);
+});
+
+/**
+ * Un Redis finto per i test: tiene i contatori in una Map ed esegue le stesse
+ * istruzioni che manda il client. EVAL applica controllo e incremento in un
+ * colpo solo, come fa lo script Lua sul server vero; la scadenza dei tasti non
+ * serve qui perché i test spostano l'orologio e cambiano giorno.
+ */
+function fakeRedis() {
+  const counts = new Map();
+  const commands = [];
+  const realFetch = globalThis.fetch;
+
+  globalThis.fetch = async (_url, init) => {
+    const command = JSON.parse(init.body);
+    const name = command[0];
+    const key = name === "EVAL" ? command[3] : command[1];
+    commands.push([name, key]);
+
+    let result = null;
+
+    if (name === "EVAL") {
+      const cap = Number(command[4]);
+      const used = counts.get(key) ?? 0;
+
+      if (used >= cap) {
+        result = [0, used];
+      } else {
+        const taken = used + 1;
+        counts.set(key, taken);
+        result = [1, taken];
+      }
+    } else if (name === "GET") {
+      result = counts.get(key) ?? null;
+    } else if (name === "DECR") {
+      const next = (counts.get(key) ?? 0) - 1;
+      counts.set(key, next);
+      result = next;
+    } else if (name === "SET") {
+      counts.set(key, Number(command[2]));
+      result = "OK";
+    } else if (name === "PEXPIRE") {
+      result = 1;
+    }
+
+    return new Response(JSON.stringify({ result }), { status: 200 });
+  };
+
+  return {
+    counts,
+    commands,
+    restore() {
+      globalThis.fetch = realFetch;
+    },
+  };
+}
+
+test("admits simultaneous shared requests atomically instead of overshooting", async () => {
+  const redis = fakeRedis();
+  const realNow = Date.now;
+  const savedEnv = {
+    url: process.env.KV_REST_API_URL,
+    token: process.env.KV_REST_API_TOKEN,
+  };
+
+  Date.now = () => Date.parse("2026-07-04T09:00:00.000Z");
+  process.env.KV_REST_API_URL = "https://kv.stub.local";
+  process.env.KV_REST_API_TOKEN = "token-di-prova";
+
+  try {
+    /* Due richieste partono insieme e il tetto è uno: una sola può passare. */
+    const [first, second] = await Promise.all([reserveGeneration(), reserveGeneration()]);
+
+    assert.equal(
+      [first, second].filter((reservation) => reservation.allowed).length,
+      1,
+      "entrambe le richieste hanno preso l'unico gettone",
+    );
+    assert.equal([first, second].filter((reservation) => !reservation.allowed).length, 1);
+    assert.equal((await currentBudget()).used, 1, "il contatore condiviso è salito sopra il tetto");
+
+    /* Con lo script il rifiuto non scrive: non ci deve essere nessun rollback. */
+    assert.ok(
+      redis.commands.some(([name]) => name === "EVAL"),
+      "l'ammissione non passa dallo script Lua",
+    );
+    assert.equal(
+      redis.commands.filter(([name]) => name === "DECR").length,
+      0,
+      "il rifiuto ha rimediato con un rollback invece di un controllo atomico",
+    );
+  } finally {
+    redis.restore();
+    Date.now = realNow;
+
+    if (savedEnv.url === undefined) delete process.env.KV_REST_API_URL;
+    else process.env.KV_REST_API_URL = savedEnv.url;
+
+    if (savedEnv.token === undefined) delete process.env.KV_REST_API_TOKEN;
+    else process.env.KV_REST_API_TOKEN = savedEnv.token;
+  }
 });

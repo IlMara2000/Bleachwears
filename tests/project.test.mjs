@@ -274,6 +274,11 @@ test("counts one generation a day and gives the slot back when it fails", async 
   /* Un provider locale non costa: solo quelli a pagamento hanno un default. */
   assert.match(budget, /activeProvider\(\) === "local" \? 0 : 1/, "il tetto di default non è una generazione al giorno");
   assert.match(budget, /refund\(\): Promise<void>/, "la prenotazione non sa restituire il gettone");
+  /* L'ammissione condivisa deve essere atomica: controllo e incremento insieme. */
+  assert.match(budget, /ADMIT_SCRIPT/, "manca lo script Lua che ammette a colpo sicuro");
+  assert.match(budget, /if used >= cap then/, "lo script non confronta con il tetto");
+  assert.match(budget, /\["EVAL", ADMIT_SCRIPT/, "lo script non viene eseguito sul contatore condiviso");
+  assert.doesNotMatch(budget, /await refund\(\);\n\s*return \{ allowed: false/, "il rifiuto torna a rimediare con un rollback");
   /* Il rimborso deve colpire il giorno della prenotazione, non quello del guasto. */
   assert.doesNotMatch(budget, /dayKey\(Date\.now\(\)\)/, "il rimborso usa la data del momento: a cavallo della mezzanotte regala un gettone");
   assert.match(budget, /DECR/, "il contatore condiviso non sa scendere");

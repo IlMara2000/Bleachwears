@@ -30,7 +30,11 @@ export type Budget = {
 
 type Store = {
   shared: boolean;
-  increment(key: string, ttlMs: number): Promise<number>;
+  /**
+   * Check and increment in one indivisible step. Two requests that arrive
+   * together must not both see the last slot: the cap is a limit, not a hint.
+   */
+  admit(key: string, cap: number, ttlMs: number): Promise<{ allowed: boolean; used: number }>;
   decrement(key: string): Promise<number>;
   read(key: string): Promise<number>;
 };
@@ -39,18 +43,17 @@ const memory = new Map<string, { count: number; resetAt: number }>();
 
 const memoryStore: Store = {
   shared: false,
-  async increment(key, ttlMs) {
+  async admit(key, cap, ttlMs) {
     const now = Date.now();
     const entry = memory.get(key);
+    const live = entry && entry.resetAt > now ? entry : null;
+    const used = live ? live.count : 0;
 
-    if (!entry || entry.resetAt <= now) {
-      const fresh = { count: 1, resetAt: now + ttlMs };
-      memory.set(key, fresh);
-      return fresh.count;
-    }
+    /* Node runs this function to completion, so read-then-write cannot interleave. */
+    if (used >= cap) return { allowed: false, used };
 
-    entry.count += 1;
-    return entry.count;
+    memory.set(key, { count: used + 1, resetAt: live ? live.resetAt : now + ttlMs });
+    return { allowed: true, used: used + 1 };
   },
   async decrement(key) {
     const entry = memory.get(key);
@@ -64,6 +67,23 @@ const memoryStore: Store = {
     return entry && entry.resetAt > Date.now() ? entry.count : 0;
   },
 };
+
+/**
+ * Admission in a single round trip. Redis runs a script atomically, so two
+ * requests arriving together cannot both read "one slot left" and both take it;
+ * a refusal never writes anything, which is why no rollback is needed.
+ * Returns { admitted, used }.
+ */
+const ADMIT_SCRIPT = `local used = tonumber(redis.call('GET', KEYS[1]) or '0')
+local cap = tonumber(ARGV[1])
+if used >= cap then
+  return { 0, used }
+end
+local taken = redis.call('INCR', KEYS[1])
+if taken == 1 then
+  redis.call('PEXPIRE', KEYS[1], ARGV[2])
+end
+return { 1, taken }`;
 
 /** Vercel KV and Upstash answer the same REST commands, so one client serves both. */
 function restStore(url: string, token: string): Store {
@@ -82,11 +102,12 @@ function restStore(url: string, token: string): Store {
 
   return {
     shared: true,
-    async increment(key, ttlMs) {
-      const count = Number(await call(["INCR", key]));
-      /* The first increment of the day sets the expiry, so the key dies by itself. */
-      if (count === 1) await call(["PEXPIRE", key, Math.round(ttlMs)]);
-      return Number.isFinite(count) ? count : 0;
+    async admit(key, cap, ttlMs) {
+      const result = await call(["EVAL", ADMIT_SCRIPT, 1, key, String(cap), String(Math.round(ttlMs))]);
+
+      if (!Array.isArray(result) || result.length < 2) throw new Error("risposta inattesa dal contatore");
+
+      return { allowed: Number(result[0]) === 1, used: Number(result[1]) || 0 };
     },
     async decrement(key) {
       const count = Number(await call(["DECR", key]));
@@ -207,9 +228,9 @@ export async function reserveGeneration(): Promise<Reservation> {
   /* Captured here, once: the day is a property of the reservation. */
   const key = dayKey(now);
 
-  let used: number;
+  let admission: { allowed: boolean; used: number };
   try {
-    used = await store.increment(key, DAY_MS);
+    admission = await store.admit(key, cap, DAY_MS);
   } catch (error) {
     /*
      * A dead counter must not take the page down: the provider's own quota is
@@ -227,17 +248,12 @@ export async function reserveGeneration(): Promise<Reservation> {
     }
   };
 
-  /*
-   * Refused at the ceiling: the INCR above was the gate, so hand it straight
-   * back. A request we turn down must not cost the user a slot — otherwise the
-   * counter drifts past the cap and every refusal makes tomorrow's count lie.
-   */
-  if (used > cap) {
-    await refund();
-    return { allowed: false, budget: withUsage(cap, cap, store, now), refund: nothingToRefund };
+  /* Nothing was written when the store refused, so there is nothing to undo. */
+  if (!admission.allowed) {
+    return { allowed: false, budget: withUsage(cap, admission.used, store, now), refund: nothingToRefund };
   }
 
-  return { allowed: true, budget: withUsage(cap, used, store, now), refund };
+  return { allowed: true, budget: withUsage(cap, admission.used, store, now), refund };
 }
 
 export function budgetMessage(budget: Budget): string {
