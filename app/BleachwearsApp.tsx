@@ -7,6 +7,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { ProductRow } from "@/lib/supabase/database.types";
 import {
   fallbackProducts,
+  purchasableProducts,
   money,
   type ClothingSize,
   type GarmentType,
@@ -245,7 +246,21 @@ export function BleachwearsApp() {
       .order("position", { ascending: true })
       .then(({ data, error }) => {
         if (cancelled || error || !data) return;
-        setCatalogProducts(data.map(productFromRow));
+
+        /*
+         * Il database può contenere capi che il listino non conosce: senza un
+         * prezzo il checkout li rifiuterebbe, quindi non vanno offerti.
+         */
+        const { sellable, unbuyable } = purchasableProducts(data.map(productFromRow));
+
+        if (unbuyable.length > 0) {
+          console.warn(
+            JSON.stringify({ event: "catalog.unpriced", ok: false, ids: unbuyable, hint: "aggiungi il prezzo in lib/shop/catalog.ts" }),
+          );
+        }
+
+        /* Nessun capo riconosciuto: meglio il catalogo di riferimento di un negozio vuoto. */
+        setCatalogProducts(sellable.length > 0 ? sellable : fallbackProducts);
         setCatalogSource("live");
       });
 

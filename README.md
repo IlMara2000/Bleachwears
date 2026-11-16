@@ -40,6 +40,10 @@ npx supabase link --project-ref <project-ref>
 npx supabase db push --linked
 ```
 
+### Cosa finisce nel negozio
+
+Il database può contenere più capi di quelli che il listino conosce, ma i prezzi li ricalcola il checkout da `lib/shop/catalog.ts`. La home quindi filtra con `purchasableProducts()`: un capo senza prezzo di listino non viene offerto (sarebbe un ordine destinato al rifiuto) e il suo id compare nel log come `{"event":"catalog.unpriced","ids":[…]}`. Se il database non contiene nessun capo riconosciuto, resta il catalogo di riferimento invece di un negozio vuoto.
+
 ## Marchio e icone
 
 Il marchio vive in un solo sorgente vettoriale, `logo-bw-square.svg`: da lì si rigenerano favicon, icone dell'app e logo dell'header. Il generatore usa `sharp` (già tra le dipendenze) e non richiede argomenti.

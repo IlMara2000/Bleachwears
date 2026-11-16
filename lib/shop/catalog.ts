@@ -136,6 +136,26 @@ export type PricedLine = {
 
 const catalogById = new Map(fallbackProducts.map((product) => [product.id, product]));
 
+/**
+ * Il negozio può mostrare solo quello che il server sa fatturare.
+ *
+ * I prezzi li ricalcola il checkout da questo catalogo: un capo che esiste solo
+ * nel database non ha un prezzo di listino, quindi non può essere venduto.
+ * Mostrarlo lo stesso vorrebbe dire far arrivare qualcuno al pagamento per poi
+ * rifiutarlo. Meglio non offrirlo, e dire nel log quali id sono stati esclusi.
+ */
+export function purchasableProducts(products: Product[]): { sellable: Product[]; unbuyable: string[] } {
+  const sellable: Product[] = [];
+  const unbuyable: string[] = [];
+
+  for (const product of products) {
+    if (catalogById.has(product.id)) sellable.push(product);
+    else unbuyable.push(product.id);
+  }
+
+  return { sellable, unbuyable };
+}
+
 export function getCatalogProduct(id: string) {
   return catalogById.get(id);
 }
