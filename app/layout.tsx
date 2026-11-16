@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Big_Shoulders } from "next/font/google";
 import "./globals.css";
+import { SITE_URL } from "@/lib/seo";
 
 const displayFont = Big_Shoulders({
   subsets: ["latin"],
@@ -14,10 +15,8 @@ const title = "Bleachwears — Custom streetwear";
 const description =
   "Drop artigianali e capi personalizzati con candeggina. Scegli una base, un segno e crea il tuo pezzo nel Custom Lab.";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://bleachwears.vercel.app";
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(SITE_URL),
   title,
   description,
   applicationName: "Bleachwears",

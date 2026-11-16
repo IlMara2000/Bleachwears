@@ -1,3 +1,15 @@
+/**
+ * L'origine pubblica del sito, in un posto solo: metadataBase, sitemap, robots e
+ * dati strutturati devono dichiarare la stessa cosa, altrimenti Google legge due
+ * siti diversi.
+ */
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://bleachwears.vercel.app").replace(/\/+$/, "");
+
+/** Nei dati strutturati le immagini vanno assolute: un percorso relativo si perde. */
+export function absoluteUrl(path: string): string {
+  return new URL(path.replace(/^\/+/, ""), `${SITE_URL}/`).toString();
+}
+
 import type { Metadata } from "next";
 
 /*
