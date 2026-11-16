@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { budgetMessage, reserveGeneration } from "@/lib/stencil/budget";
+import { budgetMessage, releaseGeneration, reserveGeneration } from "@/lib/stencil/budget";
 import { clientIdFrom, takeToken } from "@/lib/stencil/rate-limit";
 import { StencilError, activeModel, isConfigured, transformImage } from "@/lib/stencil/provider";
 import { readImageUpload } from "@/lib/stencil/upload";
@@ -107,7 +107,10 @@ export async function POST(request: Request) {
     const status = error instanceof StencilError ? error.status : 500;
     const message = error instanceof StencilError ? error.message : "Qualcosa si è rotto mentre disegnava. Riprova.";
 
-    console.error(JSON.stringify({ event: "bwslab.edit", ok: false, status, ms: Date.now() - started }));
+    /* No image came back, so the slot goes back: an error costs nothing. */
+    await releaseGeneration(reservation.budget);
+
+    console.error(JSON.stringify({ event: "bwslab.edit", ok: false, status, ms: Date.now() - started, refund: true }));
 
     return NextResponse.json({ error: message }, { status });
   }

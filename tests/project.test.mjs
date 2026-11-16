@@ -267,3 +267,24 @@ test("renders the legal pages with shipping data from the shared catalog", async
   assert.match(privacy, /art\. 6\.1\.b GDPR/);
   assert.match(privacy, /Cookie/);
 });
+
+test("counts one generation a day and gives the slot back when it fails", async () => {
+  const budget = await readFile(new URL("lib/stencil/budget.ts", root), "utf8");
+
+  /* Un provider locale non costa: solo quelli a pagamento hanno un default. */
+  assert.match(budget, /activeProvider\(\) === "local" \? 0 : 1/, "il tetto di default non è una generazione al giorno");
+  assert.match(budget, /export async function releaseGeneration/, "manca il modo di restituire un gettone");
+  assert.match(budget, /DECR/, "il contatore condiviso non sa scendere");
+  assert.match(budget, /Math\.max\(0, entry\.count - 1\)/, "il contatore in memoria può andare sotto zero");
+
+  for (const path of ["app/api/bwslab/edit/route.ts", "app/api/bwslab/transform/route.ts"]) {
+    const source = await readFile(new URL(path, root), "utf8");
+    const failure = source.indexOf("} catch (error)");
+
+    assert.ok(failure > 0, `${path}: manca il ramo di errore`);
+    assert.ok(
+      source.indexOf("releaseGeneration(reservation.budget)", failure) > failure,
+      `${path}: una generazione fallita resta conteggiata e costa`,
+    );
+  }
+});

@@ -5,9 +5,9 @@ import { activeProvider } from "./provider";
  * daily ceiling and refuses before calling the provider: the page must stop on
  * our own number, not on an upstream "quota exhausted" half a generation later.
  *
- * Attempts are counted, not successes. A generation that fails halfway may
- * already have been charged, and a guard that only counts clean exits always
- * spends a little more than it promises.
+ * The slot is taken before the provider is called, because a guard that counts
+ * only clean exits can overshoot. If the generation then fails, the slot goes
+ * back: the ceiling is on images produced, so an error must not cost one.
  *
  * The counter lives in Redis when a REST endpoint is configured (Vercel KV and
  * Upstash speak the same dialect); otherwise it lives in this instance memory,
@@ -31,6 +31,7 @@ export type Budget = {
 type Store = {
   shared: boolean;
   increment(key: string, ttlMs: number): Promise<number>;
+  decrement(key: string): Promise<number>;
   read(key: string): Promise<number>;
 };
 
@@ -49,6 +50,13 @@ const memoryStore: Store = {
     }
 
     entry.count += 1;
+    return entry.count;
+  },
+  async decrement(key) {
+    const entry = memory.get(key);
+    if (!entry || entry.resetAt <= Date.now()) return 0;
+
+    entry.count = Math.max(0, entry.count - 1);
     return entry.count;
   },
   async read(key) {
@@ -80,6 +88,18 @@ function restStore(url: string, token: string): Store {
       if (count === 1) await call(["PEXPIRE", key, Math.round(ttlMs)]);
       return Number.isFinite(count) ? count : 0;
     },
+    async decrement(key) {
+      const count = Number(await call(["DECR", key]));
+      if (!Number.isFinite(count)) return 0;
+
+      /* Never leave a negative counter behind: it would hand out free slots. */
+      if (count < 0) {
+        await call(["SET", key, 0]);
+        return 0;
+      }
+
+      return count;
+    },
     async read(key) {
       const value = Number(await call(["GET", key]));
       return Number.isFinite(value) ? value : 0;
@@ -102,8 +122,8 @@ function configuredStore(): Store {
 
 /**
  * A local model costs nothing, so it has no ceiling unless one is asked for.
- * A hosted model defaults to the smallest useful number: six generations, the
- * free Cloudflare allowance, so a leaked URL cannot burn a card overnight.
+ * A hosted model defaults to one generation a day: enough to try the press,
+ * small enough that a leaked URL cannot burn a card even if left alone.
  */
 function configuredCap(): number {
   const raw = process.env.STENCIL_DAILY_CAP?.trim();
@@ -113,7 +133,7 @@ function configuredCap(): number {
     if (Number.isFinite(value) && value >= 0) return Math.floor(value);
   }
 
-  return activeProvider() === "local" ? 0 : 6;
+  return activeProvider() === "local" ? 0 : 1;
 }
 
 function dayKey(now: number): string {
@@ -182,6 +202,20 @@ export async function reserveGeneration(): Promise<{ allowed: boolean; budget: B
   }
 
   return { allowed: used <= cap, budget: withUsage(cap, used, store, now) };
+}
+
+/**
+ * Gives a slot back after a failed generation. Called only when the provider
+ * never produced an image, so the count tracks images, not attempts.
+ */
+export async function releaseGeneration(budget: Budget): Promise<void> {
+  if (budget.cap === 0) return;
+
+  try {
+    await configuredStore().decrement(dayKey(Date.now()));
+  } catch (error) {
+    console.error(JSON.stringify({ event: "bwslab.budget", ok: false, reason: "release", error: String(error) }));
+  }
 }
 
 export function budgetMessage(budget: Budget): string {

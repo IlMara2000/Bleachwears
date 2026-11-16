@@ -46,6 +46,14 @@ function quotaLine(status: Status | null): string {
   const remaining = status.budget?.remaining ?? -1;
 
   if (cap === 0) return "Nessun tetto giornaliero: il modello gira su questa macchina.";
+
+  /* The default is one a day, and "una delle 1 generazioni" is not Italian. */
+  if (cap === 1) {
+    return remaining === 0
+      ? "La generazione di oggi è già stata usata: il contatore si azzera alle 00:00 UTC."
+      : "Hai una sola generazione al giorno: questa è quella di oggi. Se fallisce non viene conteggiata.";
+  }
+
   if (remaining >= 0) return `Consuma una delle ${cap} generazioni di oggi: ne restano ${remaining}.`;
   return `Consuma una delle ${cap} generazioni di oggi.`;
 }

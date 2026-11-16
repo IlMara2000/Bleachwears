@@ -72,7 +72,7 @@ Dopo una rigenerazione conviene ricontrollare `git status`: con i valori predefi
 Scegli una delle tre strade, tutta la configurazione sta in `.env.local` in locale e nelle Environment Variables del progetto su Vercel (dopo averle aggiunte serve un nuovo deploy):
 
 ```bash
-# 1. Gratis — Cloudflare Workers AI, ~6 generazioni al giorno
+# 1. Gratis — Cloudflare Workers AI, una generazione al giorno
 CLOUDFLARE_ACCOUNT_ID=your-account-id
 CLOUDFLARE_API_TOKEN=your-token
 CLOUDFLARE_MODEL=@cf/black-forest-labs/flux-2-klein-9b
@@ -86,11 +86,11 @@ STENCIL_PROVIDER=local
 COMFYUI_URL=http://127.0.0.1:8188
 ```
 
-Con entrambi i provider a chiave configurati vince Cloudflare; `STENCIL_PROVIDER` (`cloudflare` | `gemini` | `local`) forza una scelta. `STENCIL_DAILY_CAP` (default 6) mette un tetto alle generazioni giornaliere. Next legge `.env.local` solo all'avvio, quindi riavvia `npm run dev` dopo aver modificato il file.
+Con entrambi i provider a chiave configurati vince Cloudflare; `STENCIL_PROVIDER` (`cloudflare` | `gemini` | `local`) forza una scelta. `STENCIL_DAILY_CAP` (default **1** per i provider a pagamento, nessun tetto per quello locale) mette un tetto alle generazioni giornaliere: il gettone viene preso prima di chiamare il modello, così una richiesta oltre il tetto viene rifiutata con 429 senza costare nulla. Se invece la generazione parte e fallisce, il gettone **torna indietro**: un errore del provider non consuma la generazione di oggi. Next legge `.env.local` solo all'avvio, quindi riavvia `npm run dev` dopo aver modificato il file.
 
 ### Creare il token Cloudflare
 
-Serve un account Cloudflare gratuito: il piano free copre 10.000 neurons al giorno, e una generazione ne consuma circa 1.500, da cui il tetto di sei immagini.
+Serve un account Cloudflare gratuito: il piano free copre 10.000 neurons al giorno e una generazione ne consuma circa 1.500, quindi l'allowance arriverebbe a sei immagini. Il default del progetto resta però una generazione al giorno: alza `STENCIL_DAILY_CAP` solo se sai quanto vuoi spendere.
 
 1. Nella dashboard vai su **AI › Workers AI** e seleziona **Use REST API**.
 2. Seleziona **Create a Workers AI API Token**, controlla i permessi precompilati e conferma con **Create API Token**. Il valore viene mostrato una volta sola: copialo subito (resta comunque visibile in **My Profile › API Tokens**, dove puoi revocarlo).
