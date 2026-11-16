@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { markOrderStatus } from "@/lib/shop/orders";
+import { sendOrderConfirmation } from "@/lib/shop/email";
+import { loadOrder, markOrderStatus } from "@/lib/shop/orders";
 import { paymentIntentId, verifyStripeSignature, type StripeSession } from "@/lib/shop/stripe";
 
 export const runtime = "nodejs";
@@ -40,6 +41,18 @@ export async function POST(request: Request) {
 
     if (paid && (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded")) {
       await markOrderStatus(orderId, "paid", session ? paymentIntentId(session) : null);
+
+      /*
+       * La conferma parte qui e non nella pagina di ritorno: chi paga con carta
+       * non torna sempre sul sito, e un ordine pagato senza email è un cliente
+       * che scrive "ho pagato, e adesso?".
+       */
+      const order = await loadOrder(orderId);
+      if (order) {
+        await sendOrderConfirmation(order, session?.customer_details?.email ?? null);
+      } else {
+        console.warn(JSON.stringify({ event: "order.email", ok: false, reason: "order-missing", order: orderId }));
+      }
     } else if (event.type === "checkout.session.expired") {
       await markOrderStatus(orderId, "expired");
     }

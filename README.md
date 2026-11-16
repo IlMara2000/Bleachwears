@@ -103,6 +103,22 @@ Per sapere cosa sta usando il deploy senza indovinare: `curl -s localhost:3000/a
 
 Per provare che la pressa generi davvero c'è `node scripts/verifica-pressa.mjs [--base http://127.0.0.1:3000]`: manda un'immagine sintetica, controlla che torni un'immagine col frame di partenza e che il budget scenda di uno. Consuma una generazione vera (due con `--seconda`), quindi si lancia a mano e non fa parte di `npm test`.
 
+## Conferma d'ordine via email
+
+Quando Stripe conferma il pagamento, il webhook legge l'ordine e manda al cliente la conferma: prodotti, spedizione scelta, tempi di lavorazione e totale. Il testo dell'email è costruito in `lib/shop/email.ts` dai dati dell'ordine, con i nomi escapati, quindi quello che leggi nel codice è quello che riceve il cliente.
+
+L'invio è una chiamata HTTP al provider transazionale (`POST /emails` con la chiave nel solo header `Authorization`), così non serve nessun SDK e funziona anche su runtime edge. Servono queste variabili in `.env.local` e nelle Environment Variables di Vercel:
+
+```bash
+RESEND_API_KEY=re_...
+ORDER_FROM_EMAIL=Bleachwears <ordini@tuodominio.it>
+ORDER_REPLY_TO=ciao@tuodominio.it   # opzionale
+```
+
+`ORDER_FROM_EMAIL` deve stare su un dominio verificato presso il provider: un mittente arbitrario viene rifiutato con 403. Senza `RESEND_API_KEY` o senza `ORDER_FROM_EMAIL` il negozio incassa normalmente, l'email viene saltata e nel log resta `{"event":"order.email","ok":false,"reason":"not-configured"}` — una conferma mancante non deve mai far fallire un pagamento riuscito.
+
+Due cose da sapere: il webhook rilegge l'ordine dal database (`loadOrder`) perché su un deploy con più istanze l'evento può arrivare dove l'ordine non è in memoria, e la deduplica degli invii è per istanza, quindi un evento Stripe ritentato può produrre una seconda email. Il modo per chiuderlo è una colonna `confirmation_sent_at` con un aggiornamento condizionale.
+
 ## Controlli
 
 ```bash

@@ -105,3 +105,61 @@ export async function markOrderStatus(
     return false;
   }
 }
+
+/** La riga come sta in PostgREST: importi in centesimi, nomi in snake_case. */
+type OrderRow = {
+  id: string;
+  status: OrderStatus;
+  customer: StoredOrder["customer"] | null;
+  address: StoredOrder["address"] | null;
+  shipping_method: string | null;
+  lines: PricedLine[] | null;
+  subtotal_cents: number | null;
+  shipping_cents: number | null;
+  total_cents: number | null;
+  payment_provider?: string | null;
+  payment_ref?: string | null;
+  created_at?: string | null;
+};
+
+export function orderFromRow(row: OrderRow): StoredOrder {
+  return {
+    id: row.id,
+    createdAt: row.created_at ?? new Date(0).toISOString(),
+    status: row.status,
+    customer: row.customer ?? {},
+    address: row.address ?? {},
+    shipping: row.shipping_method ?? "standard",
+    lines: Array.isArray(row.lines) ? row.lines : [],
+    subtotal: (row.subtotal_cents ?? 0) / 100,
+    shippingCost: (row.shipping_cents ?? 0) / 100,
+    total: (row.total_cents ?? 0) / 100,
+    paymentProvider: row.payment_provider === "manual" ? "manual" : "stripe",
+    paymentRef: row.payment_ref ?? null,
+  };
+}
+
+/**
+ * Il webhook di Stripe può arrivare su un'istanza diversa da quella che ha
+ * creato l'ordine: senza questa lettura la conferma partirebbe solo per caso.
+ * Se il database non è configurato o non risponde si ricade sul promemoria in
+ * memoria, che in locale basta.
+ */
+export async function loadOrder(id: string): Promise<StoredOrder | null> {
+  const db = supabase();
+  if (!db) return recallOrder(id);
+
+  try {
+    const response = await fetch(`${db.url}/rest/v1/orders?id=eq.${encodeURIComponent(id)}&select=*`, {
+      headers: { apikey: db.key, Authorization: `Bearer ${db.key}` },
+      cache: "no-store",
+    });
+
+    if (!response.ok) return recallOrder(id);
+
+    const rows = (await response.json()) as OrderRow[];
+    return rows.length > 0 ? orderFromRow(rows[0]) : recallOrder(id);
+  } catch {
+    return recallOrder(id);
+  }
+}
