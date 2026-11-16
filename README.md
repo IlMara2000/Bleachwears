@@ -109,6 +109,12 @@ Il contatore giornaliero non si fida del fatto che la richiesta torni. Ogni gene
 
 La lease vive più a lungo della funzione apposta: le rotte dichiarano `maxDuration = 300`, quindi sei minuti lasciano margine oltre il momento in cui la piattaforma uccide il processo, senza liberare un gettone che una generazione ancora in corso sta usando. Il browser aspetta meno della funzione (`CLIENT_TIMEOUT_MS` = 290 s nella pressa del prompt, 240 s nel laboratorio): oltre quel tempo non ci sarebbe più nessuna risposta da attendere, e l'identificativo del tentativo resta salvato per ritirare l'immagine al retry.
 
+## Schede prodotto
+
+Ogni capo ha un URL suo — `/prodotti/serpenti`, non `/?sku=BW-T01` — generato da `app/prodotti/[slug]/page.tsx` a partire dal catalogo. Le pagine sono prerenderizzate (una per prodotto), dichiarano il proprio canonical, hanno titolo e descrizione propri e portano il JSON-LD `Product` con prezzo, valuta, disponibilità e link all'offerta: è il formato che permette a un motore di ricerca di mostrare il prezzo accanto al risultato. Prezzi e disponibilità vengono da `lib/shop/catalog.ts`, la stessa fonte che il checkout usa per fatturare, quindi quello che si legge nella scheda è quello che si paga.
+
+Una slug sconosciuta risponde 404 (`notFound()`), e la sitemap elenca le sei pagine più le schede di tutti i prodotti.
+
 ## Archivio delle stampe
 
 Una generazione al giorno rende caro un refresh: l'immagine viveva solo come blob in memoria e chiudere la scheda buttava via quello che il gettone aveva comprato. Ora ogni pressa tiene **l'ultima stampa** in IndexedDB (`lib/stencil/archive.ts`): risultato, immagine di partenza e parametri che l'hanno prodotta. Al caricamento la pagina li rilegge e mostra di nuovo il disegno, con la nota "Ripresa da questo browser", senza chiamare il modello.

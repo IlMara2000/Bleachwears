@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { orderEmailContent, sendOrderConfirmation } from "../lib/shop/email.ts";
-import { orderFromRow } from "../lib/shop/orders.ts";
+import { claimConfirmation, orderFromRow, releaseConfirmation } from "../lib/shop/orders.ts";
 
 const root = new URL("../", import.meta.url);
 
@@ -157,6 +157,54 @@ test("reads an order back from the database row the webhook receives", () => {
   assert.equal(loaded.customer.email, "sara@example.com");
 });
 
+test("only one delivery of the same payment can take the confirmation", async () => {
+  const restore = withEnv({
+    NEXT_PUBLIC_SUPABASE_URL: "https://db.stub.local",
+    SUPABASE_SERVICE_ROLE_KEY: "service-role-di-prova",
+  });
+  const realFetch = globalThis.fetch;
+  const requests = [];
+
+  globalThis.fetch = async (url, init) => {
+    requests.push({ url, init });
+    /* La prima PATCH tocca una riga; la seconda non trova più niente da aggiornare. */
+    const rows = requests.filter((request) => request.init.method === "PATCH" && request.init.body?.includes("confirmation_sent_at")).length;
+    return new Response(JSON.stringify(rows === 1 ? [{ id: "BW-2026-0003" }] : []), { status: 200 });
+  };
+
+  try {
+    assert.equal(await claimConfirmation("BW-2026-0003"), true, "il primo evento non ha preso in carico la conferma");
+    assert.equal(await claimConfirmation("BW-2026-0003"), false, "il secondo evento manderebbe una seconda email");
+
+    const [first] = requests;
+    assert.match(first.url, /orders\?id=eq\.BW-2026-0003&confirmation_sent_at=is\.null/, "manca la condizione sulla colonna");
+    assert.equal(first.init.method, "PATCH");
+    assert.ok(JSON.parse(first.init.body).confirmation_sent_at, "la presa in carico non viene registrata");
+
+    /* Se l'invio fallisce la presa in carico torna libera e il retry può riprovare. */
+    const before = requests.length;
+    await releaseConfirmation("BW-2026-0003");
+    assert.equal(requests.length, before + 1);
+    assert.equal(JSON.parse(requests[requests.length - 1].init.body).confirmation_sent_at, null);
+  } finally {
+    globalThis.fetch = realFetch;
+    restore();
+  }
+});
+
+test("without a database the confirmation is still claimed once per instance", async () => {
+  const restore = withEnv({ NEXT_PUBLIC_SUPABASE_URL: undefined, SUPABASE_SERVICE_ROLE_KEY: undefined });
+
+  try {
+    assert.equal(await claimConfirmation("BW-NODB-01"), true);
+    assert.equal(await claimConfirmation("BW-NODB-01"), false);
+    await releaseConfirmation("BW-NODB-01");
+    assert.equal(await claimConfirmation("BW-NODB-01"), true, "dopo il rilascio il tentativo deve poter ripartire");
+  } finally {
+    restore();
+  }
+});
+
 test("the Stripe webhook sends the confirmation after marking the order paid", async () => {
   const source = await readFile(new URL("app/api/stripe/webhook/route.ts", root), "utf8");
   const mark = source.indexOf('markOrderStatus(orderId, "paid"');
@@ -165,4 +213,9 @@ test("the Stripe webhook sends the confirmation after marking the order paid", a
   assert.ok(mark > 0, "il webhook non segna l'ordine come pagato");
   assert.ok(send > mark, "la conferma parte prima che l'ordine risulti pagato");
   assert.match(source, /loadOrder\(orderId\)/, "il webhook non rilegge l'ordine, quindi su un'altra istanza non lo trova");
+
+  /* Un evento consegnato due volte non deve mandare due email. */
+  const claim = source.indexOf("claimConfirmation(orderId)");
+  assert.ok(claim > 0, "il webhook non prende in carico la conferma prima di inviarla");
+  assert.ok(source.indexOf("sendOrderConfirmation(", claim) > claim, "l'email parte senza presa in carico");
 });

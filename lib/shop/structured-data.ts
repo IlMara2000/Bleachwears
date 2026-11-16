@@ -26,6 +26,48 @@ export function availabilityOf(product: Pick<Product, "status">): string {
   return AVAILABILITY.madeToOrder;
 }
 
+/**
+ * La scheda prodotto ha un URL leggibile ricavato dal nome: `serpenti`, non
+ * `BW-T01`. Serve a Google per associare un'offerta a una pagina, e a chi
+ * riceve il link per capire dove sta andando.
+ */
+export function productSlug(product: Pick<Product, "name">): string {
+  return product.name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export function productPath(product: Pick<Product, "name">): string {
+  return `/prodotti/${productSlug(product)}`;
+}
+
+/** La scheda di un singolo capo: stessa fonte di prezzo del catalogo e del checkout. */
+export function productStructuredData(product: Product) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "@id": `${absoluteUrl(productPath(product))}#product`,
+    name: `${product.name} — ${product.kind}`,
+    sku: product.id,
+    category: product.category,
+    description: [product.kind, product.technique, product.status].filter(Boolean).join(" · "),
+    brand: { "@type": "Brand", name: SELLER.brand },
+    ...(product.image ? { image: [absoluteUrl(product.image)] } : {}),
+    offers: {
+      "@type": "Offer",
+      price: product.price,
+      priceCurrency: "EUR",
+      availability: availabilityOf(product),
+      itemCondition: "https://schema.org/NewCondition",
+      seller: { "@type": "Organization", name: SELLER.brand },
+      url: absoluteUrl(productPath(product)),
+    },
+  };
+}
+
 export function catalogStructuredData(products: Product[]) {
   const organizationId = `${SITE_URL}/#organization`;
   const websiteId = `${SITE_URL}/#website`;
@@ -61,7 +103,7 @@ export function catalogStructuredData(products: Product[]) {
           position: index + 1,
           item: {
             "@type": "Product",
-            "@id": `${SITE_URL}/#${product.id}`,
+            "@id": `${absoluteUrl(productPath(product))}#product`,
             name: `${product.name} — ${product.kind}`,
             sku: product.id,
             category: product.category,
@@ -75,7 +117,7 @@ export function catalogStructuredData(products: Product[]) {
               availability: availabilityOf(product),
               itemCondition: "https://schema.org/NewCondition",
               seller: { "@id": organizationId },
-              url: home,
+              url: absoluteUrl(productPath(product)),
             },
           },
         })),

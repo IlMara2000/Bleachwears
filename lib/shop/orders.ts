@@ -163,3 +163,73 @@ export async function loadOrder(id: string): Promise<StoredOrder | null> {
     return recallOrder(id);
   }
 }
+
+/**
+ * Senza database resta un promemoria per istanza: meglio di niente, ma non è
+ * una garanzia — è la ragione per cui la colonna esiste.
+ */
+const localClaims = new Set<string>();
+
+/**
+ * Prende in carico la conferma d'ordine: true solo per il primo che ci riesce.
+ * Con il database è un aggiornamento condizionale (`confirmation_sent_at is
+ * null`), quindi due consegne dello stesso evento — anche su due istanze —
+ * non possono mandare due email. Un rifiuto non ha scritto niente.
+ */
+export async function claimConfirmation(id: string, now: Date = new Date()): Promise<boolean> {
+  const db = supabase();
+
+  if (!db) {
+    if (localClaims.has(id)) return false;
+    localClaims.add(id);
+    return true;
+  }
+
+  try {
+    const response = await fetch(
+      `${db.url}/rest/v1/orders?id=eq.${encodeURIComponent(id)}&confirmation_sent_at=is.null`,
+      {
+        method: "PATCH",
+        headers: {
+          apikey: db.key,
+          Authorization: `Bearer ${db.key}`,
+          "Content-Type": "application/json",
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify({ confirmation_sent_at: now.toISOString() }),
+        cache: "no-store",
+      },
+    );
+
+    if (!response.ok) return false;
+
+    const rows = (await response.json()) as unknown[];
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/** L'invio non è riuscito: la presa in carico torna libera per il prossimo tentativo. */
+export async function releaseConfirmation(id: string): Promise<void> {
+  localClaims.delete(id);
+
+  const db = supabase();
+  if (!db) return;
+
+  try {
+    await fetch(`${db.url}/rest/v1/orders?id=eq.${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: {
+        apikey: db.key,
+        Authorization: `Bearer ${db.key}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({ confirmation_sent_at: null }),
+      cache: "no-store",
+    });
+  } catch {
+    /* Resta presa: meglio una email mancante che due. */
+  }
+}

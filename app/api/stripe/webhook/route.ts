@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendOrderConfirmation } from "@/lib/shop/email";
-import { loadOrder, markOrderStatus } from "@/lib/shop/orders";
+import { claimConfirmation, loadOrder, markOrderStatus, releaseConfirmation } from "@/lib/shop/orders";
 import { paymentIntentId, verifyStripeSignature, type StripeSession } from "@/lib/shop/stripe";
 
 export const runtime = "nodejs";
@@ -48,10 +48,19 @@ export async function POST(request: Request) {
        * che scrive "ho pagato, e adesso?".
        */
       const order = await loadOrder(orderId);
-      if (order) {
-        await sendOrderConfirmation(order, session?.customer_details?.email ?? null);
-      } else {
+
+      if (!order) {
         console.warn(JSON.stringify({ event: "order.email", ok: false, reason: "order-missing", order: orderId }));
+      } else if (await claimConfirmation(orderId)) {
+        /*
+         * La conferma è presa in carico da un solo evento: Stripe può consegnare
+         * lo stesso pagamento più volte, e due email per un ordine sono un
+         * difetto visibile al cliente.
+         */
+        const sent = await sendOrderConfirmation(order, session?.customer_details?.email ?? null);
+
+        /* Nessuna email partita: la presa in carico torna libera per il retry. */
+        if (!sent.sent && sent.reason !== "duplicate") await releaseConfirmation(orderId);
       }
     } else if (event.type === "checkout.session.expired") {
       await markOrderStatus(orderId, "expired");
