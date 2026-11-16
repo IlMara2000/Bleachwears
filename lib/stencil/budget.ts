@@ -227,7 +227,17 @@ export async function reserveGeneration(): Promise<Reservation> {
     }
   };
 
-  return { allowed: used <= cap, budget: withUsage(cap, used, store, now), refund };
+  /*
+   * Refused at the ceiling: the INCR above was the gate, so hand it straight
+   * back. A request we turn down must not cost the user a slot — otherwise the
+   * counter drifts past the cap and every refusal makes tomorrow's count lie.
+   */
+  if (used > cap) {
+    await refund();
+    return { allowed: false, budget: withUsage(cap, cap, store, now), refund: nothingToRefund };
+  }
+
+  return { allowed: true, budget: withUsage(cap, used, store, now), refund };
 }
 
 export function budgetMessage(budget: Budget): string {

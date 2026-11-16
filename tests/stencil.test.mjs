@@ -354,6 +354,13 @@ test("refunds a shared counter on the day the slot was taken, even across midnig
 
     at("2026-04-10T23:59:30.000Z");
     assert.equal((await currentBudget()).used, 0, "il giorno della generazione fallita resta addebitato");
+
+    /* Anche un rifiuto non deve consumare il contatore condiviso. */
+    at("2026-04-11T00:02:00.000Z");
+    const blocked = await reserveGeneration();
+    assert.equal(blocked.allowed, false);
+    assert.equal(blocked.budget.used, 1, "il rifiuto ha lasciato il contatore sopra il tetto");
+    assert.equal((await currentBudget()).used, 1, "il rifiuto ha consumato un gettone sul contatore condiviso");
   } finally {
     globalThis.fetch = realFetch;
     Date.now = realNow;
@@ -363,5 +370,26 @@ test("refunds a shared counter on the day the slot was taken, even across midnig
 
     if (savedEnv.token === undefined) delete process.env.KV_REST_API_TOKEN;
     else process.env.KV_REST_API_TOKEN = savedEnv.token;
+  }
+});
+
+test("a refused reservation costs nothing and leaves the counter at the ceiling", async () => {
+  const realNow = Date.now;
+  Date.now = () => Date.parse("2026-05-20T10:00:00.000Z");
+
+  try {
+    const first = await reserveGeneration();
+    assert.equal(first.allowed, true);
+    assert.equal(first.budget.used, 1);
+
+    /* Con il tetto a uno la seconda richiesta dello stesso giorno viene rifiutata. */
+    const refused = await reserveGeneration();
+    assert.equal(refused.allowed, false);
+    assert.equal(refused.budget.used, 1, "il rifiuto ha consumato il gettone che non ha usato");
+    assert.equal(refused.budget.remaining, 0);
+
+    assert.equal((await currentBudget()).used, 1, "il contatore è salito oltre il tetto a causa di un rifiuto");
+  } finally {
+    Date.now = realNow;
   }
 });
