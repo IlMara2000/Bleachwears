@@ -1,11 +1,11 @@
-# Velvetica Streetwear — tema Shopify OS 2.0
+# Bleachwears — tema Shopify OS 2.0
 
 Tema Shopify completo con direzione visiva **massimalista**: hero con capi appesi al
 binario, nastro scorrevole, campagna con sfera cromata su fondo elettrico, vetrina
 prodotti, pagina prodotto con galleria e selettore taglie, drawer carrello AJAX.
 
-Il linguaggio visivo è volutamente rumoroso: palette carta/crema con tre accenti
-(verde acido, rosso pomodoro, viola elettrico), bordi da 3px, ombre dure offset,
+Il linguaggio visivo è volutamente rumoroso: palette carta/crema (allineata al sito Next.js) con tre accenti
+(ambra, rosso mattone, blu inchiostro), bordi da 3px, ombre dure offset,
 cartellini ruotati, texture a grana e strisce, titoli compressi con ombra colorata.
 
 ## Installazione
