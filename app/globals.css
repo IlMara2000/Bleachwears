@@ -735,10 +735,6 @@ button:disabled {
   text-align: center;
 }
 
-.empty-catalog > span {
-  font-size: 3rem;
-}
-
 .empty-catalog h2 {
   margin: 1rem 0 0.5rem;
 }
@@ -1025,12 +1021,6 @@ button:disabled {
   width: 54px;
   height: 54px;
   display: block;
-  background: var(--ink-soft);
-  clip-path: polygon(30% 3%, 43% 12%, 57% 12%, 70% 3%, 100% 27%, 82% 43%, 73% 34%, 76% 100%, 24% 100%, 27% 34%, 18% 43%, 0 27%);
-}
-
-.hoodie-icon {
-  clip-path: polygon(32% 16%, 40% 2%, 60% 2%, 68% 16%, 100% 34%, 84% 50%, 74% 41%, 77% 100%, 23% 100%, 26% 41%, 16% 50%, 0 34%);
 }
 
 .color-options {

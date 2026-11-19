@@ -233,24 +233,10 @@
 
 /* ---------- Icone: dove prima c'era un glifo di testo ---------- */
 
-.option-icon {
-  width: 54px;
-  height: 54px;
-  padding: 0;
-  background: none;
-  clip-path: none;
-  color: var(--ink);
-}
-
-.option-tile.is-selected .option-icon {
-  color: var(--ink);
-}
-
 .empty-catalog > span {
   display: grid;
   place-items: center;
   color: var(--acid);
-  line-height: 0;
 }
 
 .legal-back .ui-icon {
