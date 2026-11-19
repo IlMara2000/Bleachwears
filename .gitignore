@@ -45,3 +45,7 @@ next-env.d.ts
 /outputs/
 /output/
 /work/
+
+# credenziali locali: mai nel repo
+.env.local
+.env*.local
