@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Big_Shoulders } from "next/font/google";
 import "./globals.css";
+/* Clay + glass: strato successivo, così può alzare i componenti senza riscriverli. */
+import "./effects.css";
 import { SITE_URL } from "@/lib/seo";
 
 const displayFont = Big_Shoulders({

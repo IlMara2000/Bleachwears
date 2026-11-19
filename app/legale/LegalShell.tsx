@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Icon } from "@/app/ui/Icon";
 
 export function LegalShell({
   kicker,
@@ -19,7 +20,7 @@ export function LegalShell({
           <span className="legal-mark" aria-hidden="true"><i /><i /><i /><i /></span>
           bleachwears
         </Link>
-        <Link href="/" className="legal-back">Torna al sito <span aria-hidden="true">→</span></Link>
+        <Link href="/" className="legal-back">Torna al sito <Icon name="arrowRight" size={16} /></Link>
       </header>
 
       <main className="legal-body">

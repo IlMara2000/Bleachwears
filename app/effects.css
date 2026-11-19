@@ -1,0 +1,276 @@
+/* ============================================================
+   CLAY + GLASS — strato successivo al maximalism.
+   Non cambia la palette: ogni colore viene dai token già in uso
+   (--surface, --canvas, --acid, --hot, --electric, --ink).
+   Aggiunge profondità: superfici di vetro che lasciano passare
+   la carta sottostante e volumi di argilla con luce in alto e
+   ombra morbida in basso. Le ombre dure offset restano: sono la
+   firma del collage e non vanno spostate.
+   ============================================================ */
+
+:root {
+  /* Argilla: una luce in alto, un'ombra che scava in basso. */
+  --clay-light: rgb(255 255 255 / 66%);
+  --clay-shade: rgb(20 23 31 / 14%);
+  --clay-bounce: rgb(255 255 255 / 34%);
+  --clay-puff: inset 0 2px 0 var(--clay-light), inset 0 -5px 10px -6px var(--clay-shade);
+  --clay-cast: 0 22px 34px -24px rgb(20 23 31 / 55%);
+  --clay-radius: 14px;
+  --clay-radius-lg: 20px;
+
+  /* Vetro: velo di carta, non plastica trasparente. */
+  --glass-fill: rgb(252 247 236 / 58%);
+  --glass-fill-strong: rgb(252 247 236 / 82%);
+  --glass-rim: rgb(255 255 255 / 72%);
+  --glass-blur: 18px;
+  --glass-sheen: linear-gradient(180deg, rgb(255 255 255 / 30%), rgb(255 255 255 / 0) 46%);
+}
+
+.ui-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+
+/* ---------- Vetro: ciò che galleggia sopra la pagina ---------- */
+
+.topbar {
+  border-radius: var(--clay-radius);
+  background: var(--glass-sheen), var(--glass-fill-strong);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  box-shadow:
+    6px 6px 0 var(--ink),
+    inset 0 1px 0 var(--glass-rim),
+    inset 0 -3px 0 var(--clay-shade);
+}
+
+.mobile-dock {
+  border: 2px solid var(--ink);
+  border-radius: 22px;
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow:
+    0 -2px 0 var(--glass-rim) inset,
+    0 18px 30px -22px rgb(20 23 31 / 65%);
+}
+
+.mobile-dock button > span {
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+
+.cart-sheet {
+  border-radius: var(--clay-radius-lg) 0 0 var(--clay-radius-lg);
+  background: var(--glass-sheen), var(--glass-fill-strong);
+  backdrop-filter: blur(26px) saturate(150%);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  box-shadow: inset 1px 0 0 var(--glass-rim);
+}
+
+.toast-pill {
+  border-radius: 999px;
+  background: var(--glass-sheen), var(--glass-fill-strong);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  box-shadow:
+    4px 4px 0 var(--ink),
+    inset 0 1px 0 var(--glass-rim);
+}
+
+/* ---------- Argilla: superfici che si possono premere ---------- */
+
+.bento-card,
+.upload-card,
+.builder-card,
+.craft-card,
+.footer-card,
+.newsletter-card,
+.instagram-card,
+.lab-invite-card,
+.checkout-summary {
+  border-radius: var(--clay-radius-lg);
+  background: var(--glass-sheen), var(--surface);
+  box-shadow: var(--clay-cast), var(--clay-puff), 7px 7px 0 var(--ink);
+}
+
+/* La scheda prodotto conserva l'ombra rossa: è il suo segno. */
+.product-sheet {
+  border-radius: var(--clay-radius-lg);
+  background: var(--glass-sheen), var(--surface);
+  box-shadow: var(--clay-cast), var(--clay-puff), 12px 12px 0 var(--hot);
+}
+
+.option-tile,
+.design-tile,
+.reaction-tile,
+.shipping-option {
+  border-radius: var(--clay-radius);
+  background: var(--glass-sheen), var(--surface);
+  box-shadow: var(--clay-puff);
+}
+
+.option-tile:hover,
+.design-tile:hover,
+.reaction-tile:hover,
+.shipping-option:hover {
+  box-shadow: var(--clay-puff), var(--clay-cast);
+}
+
+/* ---------- Argilla: bottoni con la pressione vera ---------- */
+
+.soft-button,
+.solid-action,
+.ghost-action,
+.primary-wide-action,
+.sheet-cta,
+.checkout-submit,
+.catalog-link,
+.card-action {
+  border-radius: var(--clay-radius);
+  box-shadow: var(--clay-puff), 4px 4px 0 var(--ink);
+  transition:
+    transform 130ms var(--ease),
+    box-shadow 130ms var(--ease),
+    background 180ms var(--ease);
+}
+
+.soft-button:hover,
+.solid-action:hover,
+.primary-wide-action:hover,
+.catalog-link:hover,
+.card-action:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--clay-puff), 6px 6px 0 var(--ink);
+}
+
+.sheet-cta:hover:not(:disabled),
+.checkout-submit:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--clay-puff), 6px 6px 0 var(--ink);
+}
+
+.soft-button:active,
+.solid-action:active,
+.ghost-action:active,
+.primary-wide-action:active,
+.sheet-cta:active:not(:disabled),
+.checkout-submit:active:not(:disabled),
+.catalog-link:active,
+.card-action:active {
+  transform: translate(3px, 3px);
+  box-shadow: inset 0 4px 8px -3px var(--clay-shade), 1px 1px 0 var(--ink);
+}
+
+/* Il cerchio-freccia è argilla acid: resta acid, smette di essere piatto. */
+.round-arrow,
+.card-action-arrow {
+  display: grid;
+  place-items: center;
+  line-height: 0;
+  border-radius: 999px;
+  box-shadow: var(--clay-puff), 3px 3px 0 var(--ink);
+}
+
+.round-arrow {
+  border-width: 2px;
+}
+
+/* ---------- Vetro: etichette, pillole, sigilli ---------- */
+
+.craft-pill,
+.price-tag,
+.sticker,
+.availability-pill,
+.source-pill,
+.checkout-ref,
+.step-count {
+  border-radius: 10px;
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 var(--glass-rim),
+    2px 2px 0 var(--ink);
+}
+
+/* L'acido e il rosso restano tali: ci si aggiunge solo il riflesso. */
+.craft-pill,
+.price-tag,
+.sticker.is-tape {
+  background: var(--glass-sheen), var(--acid);
+}
+
+.availability-pill,
+.source-pill,
+.checkout-ref,
+.step-count {
+  background: var(--glass-sheen), var(--surface-soft);
+}
+
+/* ---------- Icone: dove prima c'era un glifo di testo ---------- */
+
+.option-icon {
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  background: none;
+  clip-path: none;
+  color: var(--ink);
+}
+
+.option-tile.is-selected .option-icon {
+  color: var(--ink);
+}
+
+.empty-catalog > span {
+  display: grid;
+  place-items: center;
+  color: var(--acid);
+  line-height: 0;
+}
+
+.legal-back .ui-icon {
+  margin-left: 0.15rem;
+}
+
+/* Il segno di spunta della selezione era un "✓" in un ::after: ora è un SVG
+   in maschera, così resta nitido a ogni densità di schermo. */
+.option-tile.is-selected::after,
+.design-tile.is-selected::after,
+.reaction-tile.is-selected::after,
+.upload-card.is-selected::after {
+  content: "";
+  border-radius: 999px;
+  background-color: var(--ink);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fcf7ec' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.4 10 17.3 19 7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 13px 13px;
+  box-shadow: inset 0 1px 0 var(--glass-rim), 2px 2px 0 var(--ink);
+}
+
+/* ---------- Campi: incassati nell'argilla, non appoggiati ---------- */
+
+.field input,
+.field select,
+.field textarea,
+.promptBox input,
+.promptBox textarea {
+  border-radius: 10px;
+  box-shadow: inset 0 3px 7px -4px var(--clay-shade), inset 0 -1px 0 var(--clay-light);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .soft-button,
+  .solid-action,
+  .ghost-action,
+  .primary-wide-action,
+  .sheet-cta,
+  .checkout-submit,
+  .catalog-link,
+  .card-action {
+    transition-duration: 1ms;
+  }
+}

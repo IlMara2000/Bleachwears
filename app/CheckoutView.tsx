@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { SHIPPING_METHODS, computeTotals, money, shippingCost } from "@/lib/shop/catalog";
 import { SELLER } from "@/lib/shop/business";
+import { Icon } from "./ui/Icon";
 
 export type CheckoutItem = {
   id: string;
@@ -343,7 +344,7 @@ export function CheckoutView({
           {STEPS.map((label, index) => (
             <li key={label} className={index === step ? "is-current" : index < step ? "is-done" : ""}>
               <button type="button" onClick={() => (index < step ? setStep(index) : next())} disabled={index > step}>
-                <span>{index < step ? "✓" : index + 1}</span>
+                <span>{index < step ? <Icon name="check" size={14} /> : index + 1}</span>
                 {label}
               </button>
             </li>
@@ -501,7 +502,7 @@ export function CheckoutView({
 
               <button type="submit" className="checkout-submit" disabled={sending}>
                 <span>{sending ? "Invio in corso…" : "Conferma l’ordine"}</span>
-                <span aria-hidden="true">{sending ? "…" : "→"}</span>
+                <span aria-hidden="true">{sending ? "…" : <Icon name="arrowRight" size={18} />}</span>
               </button>
               <p className="field-helper">
                 Nessun addebito automatico: ricevi conferma con riferimento ordine e tempi di lavorazione.
@@ -517,7 +518,7 @@ export function CheckoutView({
             </button>
             {step < STEPS.length - 1 && (
               <button type="button" className="solid-action" onClick={next}>
-                Continua <span aria-hidden="true">→</span>
+                Continua <Icon name="arrowRight" size={16} />
               </button>
             )}
           </div>
@@ -536,7 +537,7 @@ export function CheckoutView({
                   <small>{item.size ? `Taglia ${item.size} · ` : ""}{item.detail}</small>
                 </div>
                 <b>{money(item.price * (item.quantity ?? 1))}</b>
-                <button type="button" onClick={() => onRemove(item.id)} aria-label={`Rimuovi ${item.name}`}>×</button>
+                <button type="button" onClick={() => onRemove(item.id)} aria-label={`Rimuovi ${item.name}`}><Icon name="close" size={16} /></button>
               </li>
             ))}
           </ul>

@@ -18,6 +18,7 @@ import {
 } from "@/lib/shop/catalog";
 import { CheckoutView, type CheckoutItem } from "./CheckoutView";
 import { ProductSheet } from "./ProductSheet";
+import { Icon } from "./ui/Icon";
 
 type View = "links" | "shop" | "lab" | "checkout";
 type CatalogSource = "local" | "live";
@@ -514,7 +515,16 @@ export function BleachwearsApp() {
         <nav className="mobile-dock" aria-label="Navigazione mobile">
           {navItems.map((item) => (
             <button key={item.id} type="button" className={view === item.id ? "is-current" : ""} onClick={() => navigate(item.id)} aria-current={view === item.id ? "page" : undefined}>
-              <span aria-hidden="true">{item.id === "links" ? "⌂" : item.id === "shop" ? "◫" : "＋"}</span>{item.short}
+              <span aria-hidden="true">
+                {item.id === "links" ? (
+                  <Icon name="home" size={18} />
+                ) : item.id === "shop" ? (
+                  <Icon name="grid" size={18} />
+                ) : (
+                  <Icon name="plus" size={18} />
+                )}
+              </span>
+              {item.short}
             </button>
           ))}
           <button type="button" onClick={openCart} aria-label={`${cartItems.length} Bag, apri il carrello`}><span aria-hidden="true">{cartItems.length}</span>{" "}Bag</button>
@@ -643,14 +653,14 @@ export function BleachwearsApp() {
                         onClick={() => setProductOpen(product)}
                       >
                         <span>Scegli la taglia</span>
-                        <span className="card-action-arrow" aria-hidden="true">→</span>
+                        <span className="card-action-arrow" aria-hidden="true"><Icon name="arrowRight" size={16} /></span>
                       </button>
                     </article>
                   ))}
                 </div>
               ) : (
                 <div className="bento-card empty-catalog">
-                  <span aria-hidden="true">○</span>
+                  <span aria-hidden="true"><Icon name="sparkle" size={56} /></span>
                   <h2>Il prossimo drop sta prendendo forma.</h2>
                   <p>Torna presto oppure crea subito un capo nel Custom Lab.</p>
                   <button type="button" className="soft-button" onClick={() => navigate("lab")}>Apri il Custom Lab</button>
@@ -660,7 +670,7 @@ export function BleachwearsApp() {
                   <button type="button" className="lab-invite-card" onClick={() => navigate("lab")}>
                     <span className="section-kicker">Non trovi il tuo?</span>
                     <strong>Parti da una base neutra e componilo tu.</strong>
-                    <span className="round-arrow" aria-hidden="true">→</span>
+                    <span className="round-arrow" aria-hidden="true"><Icon name="arrowRight" size={18} /></span>
                   </button>
                 </div>
               </div>
@@ -726,7 +736,7 @@ export function BleachwearsApp() {
                           aria-current={labStep === step ? "step" : undefined}
                           aria-label={`Passaggio ${step}: ${label}`}
                         >
-                          <span>{labStep > step ? "✓" : step}</span>
+                          <span>{labStep > step ? <Icon name="check" size={14} /> : step}</span>
                           <small>{label}</small>
                         </button>
                       );
@@ -739,11 +749,11 @@ export function BleachwearsApp() {
                         <legend>Capo</legend>
                         <div className="option-grid two-columns">
                           <button type="button" className={garment === "tee" ? "option-tile is-selected" : "option-tile"} onClick={() => updateSelection(setGarment, "tee")} aria-pressed={garment === "tee"}>
-                            <span className="option-icon tee-icon" aria-hidden="true" />
+                            <Icon name="tee" size={54} className="option-icon" />
                             <strong>T-shirt</strong><small>240 g · da 49 €</small>
                           </button>
                           <button type="button" className={garment === "hoodie" ? "option-tile is-selected" : "option-tile"} onClick={() => updateSelection(setGarment, "hoodie")} aria-pressed={garment === "hoodie"}>
-                            <span className="option-icon hoodie-icon" aria-hidden="true" />
+                            <Icon name="hoodie" size={54} className="option-icon" />
                             <strong>Felpa</strong><small>400 g · da 89 €</small>
                           </button>
                         </div>
@@ -787,14 +797,14 @@ export function BleachwearsApp() {
                       </fieldset>
 
                       <button type="button" className="catalog-link" onClick={() => setToast("Il catalogo PDF sarà collegato appena definitivo")}>
-                        <span><strong>Catalogo completo</strong><small>PDF in preparazione</small></span><span aria-hidden="true">→</span>
+                        <span><strong>Catalogo completo</strong><small>PDF in preparazione</small></span><span aria-hidden="true"><Icon name="arrowRight" size={16} /></span>
                       </button>
 
                       <fieldset>
                         <legend>Oppure usa una tua immagine</legend>
                         <label className={design === "custom" ? "upload-card is-selected" : "upload-card"}>
                           <input type="file" accept=".png,.jpg,.jpeg,.webp,.heic,.heif,.pdf,image/heic,image/heif" onChange={handleUpload} />
-                          <span className="upload-symbol" aria-hidden="true">＋</span>
+                          <span className="upload-symbol" aria-hidden="true"><Icon name="plus" size={28} /></span>
                           <span><strong>{customFileName || "Carica dalla galleria"}</strong><small>JPG, PNG, WEBP, HEIC o PDF · max 10 MB</small></span>
                         </label>
                         <p className="field-helper">Il file resta sul dispositivo in questa versione dimostrativa.</p>
@@ -869,7 +879,7 @@ export function BleachwearsApp() {
                           setConfirmed(false);
                         }}
                       >
-                        Aggiungi al carrello <span>{money(labPrice)} →</span>
+                        Aggiungi al carrello <span>{money(labPrice)} <Icon name="arrowRight" size={16} /></span>
                       </button>
                       <p className="field-helper">L’anteprima è indicativa: ogni lavorazione manuale produce variazioni uniche.</p>
                     </div>
@@ -877,7 +887,7 @@ export function BleachwearsApp() {
 
                   <div className="builder-actions">
                     <button type="button" className="ghost-action" onClick={() => goToLabStep(labStep - 1)} disabled={labStep === 1}>Indietro</button>
-                    {labStep < 4 && <button type="button" className="solid-action" onClick={() => goToLabStep(labStep + 1)}>Continua <span aria-hidden="true">→</span></button>}
+                    {labStep < 4 && <button type="button" className="solid-action" onClick={() => goToLabStep(labStep + 1)}>Continua <Icon name="arrowRight" size={16} /></button>}
                   </div>
                 </section>
               </div>
@@ -934,7 +944,7 @@ export function BleachwearsApp() {
           <aside className="cart-sheet" ref={cartSheetRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="cart-title" onMouseDown={(event) => event.stopPropagation()}>
             <div className="cart-header">
               <div><span className="section-kicker">Il tuo carrello</span><h2 id="cart-title">{cartItems.length ? `${cartItems.length} ${cartItems.length === 1 ? "capo" : "capi"}` : "Ancora vuoto"}</h2></div>
-              <button ref={cartCloseButtonRef} type="button" onClick={closeCart} aria-label="Chiudi carrello">×</button>
+              <button ref={cartCloseButtonRef} type="button" onClick={closeCart} aria-label="Chiudi carrello"><Icon name="close" size={20} /></button>
             </div>
             {cartItems.length === 0 ? (
               <div className="cart-empty">
@@ -950,12 +960,12 @@ export function BleachwearsApp() {
                       <span className="cart-item-swatch" aria-hidden="true" />
                       <div><strong>{item.name}</strong><small>{item.size ? `Taglia ${item.size} · ` : ""}{item.detail}</small></div>
                       <b>{money(item.price)}</b>
-                      <button type="button" onClick={() => setCartItems((current) => current.filter((entry) => entry.id !== item.id))} aria-label={`Rimuovi ${item.name}`}>×</button>
+                      <button type="button" onClick={() => setCartItems((current) => current.filter((entry) => entry.id !== item.id))} aria-label={`Rimuovi ${item.name}`}><Icon name="close" size={16} /></button>
                     </li>
                   ))}
                 </ul>
                 <div className="cart-total"><span>Totale</span><strong>{money(cartItems.reduce((sum, item) => sum + item.price, 0))}</strong></div>
-                <button type="button" className="primary-wide-action" onClick={() => closeCartAndNavigate("checkout")}>Vai al checkout <span>→</span></button>
+                <button type="button" className="primary-wide-action" onClick={() => closeCartAndNavigate("checkout")}>Vai al checkout <Icon name="arrowRight" size={16} /></button>
                 <p className="cart-helper">Pagamento con carta al prossimo passaggio · spedizione tracciata in Italia.</p>
               </>
             )}
@@ -1204,7 +1214,7 @@ function BentoHome({
               si parte dalla stessa idea e si finisce con un pezzo che esiste solo lì.
             </p>
             <div className="poster-actions">
-              <button type="button" className="poster-cta" onClick={() => navigate("shop")}>Guarda il drop <span aria-hidden="true">→</span></button>
+              <button type="button" className="poster-cta" onClick={() => navigate("shop")}>Guarda il drop <Icon name="arrowRight" size={16} /></button>
               <button type="button" className="poster-cta is-ghost" onClick={() => navigate("lab")}>Fai il tuo pezzo</button>
             </div>
           </div>
@@ -1238,7 +1248,7 @@ function BentoHome({
                 </a>
               ) : (
                 <button key={social.name} type="button" onClick={() => notify(`${social.name} non è ancora collegato`)}>
-                  <span><strong>{social.name}</strong><small>{social.handle}</small></span><span aria-hidden="true">→</span>
+                  <span><strong>{social.name}</strong><small>{social.handle}</small></span><span aria-hidden="true"><Icon name="arrowRight" size={16} /></span>
                 </button>
               ),
             )}
@@ -1249,7 +1259,7 @@ function BentoHome({
           <span className="section-kicker">Custom Lab</span>
           <strong>Componilo come un gioco.</strong>
           <span className="lab-mini-grid" aria-hidden="true"><i /><i /><i /><i /></span>
-          <span className="round-arrow" aria-hidden="true">→</span>
+          <span className="round-arrow" aria-hidden="true"><Icon name="arrowRight" size={18} /></span>
         </button>
 
         <article className="bento-card drop-preview-card">
@@ -1266,7 +1276,7 @@ function BentoHome({
               </div>
             )) : <p>Il prossimo drop sta prendendo forma.</p>}
           </div>
-          <button type="button" className="soft-button" onClick={() => navigate("shop")}>Vedi tutto il drop <span aria-hidden="true">→</span></button>
+          <button type="button" className="soft-button" onClick={() => navigate("shop")}>Vedi tutto il drop <Icon name="arrowRight" size={16} /></button>
         </article>
 
         <article className="bento-card instagram-card" id="instagram" ref={reelSectionRef}>
@@ -1362,7 +1372,7 @@ function BentoHome({
           <div><span className="section-kicker">Drop alert</span><h2>Quando esce roba nuova.</h2><p>Niente calendario. Scriviamo solo quando c’è un capo nuovo o uno slot libero nel lab.</p></div>
           <form onSubmit={handleNewsletter}>
             <label htmlFor="email">La tua email</label>
-            <div><input id="email" type="email" required placeholder="nome@email.it" /><button type="submit" aria-label="Iscriviti alla lista">→</button></div>
+            <div><input id="email" type="email" required placeholder="nome@email.it" /><button type="submit" aria-label="Iscriviti alla lista"><Icon name="arrowRight" size={16} /></button></div>
             <small>Funzione in anteprima, nessun dato viene salvato.</small>
           </form>
         </article>
@@ -1399,7 +1409,7 @@ function GarmentVisual({
       <span className="garment-collar" aria-hidden="true" />
       <span className={`bleach-shape shape-${art}`} aria-hidden="true">
         {art === "custom" && customPreview && <Image src={customPreview} alt="" width={420} height={420} unoptimized />}
-        {art === "custom" && !customPreview && "＋"}
+        {art === "custom" && !customPreview && <Icon name="plus" size={38} />}
       </span>
     </div>
   );

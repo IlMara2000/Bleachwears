@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { clearPrint, loadPrint, savePrint } from "@/lib/stencil/archive";
 import { finishAttempt, startAttempt } from "@/lib/stencil/attempt";
+import { Icon } from "../../ui/Icon";
 import styles from "../stencil.module.css";
 
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
@@ -420,10 +421,10 @@ export default function PromptLab() {
             <span className={styles.micro}>Testo libero</span>
             <span className={styles.micro}>{MAX_PROMPT} caratteri</span>
             <Link href="/bwslab" className={styles.backLink}>
-              ← Stencil Lab
+              <Icon name="arrowLeft" size={14} /> Stencil Lab
             </Link>
             <Link href="/" className={styles.backLink}>
-              ← Bleachwears
+              <Icon name="arrowLeft" size={14} /> Bleachwears
             </Link>
           </div>
         </header>

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { CLOTHING_SIZES, money, type ClothingSize, type Product } from "@/lib/shop/catalog";
+import { Icon } from "./ui/Icon";
 
 export function ProductSheet({
   product,
@@ -82,8 +83,8 @@ export function ProductSheet({
         ref={sheetRef}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <button ref={closeRef} type="button" className="sheet-close" onClick={onClose} aria-label="Chiudi la scheda">
-          ×
+        <button ref={closeRef} type="button" className="sheet-close" onClick={onClose} aria-label="Chiudi la scheda"        >
+          <Icon name="close" size={20} />
         </button>
 
         <div className="sheet-photo" style={{ "--product-color": product.color, "--product-reaction": product.reaction } as CSSProperties}>
@@ -139,7 +140,7 @@ export function ProductSheet({
             onClick={() => size && onAdd(product, size)}
           >
             <span>{size ? "Aggiungi al carrello" : "Scegli una taglia"}</span>
-            <span className="card-action-arrow" aria-hidden="true">→</span>
+            <span className="card-action-arrow" aria-hidden="true"><Icon name="arrowRight" size={18} /></span>
           </button>
 
           <div className="sheet-foot">

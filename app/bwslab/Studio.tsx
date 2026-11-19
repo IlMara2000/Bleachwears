@@ -12,6 +12,7 @@ import {
   segmentSubject,
   type StencilStyle,
 } from "@/lib/stencil/local";
+import { Icon } from "../ui/Icon";
 import MaskEditorOverlay from "./MaskEditorOverlay";
 import styles from "./stencil.module.css";
 
@@ -598,7 +599,7 @@ export default function Studio() {
             <span className={styles.micro}>{local ? "1600 px" : (status?.resolution ?? "1K")}</span>
             <span className={styles.micro}>{modelLabel}</span>
             <Link href="/" className={styles.backLink}>
-              ← bleachwears
+              <Icon name="arrowLeft" size={14} /> bleachwears
             </Link>
           </div>
         </header>
