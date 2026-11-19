@@ -19,7 +19,7 @@ const MIN_PROMPT_CHARS = 3;
  * how long, how much — stays configuration on our side.
  */
 export async function POST(request: Request) {
-  if (!isConfigured()) {
+  if (!isConfigured("prompt")) {
     return NextResponse.json(
       { error: "Il generatore non è configurato su questo deploy: manca la chiave del provider." },
       { status: 503 },
@@ -50,13 +50,14 @@ export async function POST(request: Request) {
         "Content-Type": claimed.image.mimeType,
         "Content-Length": String(claimed.image.bytes.length),
         "Cache-Control": "no-store, max-age=0",
-        "X-Stencil-Model": activeModel(),
+        "X-Stencil-Model": activeModel("prompt"),
         "X-Stencil-Reused": "1",
       },
     });
   }
 
-  const limit = takeToken(clientIdFrom(request));
+  /* La soglia di frequenza è per pagina: la pressa non consuma quella del lab. */
+  const limit = takeToken(`prompt:${clientIdFrom(request)}`);
   if (!limit.allowed) {
     /* Nessuna generazione: l'id va liberato, o il retry con lo stesso id troverebbe "in corso". */
     failRequest(requestId);
@@ -121,7 +122,7 @@ export async function POST(request: Request) {
   const started = Date.now();
 
   try {
-    const result = await transformImage({ ...uploaded.upload, prompt });
+    const result = await transformImage({ ...uploaded.upload, prompt, section: "prompt" });
 
     console.info(
       JSON.stringify({
@@ -147,7 +148,7 @@ export async function POST(request: Request) {
         "Content-Type": result.mimeType,
         "Content-Length": String(result.bytes.length),
         "Cache-Control": "no-store, max-age=0",
-        "X-Stencil-Model": activeModel(),
+        "X-Stencil-Model": activeModel("prompt"),
       },
     });
   } catch (error) {

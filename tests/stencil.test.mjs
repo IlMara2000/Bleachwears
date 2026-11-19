@@ -60,9 +60,14 @@ test("reports a missing provider as a 503 instead of a broken generation", async
   /* Le chiavi si leggono a ogni chiamata, ma l'ambiente del test resta intatto. */
   const saved = {
     STENCIL_PROVIDER: process.env.STENCIL_PROVIDER,
+    STENCIL_LAB_PROVIDER: process.env.STENCIL_LAB_PROVIDER,
+    STENCIL_PRESS_PROVIDER: process.env.STENCIL_PRESS_PROVIDER,
+    STENCIL_LAB_API_KEY: process.env.STENCIL_LAB_API_KEY,
+    STENCIL_PRESS_API_KEY: process.env.STENCIL_PRESS_API_KEY,
     CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    DASHSCOPE_API_KEY: process.env.DASHSCOPE_API_KEY,
   };
   for (const key of Object.keys(saved)) delete process.env[key];
 
@@ -80,6 +85,56 @@ test("reports a missing provider as a 503 instead of a broken generation", async
         return true;
       },
     );
+  } finally {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test("the lab and the press resolve their own provider and key", () => {
+  const saved = {
+    STENCIL_PROVIDER: process.env.STENCIL_PROVIDER,
+    STENCIL_LAB_PROVIDER: process.env.STENCIL_LAB_PROVIDER,
+    STENCIL_PRESS_PROVIDER: process.env.STENCIL_PRESS_PROVIDER,
+    STENCIL_LAB_API_KEY: process.env.STENCIL_LAB_API_KEY,
+    STENCIL_PRESS_API_KEY: process.env.STENCIL_PRESS_API_KEY,
+    CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID,
+    CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    DASHSCOPE_API_KEY: process.env.DASHSCOPE_API_KEY,
+  };
+  for (const key of Object.keys(saved)) delete process.env[key];
+
+  try {
+    process.env.GEMINI_API_KEY = "chiave-gemini-di-prova";
+    process.env.DASHSCOPE_API_KEY = "chiave-qwen-di-prova";
+
+    /* Due chiavi configurate, due pagine, due motori: nessuna le consuma per l'altra. */
+    assert.equal(activeProvider("lab"), "gemini", "il lab stampa lo stencil con Gemini");
+    assert.equal(activeProvider("prompt"), "qwen", "la pressa esegue il prompt con Qwen");
+
+    /* La chiave di una pagina non tiene in vita il provider dell'altra. */
+    delete process.env.GEMINI_API_KEY;
+    assert.equal(activeProvider("lab"), "qwen", "senza chiave Gemini il lab ricade su chi è configurato");
+    assert.equal(activeProvider("prompt"), "qwen");
+
+    /* La scelta dichiarata dalla pagina batte quella condivisa. */
+    process.env.GEMINI_API_KEY = "chiave-gemini-di-prova";
+    process.env.STENCIL_PROVIDER = "cloudflare";
+    process.env.CLOUDFLARE_ACCOUNT_ID = "account-di-prova";
+    process.env.CLOUDFLARE_API_TOKEN = "token-di-prova";
+    process.env.STENCIL_PRESS_PROVIDER = "gemini";
+    assert.equal(activeProvider("prompt"), "gemini", "STENCIL_PRESS_PROVIDER batte STENCIL_PROVIDER");
+    assert.equal(activeProvider("lab"), "cloudflare", "senza scelta propria il lab segue STENCIL_PROVIDER");
+
+    /* E una chiave scritta per una pagina vale solo per quella. */
+    process.env.STENCIL_LAB_PROVIDER = "qwen";
+    process.env.STENCIL_LAB_API_KEY = "chiave-solo-del-lab";
+    delete process.env.DASHSCOPE_API_KEY;
+    assert.equal(activeProvider("lab"), "qwen", "la chiave del lab basta a configurarlo");
+    assert.equal(activeProvider("prompt"), "gemini", "la chiave del lab non configura la pressa");
   } finally {
     for (const [key, value] of Object.entries(saved)) {
       if (value === undefined) delete process.env[key];

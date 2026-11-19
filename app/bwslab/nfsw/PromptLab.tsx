@@ -597,10 +597,15 @@ export default function PromptLab() {
                     ogni richiesta risponde 503. Aggiungi una di queste configurazioni a{" "}
                     <code className={styles.codeChip}>.env.local</code> e riavvia{" "}
                     <code className={styles.codeChip}>npm run dev</code>:
+                    <br />· gratis, Qwen su Model Studio:{" "}
+                    <code className={styles.codeChip}>STENCIL_PRESS_PROVIDER=qwen</code> +{" "}
+                    <code className={styles.codeChip}>STENCIL_PRESS_API_KEY</code>
                     <br />· gratis, Cloudflare Workers AI:{" "}
                     <code className={styles.codeChip}>CLOUDFLARE_ACCOUNT_ID</code> +{" "}
                     <code className={styles.codeChip}>CLOUDFLARE_API_TOKEN</code>
-                    <br />· a pagamento, Gemini: <code className={styles.codeChip}>GEMINI_API_KEY</code>
+                    <br />· a pagamento, Gemini:{" "}
+                    <code className={styles.codeChip}>STENCIL_PRESS_API_KEY</code> con{" "}
+                    <code className={styles.codeChip}>GEMINI_API_KEY</code>
                     <br />· senza chiavi, sul tuo computer:{" "}
                     <code className={styles.codeChip}>STENCIL_PROVIDER=local</code> con ComfyUI su{" "}
                     <code className={styles.codeChip}>COMFYUI_URL</code>

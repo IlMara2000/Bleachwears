@@ -81,8 +81,28 @@ export function nearestAspectRatio(width: number, height: number): string {
   return best.label;
 }
 
-export function apiKey(): string | undefined {
-  return process.env.GEMINI_API_KEY?.trim() || undefined;
+export type ProviderId = "cloudflare" | "gemini" | "qwen" | "local";
+
+/**
+ * The two pages of Stencil Lab are two products, not two skins on one engine:
+ * /bwslab prints the house stencil, /bwslab/nfsw runs the visitor's prompt.
+ * Each one resolves its own provider, key and model from STENCIL_LAB_* or
+ * STENCIL_PRESS_*, so a quota spent on one page cannot stop the other.
+ */
+export type Section = "lab" | "prompt";
+
+const SECTION_ENV: Record<Section, string> = { lab: "LAB", prompt: "PRESS" };
+
+/** What each page is built for; any provider that is configured can take over. */
+const PREFERRED_PROVIDER: Record<Section, ProviderId> = { lab: "gemini", prompt: "qwen" };
+
+function sectionVar(section: Section, name: string): string {
+  return `STENCIL_${SECTION_ENV[section]}_${name}`;
+}
+
+/** STENCIL_LAB_* belongs to the lab, STENCIL_PRESS_* to the prompt press. */
+function sectionSetting(section: Section, name: string): string | undefined {
+  return process.env[sectionVar(section, name)]?.trim() || undefined;
 }
 
 /*
@@ -101,33 +121,84 @@ function cloudflareCredentials(): { accountId: string; token: string } | undefin
   return accountId && token ? { accountId, token } : undefined;
 }
 
-export type ProviderId = "cloudflare" | "gemini" | "local";
+/** One key per page, whoever answers: STENCIL_LAB_API_KEY / STENCIL_PRESS_API_KEY. */
+export function geminiKey(section: Section = "lab"): string | undefined {
+  return sectionSetting(section, "API_KEY") ?? (process.env.GEMINI_API_KEY?.trim() || undefined);
+}
 
-/** Free hosting wins when both are configured; STENCIL_PROVIDER overrides. */
-export function activeProvider(): ProviderId | undefined {
-  const forced = process.env.STENCIL_PROVIDER?.trim().toLowerCase();
+export function qwenKey(section: Section = "prompt"): string | undefined {
+  return sectionSetting(section, "API_KEY") ?? (process.env.DASHSCOPE_API_KEY?.trim() || undefined);
+}
+
+/** Kept for callers that only ever meant the house style. */
+export function apiKey(section: Section = "lab"): string | undefined {
+  return geminiKey(section);
+}
+
+export const QWEN_DEFAULT_MODEL = "qwen-image-2.0-pro";
+
+/**
+ * Model Studio's image-editing endpoint. The region is a property of the key,
+ * so the base URL is configuration: Singapore is the one that grants the free
+ * quota, and a key from another region is rejected by this host.
+ */
+export const QWEN_ENDPOINT = `${(
+  process.env.DASHSCOPE_BASE_URL?.trim() || "https://dashscope-intl.aliyuncs.com/api/v1"
+).replace(/\/+$/, "")}/services/aigc/multimodal-generation/generation`;
+
+function canRun(section: Section, provider: ProviderId): boolean {
+  if (provider === "local") return true;
+  if (provider === "cloudflare") return cloudflareCredentials() !== undefined;
+  if (provider === "gemini") return geminiKey(section) !== undefined;
+  return qwenKey(section) !== undefined;
+}
+
+function normalizeProvider(value: string): ProviderId | undefined {
+  const id = value === "comfyui" ? "local" : value;
+  return id === "local" || id === "cloudflare" || id === "gemini" || id === "qwen" ? id : undefined;
+}
+
+/**
+ * The page's own choice wins, then its preferred provider, then whatever else
+ * is configured. STENCIL_PROVIDER still forces both pages, which is what an
+ * existing deploy already has in its environment.
+ */
+export function activeProvider(section: Section = "lab"): ProviderId | undefined {
+  const asked = sectionSetting(section, "PROVIDER") ?? process.env.STENCIL_PROVIDER?.trim();
+  const forced = asked ? normalizeProvider(asked.toLowerCase()) : undefined;
 
   /* "local" is the machine running this server: no key, no quota, no upload. */
-  if (forced === "local" || forced === "comfyui") return "local";
+  if (forced === "local") return "local";
 
-  const cloudflare = cloudflareCredentials();
+  if (forced && canRun(section, forced)) return forced;
 
-  if (forced === "gemini") {
-    return apiKey() ? "gemini" : cloudflare ? "cloudflare" : undefined;
+  const order: ProviderId[] = [PREFERRED_PROVIDER[section], "cloudflare", "gemini", "qwen"];
+  for (const candidate of order) {
+    if (candidate !== forced && canRun(section, candidate)) return candidate;
   }
 
-  if (cloudflare) return "cloudflare";
-  return apiKey() ? "gemini" : undefined;
+  return undefined;
 }
 
-export function activeModel(): string {
-  const provider = activeProvider();
+export function activeModel(section: Section = "lab"): string {
+  const provider = activeProvider(section);
+  const override = sectionSetting(section, "MODEL");
+
   if (provider === "local") return process.env.COMFYUI_MODEL?.trim() || COMFYUI_DEFAULTS.model;
-  return provider === "cloudflare" ? CLOUDFLARE_MODEL : MODEL;
+  if (provider === "cloudflare") return override ?? CLOUDFLARE_MODEL;
+  if (provider === "qwen") return override ?? (process.env.QWEN_IMAGE_MODEL?.trim() || QWEN_DEFAULT_MODEL);
+  return override ?? MODEL;
 }
 
-export function isConfigured(): boolean {
-  return activeProvider() !== undefined;
+export function isConfigured(section: Section = "lab"): boolean {
+  return activeProvider(section) !== undefined;
+}
+
+/** Which variable to look at when a provider rejects the key. */
+function keyHint(section: Section, provider: ProviderId): string {
+  if (provider === "gemini") return `${sectionVar(section, "API_KEY")} (oppure GEMINI_API_KEY)`;
+  if (provider === "qwen") return `${sectionVar(section, "API_KEY")} (oppure DASHSCOPE_API_KEY)`;
+  return "CLOUDFLARE_API_TOKEN";
 }
 
 type ImagePayload = { data: string; mimeType: string };
@@ -211,6 +282,8 @@ export type TransformInput = {
    * gets STENCIL_PROMPT; /bwslab/nfsw sets it and gets what the user typed.
    */
   prompt?: string;
+  /** Which page is generating: each one carries its own provider and key. */
+  section?: Section;
 };
 
 /** An empty or missing prompt falls back to the house style, never to nothing. */
@@ -220,10 +293,12 @@ function promptFor(input: TransformInput): string {
 }
 
 export async function transformImage(input: TransformInput): Promise<TransformResult> {
-  const provider = activeProvider();
+  const section = input.section ?? "lab";
+  const provider = activeProvider(section);
   if (provider === "local") return transformWithComfyUI(input);
-  if (provider === "cloudflare") return transformWithCloudflare(input);
-  return transformWithGemini(input);
+  if (provider === "cloudflare") return transformWithCloudflare(input, section);
+  if (provider === "qwen") return transformWithQwen(input, section);
+  return transformWithGemini(input, section);
 }
 
 /**
@@ -268,11 +343,15 @@ async function cloudflareInput(bytes: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
-async function transformWithCloudflare(input: TransformInput): Promise<TransformResult> {
+async function transformWithCloudflare(
+  input: TransformInput,
+  section: Section,
+): Promise<TransformResult> {
   const credentials = cloudflareCredentials();
   if (!credentials) throw new StencilError("Il generatore non è configurato su questo deploy.", 503);
 
-  const endpoint = `https://api.cloudflare.com/client/v4/accounts/${credentials.accountId}/ai/run/${CLOUDFLARE_MODEL}`;
+  const model = activeModel(section);
+  const endpoint = `https://api.cloudflare.com/client/v4/accounts/${credentials.accountId}/ai/run/${model}`;
 
   let reference: Buffer;
   try {
@@ -331,7 +410,7 @@ async function transformWithCloudflare(input: TransformInput): Promise<Transform
 
     throw new StencilError(
       keyProblem
-        ? "Il provider ha rifiutato la chiave del server: controlla CLOUDFLARE_API_TOKEN."
+        ? `Il provider ha rifiutato la chiave del server: controlla ${keyHint(section, "cloudflare")}.`
         : "Il servizio ha rifiutato questa immagine. Prova una foto più pulita e più piccola.",
       502,
     );
@@ -346,8 +425,139 @@ async function transformWithCloudflare(input: TransformInput): Promise<Transform
   return { bytes: Buffer.from(payload.data, "base64"), mimeType: payload.mimeType };
 }
 
-async function transformWithGemini(input: TransformInput): Promise<TransformResult> {
-  const key = apiKey();
+/**
+ * DashScope answers with the edited image as a signed URL that lives 24 hours,
+ * or inline as a data URL. Read whichever came back.
+ */
+export function qwenImageRef(body: unknown): string | undefined {
+  const content = (
+    body as { output?: { choices?: Array<{ message?: { content?: unknown } }> } } | undefined
+  )?.output?.choices?.[0]?.message?.content;
+
+  if (!Array.isArray(content)) return undefined;
+
+  for (const part of content) {
+    const image = (part as { image?: unknown } | undefined)?.image;
+    if (typeof image === "string" && image.length > 0) return image;
+  }
+
+  return undefined;
+}
+
+/** The image is served by OSS, not by the API: no key, but still a download. */
+async function downloadQwenImage(reference: string): Promise<TransformResult> {
+  const inline = /^data:(image\/[\w.+-]+);base64,([\s\S]+)$/.exec(reference);
+  if (inline) return { bytes: Buffer.from(inline[2], "base64"), mimeType: inline[1] };
+
+  const url = /^https?:\/\//i.test(reference) ? reference : `https://${reference}`;
+
+  let response: Response;
+  try {
+    response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(60_000) });
+  } catch (error) {
+    console.error("stencil: could not download the generated image", error);
+    throw new StencilError("Non riesco a scaricare l'immagine generata. Riprova.", 502);
+  }
+
+  if (!response.ok) {
+    console.error("stencil: generated image download failed", response.status);
+    throw new StencilError("Non riesco a scaricare l'immagine generata. Riprova.", 502);
+  }
+
+  const declared = response.headers.get("content-type")?.split(";")[0]?.trim();
+  return {
+    bytes: Buffer.from(await response.arrayBuffer()),
+    mimeType: declared?.startsWith("image/") ? declared : "image/png",
+  };
+}
+
+/**
+ * Qwen-Image-Edit on Model Studio: the image and one instruction, one round
+ * trip. It is the natural engine for the prompt press, and its free quota is
+ * granted per account and per model, not per key — the page's own key is the
+ * only thing that makes its ceiling separate from the lab's.
+ */
+async function transformWithQwen(input: TransformInput, section: Section): Promise<TransformResult> {
+  const key = qwenKey(section);
+  if (!key) throw new StencilError("Il generatore non è configurato su questo deploy.", 503);
+
+  let response: Response;
+  try {
+    response = await fetch(QWEN_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(input.timeoutMs ?? 240_000),
+      body: JSON.stringify({
+        model: activeModel(section),
+        input: {
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  image: `data:${input.mimeType};base64,${input.bytes.toString("base64")}`,
+                },
+                { text: promptFor(input) },
+              ],
+            },
+          ],
+        },
+      }),
+    });
+  } catch (error) {
+    const timedOut = error instanceof Error && error.name === "TimeoutError";
+    console.error("stencil: provider unreachable", error);
+    throw new StencilError(
+      timedOut
+        ? "La generazione è andata in timeout. Riprova con un'immagine più leggera."
+        : "Il servizio di generazione non risponde.",
+      timedOut ? 504 : 502,
+    );
+  }
+
+  const body = await response.text();
+
+  if (!response.ok) {
+    const detail = upstreamMessage(body);
+    console.error("stencil: provider rejected the request", response.status, detail);
+
+    if (response.status === 429) {
+      throw new StencilError(
+        /quota|limit|exceed/i.test(detail)
+          ? "La quota gratuita del provider è finita. Torna domani o collega un'altra chiave."
+          : "Il servizio di generazione è occupato. Aspetta un momento e riprova.",
+        429,
+      );
+    }
+
+    const keyProblem =
+      response.status === 401 ||
+      response.status === 403 ||
+      /api.?key|invalidapikey|unauthor|permission|workspace/i.test(detail);
+
+    throw new StencilError(
+      keyProblem
+        ? `Il provider ha rifiutato la chiave del server: controlla ${keyHint(section, "qwen")}.`
+        : "Il servizio ha rifiutato questa immagine. Prova una foto più pulita e più piccola.",
+      502,
+    );
+  }
+
+  const reference = qwenImageRef(safeJson(body));
+  if (!reference) {
+    console.error("stencil: no image in provider response", body.slice(0, 600));
+    throw new StencilError("Il provider ha risposto senza immagine. Riprova.", 502);
+  }
+
+  return downloadQwenImage(reference);
+}
+
+async function transformWithGemini(input: TransformInput, section: Section): Promise<TransformResult> {
+  const key = geminiKey(section);
   if (!key) throw new StencilError("Il generatore non è configurato su questo deploy.", 503);
 
   const aspectRatio = nearestAspectRatio(input.width, input.height);
@@ -363,7 +573,7 @@ async function transformWithGemini(input: TransformInput): Promise<TransformResu
       cache: "no-store",
       signal: AbortSignal.timeout(input.timeoutMs ?? 240_000),
       body: JSON.stringify({
-        model: MODEL,
+        model: activeModel(section),
         input: [
           { type: "text", text: promptFor(input) },
           {
@@ -409,7 +619,7 @@ async function transformWithGemini(input: TransformInput): Promise<TransformResu
 
     throw new StencilError(
       keyProblem
-        ? "Il provider ha rifiutato la chiave del server: controlla GEMINI_API_KEY."
+        ? `Il provider ha rifiutato la chiave del server: controlla ${keyHint(section, "gemini")}.`
         : "Il servizio ha rifiutato questa immagine. Prova una foto più pulita e più piccola.",
       502,
     );

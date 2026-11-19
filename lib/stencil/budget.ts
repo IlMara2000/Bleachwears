@@ -1,4 +1,4 @@
-import { activeProvider } from "./provider.ts";
+import { activeProvider, type Section } from "./provider.ts";
 
 /**
  * The spend guard. Stencil Lab calls a paid model, so the server keeps its own
@@ -36,7 +36,7 @@ export const LEASE_MS = 6 * 60 * 1000;
  * takes instructions. Sharing one counter meant one page could eat the other's
  * generation, which is not what either page promises.
  */
-export type SpendScope = "lab" | "prompt";
+export type SpendScope = Section;
 
 export type Budget = {
   /** Generations per day. 0 means this provider spends nothing. */
@@ -280,16 +280,21 @@ function configuredStore(): Store {
  * A local model costs nothing, so it has no ceiling unless one is asked for.
  * A hosted model defaults to one generation a day: enough to try the press,
  * small enough that a leaked URL cannot burn a card even if left alone.
+ *
+ * The ceiling is read per page — STENCIL_LAB_DAILY_CAP and
+ * STENCIL_PRESS_DAILY_CAP beat STENCIL_DAILY_CAP — so one page cannot spend
+ * the other's budget.
  */
-function configuredCap(): number {
-  const raw = process.env.STENCIL_DAILY_CAP?.trim();
+function configuredCap(scope: SpendScope): number {
+  const scoped = scope === "lab" ? process.env.STENCIL_LAB_DAILY_CAP : process.env.STENCIL_PRESS_DAILY_CAP;
+  const raw = scoped?.trim() || process.env.STENCIL_DAILY_CAP?.trim();
 
   if (raw) {
     const value = Number(raw);
     if (Number.isFinite(value) && value >= 0) return Math.floor(value);
   }
 
-  return activeProvider() === "local" ? 0 : 1;
+  return activeProvider(scope) === "local" ? 0 : 1;
 }
 
 function dayKey(now: number, scope: SpendScope): string {
@@ -329,7 +334,7 @@ function newLeaseId(): string {
 export async function currentBudget(scope: SpendScope = "prompt"): Promise<Budget> {
   const now = Date.now();
   const store = configuredStore();
-  const cap = configuredCap();
+  const cap = configuredCap(scope);
 
   if (cap === 0) return unlimited(store, now);
 
@@ -377,7 +382,7 @@ const nothingToConfirm = async (): Promise<void> => undefined;
 export async function reserveGeneration(scope: SpendScope = "prompt"): Promise<Reservation> {
   const now = Date.now();
   const store = configuredStore();
-  const cap = configuredCap();
+  const cap = configuredCap(scope);
 
   if (cap === 0) {
     return { allowed: true, budget: unlimited(store, now), refund: nothingToRefund, confirm: nothingToConfirm };

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function POST(request: Request) {
-  if (!isConfigured()) {
+  if (!isConfigured("lab")) {
     return NextResponse.json(
       { error: "Il generatore non è configurato su questo deploy: manca la chiave del provider." },
       { status: 503 },
@@ -41,13 +41,14 @@ export async function POST(request: Request) {
         "Content-Type": claimed.image.mimeType,
         "Content-Length": String(claimed.image.bytes.length),
         "Cache-Control": "no-store, max-age=0",
-        "X-Stencil-Model": activeModel(),
+        "X-Stencil-Model": activeModel("lab"),
         "X-Stencil-Reused": "1",
       },
     });
   }
 
-  const limit = takeToken(clientIdFrom(request));
+  /* La soglia di frequenza è per pagina: il lab non consuma quella della pressa. */
+  const limit = takeToken(`lab:${clientIdFrom(request)}`);
   if (!limit.allowed) {
     /* Nessuna generazione: l'id va liberato, o il retry con lo stesso id troverebbe "in corso". */
     failRequest(requestId);
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
   const started = Date.now();
 
   try {
-    const result = await transformImage({ bytes, mimeType, width, height });
+    const result = await transformImage({ bytes, mimeType, width, height, section: "lab" });
 
     /* Real numbers only: this log line is the cost ledger. */
     console.info(
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
         "Content-Type": result.mimeType,
         "Content-Length": String(result.bytes.length),
         "Cache-Control": "no-store, max-age=0",
-        "X-Stencil-Model": activeModel(),
+        "X-Stencil-Model": activeModel("lab"),
       },
     });
   } catch (error) {
