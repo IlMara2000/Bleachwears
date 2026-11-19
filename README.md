@@ -44,6 +44,18 @@ npx supabase db push --linked
 
 Il database può contenere più capi di quelli che il listino conosce, ma i prezzi li ricalcola il checkout da `lib/shop/catalog.ts`. La home quindi filtra con `purchasableProducts()`: un capo senza prezzo di listino non viene offerto (sarebbe un ordine destinato al rifiuto) e il suo id compare nel log come `{"event":"catalog.unpriced","ids":[…]}`. Se il database non contiene nessun capo riconosciuto, resta il catalogo di riferimento invece di un negozio vuoto.
 
+### Rotazione della chiave Supabase
+
+La service key vive solo in `SUPABASE_SERVICE_ROLE_KEY` e non deve mai stare nel repository. Per sostituirla senza fermare il sito:
+
+1. **Supabase → Settings → API Keys**: crea una nuova *secret key* (`sb_secret_…`) e copiala subito, viene mostrata una volta sola. Non revocare ancora la vecchia.
+2. **Vercel → Settings → Environment Variables**: aggiorna `SUPABASE_SERVICE_ROLE_KEY` per Production (e Preview, se la usi) e salva.
+3. **Redeploy**: le variabili d'ambiente valgono dal deployment successivo.
+4. **Verifica** con `./scripts/verify-orders-read.sh`: la sola header `apikey` deve rispondere `200`, mentre `apikey` + `Authorization: Bearer` con una `sb_secret_` deve rispondere `401`. Il Bearer non va più usato: le nuove chiavi non sono JWT e PostgREST le rifiuterebbe.
+5. **Solo dopo**, revoca la vecchia chiave in Supabase. Finché resta attiva, chiunque l'abbia vista può continuare a usarla.
+
+Togliere una chiave dall'index non la cancella dalla storia del repository: se è stata committata, la rotazione è l'unico rimedio.
+
 ## Marchio e icone
 
 Il marchio vive in un solo sorgente vettoriale, `logo-bw-square.svg`: da lì si rigenerano favicon, icone dell'app e logo dell'header. Il generatore usa `sharp` (già tra le dipendenze) e non richiede argomenti.
