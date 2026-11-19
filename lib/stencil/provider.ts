@@ -335,12 +335,24 @@ function cloudflareMessage(body: string): string {
  * is downscaled in memory: the original bytes are never written down.
  */
 async function cloudflareInput(bytes: Buffer): Promise<Buffer> {
-  const { default: sharp } = await import("sharp");
-  return sharp(bytes)
-    .rotate()
-    .resize({ width: 511, height: 511, fit: "inside", withoutEnlargement: true })
-    .jpeg({ quality: 92 })
-    .toBuffer();
+  try {
+    // Nome in variabile: il bundler per Cloudflare non deve includere sharp.
+    const moduleName = "sharp";
+    const imported = (await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ moduleName)) as {
+      default: typeof import("sharp");
+    };
+    const sharp = imported.default;
+    return await sharp(bytes)
+      .rotate()
+      .resize({ width: 511, height: 511, fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 92 })
+      .toBuffer();
+  } catch (error) {
+    // Su Cloudflare Workers sharp non è disponibile: si usa l'immagine così com'è
+    // invece di far fallire la richiesta.
+    console.warn("stencil: sharp non disponibile, uso l'immagine originale", error);
+    return bytes;
+  }
 }
 
 async function transformWithCloudflare(
