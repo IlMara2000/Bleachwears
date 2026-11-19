@@ -45,7 +45,6 @@ export async function saveOrder(order: StoredOrder) {
       method: "POST",
       headers: {
         apikey: db.key,
-        Authorization: `Bearer ${db.key}`,
         "Content-Type": "application/json",
         Prefer: "resolution=merge-duplicates,return=minimal",
       },
@@ -90,7 +89,6 @@ export async function markOrderStatus(
       method: "PATCH",
       headers: {
         apikey: db.key,
-        Authorization: `Bearer ${db.key}`,
         "Content-Type": "application/json",
         Prefer: "return=minimal",
       },
@@ -151,7 +149,7 @@ export async function loadOrder(id: string): Promise<StoredOrder | null> {
 
   try {
     const response = await fetch(`${db.url}/rest/v1/orders?id=eq.${encodeURIComponent(id)}&select=*`, {
-      headers: { apikey: db.key, Authorization: `Bearer ${db.key}` },
+      headers: { apikey: db.key },
       cache: "no-store",
     });
 
@@ -192,7 +190,6 @@ export async function claimConfirmation(id: string, now: Date = new Date()): Pro
         method: "PATCH",
         headers: {
           apikey: db.key,
-          Authorization: `Bearer ${db.key}`,
           "Content-Type": "application/json",
           Prefer: "return=representation",
         },
@@ -222,7 +219,6 @@ export async function releaseConfirmation(id: string): Promise<void> {
       method: "PATCH",
       headers: {
         apikey: db.key,
-        Authorization: `Bearer ${db.key}`,
         "Content-Type": "application/json",
         Prefer: "return=minimal",
       },
