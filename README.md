@@ -149,3 +149,11 @@ Due cose da sapere: il webhook rilegge l'ordine dal database (`loadOrder`) perch
 npm run lint
 npm test
 ```
+
+## Hook pre-commit
+
+Dopo il clone abilita il controllo che blocca il commit di file `.env*`:
+
+```sh
+./scripts/install-hooks.sh
+```
