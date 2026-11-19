@@ -8,5 +8,13 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bleachwears",
+      "database_id": "3304ee3a-300a-4046-9e71-0f7a45bc5b04",
+      "migrations_dir": "migrations"
+    }
+  ],
   "observability": { "enabled": true }
 }
