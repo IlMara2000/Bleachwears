@@ -1,9 +1,9 @@
 [
   {
     "name": "theme_info",
-    "theme_name": "Velvetica Streetwear",
+    "theme_name": "Bleachwears",
     "theme_version": "1.1.0",
-    "theme_author": "Velvetica Studio",
+    "theme_author": "Bleachwears",
     "theme_documentation_url": "https://shopify.dev/docs/themes",
     "theme_support_url": "https://shopify.dev/docs/themes"
   },
@@ -11,15 +11,15 @@
     "name": "Colori",
     "settings": [
       { "type": "header", "content": "Base" },
-      { "type": "color", "id": "color_background", "label": "Sfondo", "default": "#f4ede0" },
-      { "type": "color", "id": "color_paper", "label": "Superfici (card, header)", "default": "#f8f2e6" },
-      { "type": "color", "id": "color_text", "label": "Testo e bordi", "default": "#0e0b0a" },
-      { "type": "color", "id": "color_muted", "label": "Testo secondario", "default": "#6b6357" },
-      { "type": "color", "id": "color_border", "label": "Bordi sottili", "default": "#0e0b0a" },
+      { "type": "color", "id": "color_background", "label": "Sfondo", "default": "#f2e7d3" },
+      { "type": "color", "id": "color_paper", "label": "Superfici (card, header)", "default": "#fcf7ec" },
+      { "type": "color", "id": "color_text", "label": "Testo e bordi", "default": "#14171f" },
+      { "type": "color", "id": "color_muted", "label": "Testo secondario", "default": "#5b5c61" },
+      { "type": "color", "id": "color_border", "label": "Bordi sottili", "default": "#14171f" },
       { "type": "header", "content": "Accenti massimalisti" },
-      { "type": "color", "id": "color_acid", "label": "Accento acido (verde lime)", "default": "#d8ff3e" },
-      { "type": "color", "id": "color_hot", "label": "Accento caldo (rosso pomodoro)", "default": "#ff3b2f" },
-      { "type": "color", "id": "color_electric", "label": "Accento elettrico (viola)", "default": "#4a1fff" }
+      { "type": "color", "id": "color_acid", "label": "Accento ambra", "default": "#efb53c" },
+      { "type": "color", "id": "color_hot", "label": "Accento caldo (rosso mattone)", "default": "#c0272d" },
+      { "type": "color", "id": "color_electric", "label": "Accento blu inchiostro", "default": "#1e4c8c" }
     ]
   },
   {
@@ -32,7 +32,7 @@
   {
     "name": "Forme",
     "settings": [
-      { "type": "range", "id": "corner_radius", "label": "Raggio angoli", "min": 0, "max": 24, "step": 1, "unit": "px", "default": 4 }
+      { "type": "range", "id": "corner_radius", "label": "Raggio angoli", "min": 0, "max": 24, "step": 1, "unit": "px", "default": 6 }
     ]
   }
 ]
