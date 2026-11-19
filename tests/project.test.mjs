@@ -5,7 +5,7 @@ import sharp from "sharp";
 
 const root = new URL("../", import.meta.url);
 
-test("is configured as a Vercel-compatible Next.js app", async () => {
+test("is configured as a Next.js app deployable on Vercel or Cloudflare", async () => {
   const [packageJson, page, layout] = await Promise.all([
     readFile(new URL("package.json", root), "utf8"),
     readFile(new URL("app/page.tsx", root), "utf8"),
@@ -14,7 +14,8 @@ test("is configured as a Vercel-compatible Next.js app", async () => {
 
   assert.match(packageJson, /"build": "next build"/);
   assert.match(packageJson, /"@supabase\/supabase-js": "2\.112\.0"/);
-  assert.doesNotMatch(packageJson, /vinext|wrangler|drizzle-orm/);
+  assert.doesNotMatch(packageJson, /vinext|drizzle-orm/);
+  assert.match(packageJson, /@opennextjs\/cloudflare/);
   assert.match(page, /BleachwearsApp/);
   assert.match(layout, /Bleachwears — Custom streetwear/);
 });
